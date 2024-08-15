@@ -1,0 +1,7 @@
+LOAD select_language 0
+MOUT english 0
+MOUT kiswahili 1
+HALT
+INCMP terms 0
+INCMP terms 1
+RELOAD select_language

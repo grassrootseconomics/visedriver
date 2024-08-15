@@ -1,4 +1,6 @@
 **/*.env
 covprofile
 go.work*
-services/registration/*.bin
+**/*/*.bin
+**/*/.state/
+cmd/.state/

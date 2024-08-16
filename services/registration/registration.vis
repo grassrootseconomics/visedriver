@@ -1,5 +1,6 @@
-MOUT english 0
-MOUT kiswahili 1
+CATCH select_language 8 0
+CATCH terms 9 0
+CATCH account_pending 10 1
+CATCH profile 11 1
+LOAD check_account_status 0
 HALT
-INCMP terms 0
-INCMP terms 1

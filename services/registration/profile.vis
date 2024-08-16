@@ -1,0 +1,4 @@
+LOAD check_identifier 64
+RELOAD check_identifier
+MAP check_identifier
+HALT

@@ -59,7 +59,6 @@ type fsData struct {
 func (fsd *fsData) SetLanguageSelected(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	inputStr := string(input)
 	res := resource.Result{}
-
 	switch inputStr {
 	case "0":
 		res.FlagSet = []uint32{state.FLAG_LANG}
@@ -257,6 +256,9 @@ func main() {
 	if err != nil {
 		pr = pr.WithContent(&st, ca)
 		err = pr.Save(cfg.SessionId)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to save state with error: %v\n", err)
+		}
 		en, err = engine.NewPersistedEngine(ctx, cfg, pr, rfs)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "engine create exited with error: %v\n", err)

@@ -220,6 +220,13 @@ func checkAccountStatus(trackingId string) (string, error) {
 	return status, nil
 }
 
+func  (fsd *fsData) quit(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	return resource.Result{
+		Content: "",
+	}, nil
+}
+
+
 var (
 	scriptDir = path.Join("services", "registration")
 )
@@ -238,6 +245,7 @@ func main() {
 
 	ctx := context.Background()
 	st := state.NewState(7)
+	st.UseDebug()
 	rfs := resource.NewFsResource(scriptDir)
 	ca := cache.NewCache()
 	cfg := engine.Config{
@@ -274,6 +282,7 @@ func main() {
 	rfs.AddLocalFunc("create_account", fs.create_account)
 	rfs.AddLocalFunc("check_identifier", fs.checkIdentifier)
 	rfs.AddLocalFunc("check_account_status", fs.check_account_status)
+	rfs.AddLocalFunc("quit",fs.quit)
 
 	cont, err := en.Init(ctx)
 	if err != nil {

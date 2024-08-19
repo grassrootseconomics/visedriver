@@ -246,6 +246,12 @@ func main() {
 	ctx := context.Background()
 	st := state.NewState(7)
 	st.UseDebug()
+	state.FlagDebugger.Register(USERFLAG_LANGUAGE_SET, "LANGUAGE_CHANGE")
+	state.FlagDebugger.Register(USERFLAG_ACCOUNT_CREATED,"ACCOUNT_CREATED")
+	state.FlagDebugger.Register(USERFLAG_ACCOUNT_SUCCESS,"ACCOUNT_SUCCESS")
+	state.FlagDebugger.Register(USERFLAG_ACCOUNT_PENDING,"ACCOUNT_PENDING")
+
+
 	rfs := resource.NewFsResource(scriptDir)
 	ca := cache.NewCache()
 	cfg := engine.Config{

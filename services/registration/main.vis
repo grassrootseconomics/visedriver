@@ -1,9 +1,15 @@
-LOAD check_identifier 64
-RELOAD check_identifier
-MAP check_identifier
+LOAD check_balance 64
+RELOAD check_balance
+MAP check_balance
 MOUT send 1
 MOUT vouchers 2
 MOUT account 3
 MOUT help 4
+MOUT quit 9
 HALT
+INCMP send 1
+INCMP vouchers 2
 INCMP my_account 3
+INCMP help 4
+INCMP quit 9
+INCMP . *

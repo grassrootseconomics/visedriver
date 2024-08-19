@@ -1,1 +1,1 @@
-Salio: 0.00 SRF
+Salio: {{.check_balance}}

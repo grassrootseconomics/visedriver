@@ -1,2 +1,1 @@
-Balance: 0.00 SRF
-
+Balance: {{.check_balance}}

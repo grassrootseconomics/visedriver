@@ -29,6 +29,7 @@ const (
 const (
 	createAccountURL = "https://custodial.sarafu.africa/api/account/create"
 	trackStatusURL   = "https://custodial.sarafu.africa/api/track/"
+	checkBalanceURL  = "https://custodial.sarafu.africa/api/account/status/"
 )
 
 type accountResponse struct {
@@ -50,6 +51,14 @@ type trackStatusResponse struct {
 			TxHash        string      `json:"txHash"`
 			TxType        string      `json:"txType"`
 		}
+	} `json:"result"`
+}
+
+type balanceResponse struct {
+	Ok     bool `json:"ok"`
+	Result struct {
+		Balance   string      `json:"balance"`
+		Nonce  json.Number `json:"nonce"`
 	} `json:"result"`
 }
 
@@ -262,6 +271,45 @@ func  (fsd *fsData) quit(ctx context.Context, sym string, input []byte) (resourc
 	return res, nil
 }
 
+func (fsd *fsData) checkBalance(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	res := resource.Result{}
+
+	fp := fsd.path + "_data"
+
+	jsonData, err := os.ReadFile(fp)
+	if err != nil {
+		return res, err
+	}
+
+	var accountData map[string]string
+	err = json.Unmarshal(jsonData, &accountData)
+	if err != nil {
+		return res, err
+	}
+
+	resp, err := http.Get(checkBalanceURL + accountData["PublicKey"])
+	if err != nil {
+		return res, nil
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return res, nil
+	}
+
+	var balanceResp balanceResponse
+	err = json.Unmarshal(body, &balanceResp)
+	if err != nil {
+		return res, nil
+	}
+
+	balance := balanceResp.Result.Balance
+
+	res.Content = balance
+
+	return res, nil
+}
 
 var (
 	scriptDir = path.Join("services", "registration")
@@ -327,6 +375,7 @@ func main() {
 	rfs.AddLocalFunc("check_account_status", fs.check_account_status)
 	rfs.AddLocalFunc("unlock_account", fs.unlock)
 	rfs.AddLocalFunc("quit",fs.quit)
+	rfs.AddLocalFunc("check_balance", fs.checkBalance)
 
 	cont, err := en.Init(ctx)
 	if err != nil {

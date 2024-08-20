@@ -2,5 +2,5 @@ CATCH select_language 8 0
 CATCH terms 9 0
 LOAD check_account_status 0
 CATCH account_pending 10 1
-CATCH profile 11 1
+CATCH main 11 1
 HALT

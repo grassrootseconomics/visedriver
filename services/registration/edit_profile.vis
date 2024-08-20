@@ -1,0 +1,17 @@
+MOUT edit_name 1
+MOUT edit_gender 2
+MOUT edit_yob 3
+MOUT edit_location 4
+MOUT edit_offerings 5
+MOUT view 6
+MOUT back 0
+HALT
+INCMP ^ 0
+INCMP enter_name 1
+INCMP select_gender 2
+INCMP enter_yob 3
+INCMP enter_location 4
+INCMP enter_offerings 5
+INCMP view_profile 6
+
+

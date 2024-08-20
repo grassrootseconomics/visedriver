@@ -1,0 +1,6 @@
+MOUT male 1
+MOUT female 2
+MOUT other_gender 3
+MOUT back 0
+HALT
+INCMP ^ 0

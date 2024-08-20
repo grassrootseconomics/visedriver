@@ -1,0 +1,4 @@
+LOAD unlock_account 0
+HALT
+RELOAD unlock_account
+INCMP _ *

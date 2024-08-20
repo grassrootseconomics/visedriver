@@ -1,0 +1,7 @@
+LOAD transaction_reset 0
+MOUT back 0
+HALT
+INCMP ^ 0
+LOAD send_transaction 0
+MAP send_transaction
+MOVE invalid_recipient

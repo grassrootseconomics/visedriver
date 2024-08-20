@@ -1,0 +1,7 @@
+MAP send_transaction
+LOAD transaction_reset 0
+MOUT retry 1
+MOUT quit 9
+HALT
+INCMP send 1
+INCMP quit 9

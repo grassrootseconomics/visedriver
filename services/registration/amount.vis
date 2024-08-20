@@ -3,4 +3,7 @@ MAP max_amount
 MOUT back 0
 HALT
 INCMP ^ 0
-INCMP quit *
+LOAD validate_amount 0
+LOAD get_recipient 12
+LOAD get_sender 64
+MOVE transaction_pin

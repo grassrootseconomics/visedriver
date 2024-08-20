@@ -59,8 +59,8 @@ type trackStatusResponse struct {
 type balanceResponse struct {
 	Ok     bool `json:"ok"`
 	Result struct {
-		Balance   string      `json:"balance"`
-		Nonce  json.Number `json:"nonce"`
+		Balance string      `json:"balance"`
+		Nonce   json.Number `json:"nonce"`
 	} `json:"result"`
 }
 
@@ -313,7 +313,7 @@ func (fsd *fsData) checkBalance(ctx context.Context, sym string, input []byte) (
 	return res, nil
 }
 
-func(fsd *fsData) validate_recipient(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+func (fsd *fsData) validate_recipient(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	recipient := string(input)
 
@@ -356,7 +356,7 @@ func(fsd *fsData) validate_recipient(ctx context.Context, sym string, input []by
 	return res, nil
 }
 
-func(fsd *fsData) transaction_reset(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+func (fsd *fsData) transaction_reset(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	fp := fsd.path + "_data"
 
@@ -389,12 +389,94 @@ func(fsd *fsData) transaction_reset(ctx context.Context, sym string, input []byt
 	return res, nil
 }
 
-func(fsd *fsData) max_amount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+func (fsd *fsData) max_amount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
 	// mimic a max amount
 	res.Content = "10.00"
-	
+
+	return res, nil
+}
+
+func (fsd *fsData) validate_amount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	res := resource.Result{}
+	amount := string(input)
+
+	fp := fsd.path + "_data"
+
+	jsonData, err := os.ReadFile(fp)
+	if err != nil {
+		return res, err
+	}
+
+	var accountData map[string]string
+	err = json.Unmarshal(jsonData, &accountData)
+	if err != nil {
+		return res, err
+	}
+
+	// mimic invalid amount check
+	if amount == "0" {
+		// res.FlagSet = []uint32{invalidAmount}
+		res.Content = amount
+
+		return res, nil
+	}
+
+	res.Content = amount
+
+	accountData["Amount"] = amount
+
+	updatedJsonData, err := json.Marshal(accountData)
+	if err != nil {
+		return res, err
+	}
+
+	err = os.WriteFile(fp, updatedJsonData, 0644)
+	if err != nil {
+		return res, err
+	}
+
+	return res, nil
+}
+
+func (fsd *fsData) get_recipient(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	res := resource.Result{}
+	fp := fsd.path + "_data"
+
+	jsonData, err := os.ReadFile(fp)
+	if err != nil {
+		return res, err
+	}
+
+	var accountData map[string]string
+	err = json.Unmarshal(jsonData, &accountData)
+	if err != nil {
+		return res, err
+	}
+
+	res.Content = accountData["Recipient"]
+
+	return res, nil
+}
+
+func (fsd *fsData) get_sender(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	res := resource.Result{}
+	fp := fsd.path + "_data"
+
+	jsonData, err := os.ReadFile(fp)
+	if err != nil {
+		return res, err
+	}
+
+	var accountData map[string]string
+	err = json.Unmarshal(jsonData, &accountData)
+	if err != nil {
+		return res, err
+	}
+
+	res.Content = accountData["PublicKey"]
+
 	return res, nil
 }
 
@@ -418,10 +500,9 @@ func main() {
 	st := state.NewState(7)
 	st.UseDebug()
 	state.FlagDebugger.Register(USERFLAG_LANGUAGE_SET, "LANGUAGE_CHANGE")
-	state.FlagDebugger.Register(USERFLAG_ACCOUNT_CREATED,"ACCOUNT_CREATED")
-	state.FlagDebugger.Register(USERFLAG_ACCOUNT_SUCCESS,"ACCOUNT_SUCCESS")
-	state.FlagDebugger.Register(USERFLAG_ACCOUNT_PENDING,"ACCOUNT_PENDING")
-
+	state.FlagDebugger.Register(USERFLAG_ACCOUNT_CREATED, "ACCOUNT_CREATED")
+	state.FlagDebugger.Register(USERFLAG_ACCOUNT_SUCCESS, "ACCOUNT_SUCCESS")
+	state.FlagDebugger.Register(USERFLAG_ACCOUNT_PENDING, "ACCOUNT_PENDING")
 
 	rfs := resource.NewFsResource(scriptDir)
 	ca := cache.NewCache()
@@ -461,11 +542,14 @@ func main() {
 	rfs.AddLocalFunc("check_identifier", fs.checkIdentifier)
 	rfs.AddLocalFunc("check_account_status", fs.check_account_status)
 	rfs.AddLocalFunc("unlock_account", fs.unlock)
-	rfs.AddLocalFunc("quit",fs.quit)
+	rfs.AddLocalFunc("quit", fs.quit)
 	rfs.AddLocalFunc("check_balance", fs.checkBalance)
 	rfs.AddLocalFunc("validate_recipient", fs.validate_recipient)
 	rfs.AddLocalFunc("transaction_reset", fs.transaction_reset)
 	rfs.AddLocalFunc("max_amount", fs.max_amount)
+	rfs.AddLocalFunc("validate_amount", fs.validate_amount)
+	rfs.AddLocalFunc("get_recipient", fs.get_recipient)
+	rfs.AddLocalFunc("get_sender", fs.get_sender)
 
 	cont, err := en.Init(ctx)
 	if err != nil {

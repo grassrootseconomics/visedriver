@@ -1,0 +1,11 @@
+RELOAD validate_amount
+MAP validate_amount
+RELOAD get_recipient
+MAP get_recipient
+RELOAD get_sender
+MAP get_sender
+MOUT back 0
+MOUT quit 9
+HALT
+INCMP ^ 0
+INCMP quit 9

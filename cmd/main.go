@@ -23,6 +23,7 @@ const (
 	USERFLAG_ACCOUNT_CREATED
 	USERFLAG_ACCOUNT_PENDING
 	USERFLAG_ACCOUNT_SUCCESS
+	USERFLAG_ACCOUNT_UNLOCKED
 )
 
 const (
@@ -54,6 +55,7 @@ type trackStatusResponse struct {
 
 type fsData struct {
 	path string
+	st *state.State
 }
 
 func (fsd *fsData) SetLanguageSelected(ctx context.Context, sym string, input []byte) (resource.Result, error) {
@@ -83,12 +85,24 @@ func (fsd *fsData) create_account(ctx context.Context, sym string, input []byte)
 	}
 	f.Close()
 
-	accountResp, err := createAccount()
+	// accountResp, err := createAccount()
 
-	if err != nil {
-		fmt.Println("Failed to create account:", err)
-		return res, err
-	}
+	// if err != nil {
+	// 	fmt.Println("Failed to create account:", err)
+	// 	return res, err
+	// }
+
+	accountResp := accountResponse{
+        Ok: true,
+        Result: struct {
+            CustodialId json.Number `json:"custodialId"`
+            PublicKey   string      `json:"publicKey"`
+            TrackingId  string      `json:"trackingId"`
+        }{
+            CustodialId: "636", 
+            PublicKey:   "0x8d86F9D4A4eae41Dc3B68034895EA97BcA90e8c1",
+            TrackingId:  "45c67314-7995-4890-89d6-e5af987754ac",
+    }}
 
 	accountData := map[string]string{
 		"TrackingId":  accountResp.Result.TrackingId,
@@ -131,6 +145,18 @@ func (fsd *fsData) checkIdentifier(ctx context.Context, sym string, input []byte
 	return res, nil
 }
 
+
+func (fsd *fsData) unlock(ctx context.Context,sym string,input []byte) (resource.Result,error){
+	res := resource.Result{}
+	//res.FlagSet = []uint32{USERFLAG_ACCOUNT_UNLOCKED}
+	if fsd.st.MatchFlag(USERFLAG_ACCOUNT_UNLOCKED, false) {
+		res.FlagSet = append(res.FlagSet, USERFLAG_ACCOUNT_UNLOCKED)
+	} else {
+		res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_UNLOCKED)
+	}
+	return res,nil
+}
+
 func (fsd *fsData) check_account_status(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	fp := fsd.path + "_data"
@@ -156,12 +182,14 @@ func (fsd *fsData) check_account_status(ctx context.Context, sym string, input [
 	accountData["Status"] = status
 
 	if status == "SUCCESS" {
-		res.FlagSet = []uint32{USERFLAG_ACCOUNT_SUCCESS}
-		res.FlagReset = []uint32{USERFLAG_ACCOUNT_PENDING}
+		res.FlagSet = append(res.FlagSet, USERFLAG_ACCOUNT_SUCCESS)
+		res.FlagReset = append(res.FlagReset,USERFLAG_ACCOUNT_PENDING)
 	} else {
-		res.FlagSet = []uint32{USERFLAG_ACCOUNT_PENDING}
-		res.FlagReset = []uint32{USERFLAG_ACCOUNT_SUCCESS}
+		res.FlagReset = append(res.FlagSet, USERFLAG_ACCOUNT_SUCCESS)
+		res.FlagSet = append(res.FlagReset,USERFLAG_ACCOUNT_PENDING)
 	}
+
+	
 
 	updatedJsonData, err := json.Marshal(accountData)
 	if err != nil {
@@ -221,9 +249,17 @@ func checkAccountStatus(trackingId string) (string, error) {
 }
 
 func  (fsd *fsData) quit(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	return resource.Result{
+	res := resource.Result{
 		Content: "",
-	}, nil
+	}
+	st := fsd.st
+	if(st.MatchFlag(USERFLAG_ACCOUNT_UNLOCKED,true)){
+	     //res.FlagReset = []uint32{USERFLAG_ACCOUNT_UNLOCKED}
+		// res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_UNLOCKED)
+	}else {
+		res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_UNLOCKED)
+	}
+	return res, nil
 }
 
 
@@ -283,11 +319,13 @@ func main() {
 	fp := path.Join(dp, sessionId)
 	fs := &fsData{
 		path: fp,
+		st: &st,
 	}
 	rfs.AddLocalFunc("select_language", fs.SetLanguageSelected)
 	rfs.AddLocalFunc("create_account", fs.create_account)
 	rfs.AddLocalFunc("check_identifier", fs.checkIdentifier)
 	rfs.AddLocalFunc("check_account_status", fs.check_account_status)
+	rfs.AddLocalFunc("unlock_account", fs.unlock)
 	rfs.AddLocalFunc("quit",fs.quit)
 
 	cont, err := en.Init(ctx)

@@ -24,6 +24,8 @@ const (
 	USERFLAG_ACCOUNT_PENDING
 	USERFLAG_ACCOUNT_SUCCESS
 	USERFLAG_ACCOUNT_UNLOCKED
+	invalidRecipient
+	invalidRecipientWithInvite
 )
 
 const (
@@ -311,6 +313,22 @@ func (fsd *fsData) checkBalance(ctx context.Context, sym string, input []byte) (
 	return res, nil
 }
 
+func(fsd *fsData) send_transaction(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	res := resource.Result{}
+	recipient := string(input)
+
+	res.FlagSet = []uint32{invalidRecipient}
+	res.Content = recipient
+
+	return res, nil
+}
+
+func(fsd *fsData) transaction_reset(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	res := resource.Result{}
+	res.FlagReset = []uint32{invalidRecipient}
+	return res, nil
+}
+
 var (
 	scriptDir = path.Join("services", "registration")
 )
@@ -376,6 +394,8 @@ func main() {
 	rfs.AddLocalFunc("unlock_account", fs.unlock)
 	rfs.AddLocalFunc("quit",fs.quit)
 	rfs.AddLocalFunc("check_balance", fs.checkBalance)
+	rfs.AddLocalFunc("send_transaction", fs.send_transaction)
+	rfs.AddLocalFunc("transaction_reset", fs.transaction_reset)
 
 	cont, err := en.Init(ctx)
 	if err != nil {

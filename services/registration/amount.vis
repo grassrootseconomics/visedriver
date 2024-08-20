@@ -1,0 +1,6 @@
+LOAD max_amount 0
+MAP max_amount
+MOUT back 0
+HALT
+INCMP ^ 0
+INCMP quit *

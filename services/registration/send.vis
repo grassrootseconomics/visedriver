@@ -2,6 +2,6 @@ LOAD transaction_reset 0
 MOUT back 0
 HALT
 INCMP ^ 0
-LOAD send_transaction 0
-MAP send_transaction
-MOVE invalid_recipient
+LOAD validate_recipient 0
+MAP validate_recipient
+MOVE amount

@@ -313,19 +313,88 @@ func (fsd *fsData) checkBalance(ctx context.Context, sym string, input []byte) (
 	return res, nil
 }
 
-func(fsd *fsData) send_transaction(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+func(fsd *fsData) validate_recipient(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	recipient := string(input)
 
-	res.FlagSet = []uint32{invalidRecipient}
-	res.Content = recipient
+	res.FlagReset = []uint32{invalidRecipient}
+	res.FlagReset = []uint32{invalidRecipientWithInvite}
+
+	fp := fsd.path + "_data"
+
+	jsonData, err := os.ReadFile(fp)
+	if err != nil {
+		return res, err
+	}
+
+	var accountData map[string]string
+	err = json.Unmarshal(jsonData, &accountData)
+	if err != nil {
+		return res, err
+	}
+
+	// mimic invalid number check
+	if recipient == "000" {
+		res.FlagSet = []uint32{invalidRecipient}
+		res.Content = recipient
+
+		return res, nil
+	}
+
+	accountData["Recipient"] = recipient
+
+	updatedJsonData, err := json.Marshal(accountData)
+	if err != nil {
+		return res, err
+	}
+
+	err = os.WriteFile(fp, updatedJsonData, 0644)
+	if err != nil {
+		return res, err
+	}
 
 	return res, nil
 }
 
 func(fsd *fsData) transaction_reset(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
+	fp := fsd.path + "_data"
+
+	jsonData, err := os.ReadFile(fp)
+	if err != nil {
+		return res, err
+	}
+
+	var accountData map[string]string
+	err = json.Unmarshal(jsonData, &accountData)
+	if err != nil {
+		return res, err
+	}
+
+	// reset the recipient
+	accountData["Recipient"] = ""
+
+	updatedJsonData, err := json.Marshal(accountData)
+	if err != nil {
+		return res, err
+	}
+
+	err = os.WriteFile(fp, updatedJsonData, 0644)
+	if err != nil {
+		return res, err
+	}
+
 	res.FlagReset = []uint32{invalidRecipient}
+	res.FlagReset = []uint32{invalidRecipientWithInvite}
+	return res, nil
+}
+
+func(fsd *fsData) max_amount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	res := resource.Result{}
+
+	// mimic a max amount
+	res.Content = "10.00"
+	
 	return res, nil
 }
 
@@ -394,8 +463,9 @@ func main() {
 	rfs.AddLocalFunc("unlock_account", fs.unlock)
 	rfs.AddLocalFunc("quit",fs.quit)
 	rfs.AddLocalFunc("check_balance", fs.checkBalance)
-	rfs.AddLocalFunc("send_transaction", fs.send_transaction)
+	rfs.AddLocalFunc("validate_recipient", fs.validate_recipient)
 	rfs.AddLocalFunc("transaction_reset", fs.transaction_reset)
+	rfs.AddLocalFunc("max_amount", fs.max_amount)
 
 	cont, err := en.Init(ctx)
 	if err != nil {

@@ -1,1 +1,1 @@
-{{.send_transaction}} is not registered or invalid, please try again:
+{{.validate_recipient}} is not registered or invalid, please try again:

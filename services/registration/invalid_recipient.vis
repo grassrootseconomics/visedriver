@@ -1,4 +1,4 @@
-MAP send_transaction
+MAP validate_recipient
 LOAD transaction_reset 0
 MOUT retry 1
 MOUT quit 9

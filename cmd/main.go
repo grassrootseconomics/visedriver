@@ -97,24 +97,12 @@ func (fsd *fsData) create_account(ctx context.Context, sym string, input []byte)
 	}
 	f.Close()
 
-	// accountResp, err := createAccount()
+	accountResp, err := createAccount()
 
-	// if err != nil {
-	// 	fmt.Println("Failed to create account:", err)
-	// 	return res, err
-	// }
-
-	accountResp := accountResponse{
-		Ok: true,
-		Result: struct {
-			CustodialId json.Number `json:"custodialId"`
-			PublicKey   string      `json:"publicKey"`
-			TrackingId  string      `json:"trackingId"`
-		}{
-			CustodialId: "636",
-			PublicKey:   "0x8d86F9D4A4eae41Dc3B68034895EA97BcA90e8c1",
-			TrackingId:  "45c67314-7995-4890-89d6-e5af987754ac",
-		}}
+	if err != nil {
+		fmt.Println("Failed to create account:", err)
+		return res, err
+	}
 
 	accountData := map[string]string{
 		"TrackingId":  accountResp.Result.TrackingId,
@@ -209,7 +197,7 @@ func (fsd *fsData) check_account_status(ctx context.Context, sym string, input [
 
 	accountData["Status"] = status
 
-	if status == "REVERTED" {
+	if status == "SUCCESS" {
 		res.FlagSet = append(res.FlagSet, USERFLAG_ACCOUNT_SUCCESS)
 		res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_PENDING)
 	} else {
@@ -488,10 +476,8 @@ func (fsd *fsData) get_sender(ctx context.Context, sym string, input []byte) (re
 	return res, nil
 }
 
-
 func (fsd *fsData) quitWithBalance(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res := resource.Result{
-	}
+	res := resource.Result{}
 	fp := fsd.path + "_data"
 
 	jsonData, err := os.ReadFile(fp)
@@ -521,7 +507,7 @@ func (fsd *fsData) quitWithBalance(ctx context.Context, sym string, input []byte
 		return res, nil
 	}
 	balance := balanceResp.Result.Balance
-	res.Content =  fmt.Sprintf("Your account balance is: %s", balance)
+	res.Content = fmt.Sprintf("Your account balance is: %s", balance)
 	res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_UNLOCKED)
 	return res, nil
 }
@@ -599,7 +585,7 @@ func main() {
 	rfs.AddLocalFunc("get_recipient", fs.get_recipient)
 	rfs.AddLocalFunc("get_sender", fs.get_sender)
 	rfs.AddLocalFunc("reset_incorrect", fs.ResetIncorrectPin)
-	rfs.AddLocalFunc("quit_with_balance",fs.quitWithBalance)
+	rfs.AddLocalFunc("quit_with_balance", fs.quitWithBalance)
 
 	cont, err := en.Init(ctx)
 	en.SetDebugger(engine.NewSimpleDebug(nil))

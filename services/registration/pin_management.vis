@@ -3,4 +3,4 @@ MOUT reset_pin 2
 MOUT guard_pin 3
 MOUT back 0
 HALT
-INCMP ^ 0
+INCMP _ 0

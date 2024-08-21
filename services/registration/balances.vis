@@ -2,7 +2,7 @@ MOUT my_balance 1
 MOUT community_balance 2
 MOUT back 0
 HALT
-INCMP ^ 0
+INCMP _ 0
 INCMP my_balance 1
 INCMP community_balance 2
 

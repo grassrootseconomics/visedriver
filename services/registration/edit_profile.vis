@@ -6,7 +6,7 @@ MOUT edit_offerings 5
 MOUT view 6
 MOUT back 0
 HALT
-INCMP ^ 0
+INCMP _ 0
 INCMP enter_name 1
 INCMP select_gender 2
 INCMP enter_yob 3

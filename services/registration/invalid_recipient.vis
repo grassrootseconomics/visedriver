@@ -1,5 +1,5 @@
 MAP validate_recipient
-LOAD transaction_reset 0
+RELOAD transaction_reset
 MOUT retry 1
 MOUT quit 9
 HALT

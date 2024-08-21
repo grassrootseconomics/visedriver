@@ -24,8 +24,8 @@ const (
 	USERFLAG_ACCOUNT_PENDING
 	USERFLAG_ACCOUNT_SUCCESS
 	USERFLAG_ACCOUNT_UNLOCKED
-	invalidRecipient
-	invalidRecipientWithInvite
+	USERFLAG_INVALID_RECIPIENT
+	USERFLAG_INVALID_RECIPIENT_WITH_INVITE
 )
 
 const (
@@ -317,9 +317,6 @@ func (fsd *fsData) validate_recipient(ctx context.Context, sym string, input []b
 	res := resource.Result{}
 	recipient := string(input)
 
-	res.FlagReset = []uint32{invalidRecipient}
-	res.FlagReset = []uint32{invalidRecipientWithInvite}
-
 	fp := fsd.path + "_data"
 
 	jsonData, err := os.ReadFile(fp)
@@ -333,24 +330,26 @@ func (fsd *fsData) validate_recipient(ctx context.Context, sym string, input []b
 		return res, err
 	}
 
-	// mimic invalid number check
-	if recipient == "000" {
-		res.FlagSet = []uint32{invalidRecipient}
-		res.Content = recipient
+	if recipient != "0" {
+		// mimic invalid number check
+		if recipient == "000" {
+			res.FlagSet = append(res.FlagSet, USERFLAG_INVALID_RECIPIENT)
+			res.Content = recipient
 
-		return res, nil
-	}
+			return res, nil
+		}
 
-	accountData["Recipient"] = recipient
+		accountData["Recipient"] = recipient
 
-	updatedJsonData, err := json.Marshal(accountData)
-	if err != nil {
-		return res, err
-	}
+		updatedJsonData, err := json.Marshal(accountData)
+		if err != nil {
+			return res, err
+		}
 
-	err = os.WriteFile(fp, updatedJsonData, 0644)
-	if err != nil {
-		return res, err
+		err = os.WriteFile(fp, updatedJsonData, 0644)
+		if err != nil {
+			return res, err
+		}
 	}
 
 	return res, nil
@@ -384,8 +383,8 @@ func (fsd *fsData) transaction_reset(ctx context.Context, sym string, input []by
 		return res, err
 	}
 
-	res.FlagReset = []uint32{invalidRecipient}
-	res.FlagReset = []uint32{invalidRecipientWithInvite}
+	res.FlagReset = append(res.FlagReset, USERFLAG_INVALID_RECIPIENT, USERFLAG_INVALID_RECIPIENT_WITH_INVITE)
+
 	return res, nil
 }
 

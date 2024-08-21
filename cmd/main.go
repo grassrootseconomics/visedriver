@@ -26,6 +26,7 @@ const (
 	USERFLAG_ACCOUNT_UNLOCKED
 	invalidRecipient
 	invalidRecipientWithInvite
+	USERFLAG_INCORRECTPIN
 )
 
 const (
@@ -66,7 +67,7 @@ type balanceResponse struct {
 
 type fsData struct {
 	path string
-	st *state.State
+	st   *state.State
 }
 
 func (fsd *fsData) SetLanguageSelected(ctx context.Context, sym string, input []byte) (resource.Result, error) {
@@ -104,16 +105,16 @@ func (fsd *fsData) create_account(ctx context.Context, sym string, input []byte)
 	// }
 
 	accountResp := accountResponse{
-        Ok: true,
-        Result: struct {
-            CustodialId json.Number `json:"custodialId"`
-            PublicKey   string      `json:"publicKey"`
-            TrackingId  string      `json:"trackingId"`
-        }{
-            CustodialId: "636", 
-            PublicKey:   "0x8d86F9D4A4eae41Dc3B68034895EA97BcA90e8c1",
-            TrackingId:  "45c67314-7995-4890-89d6-e5af987754ac",
-    }}
+		Ok: true,
+		Result: struct {
+			CustodialId json.Number `json:"custodialId"`
+			PublicKey   string      `json:"publicKey"`
+			TrackingId  string      `json:"trackingId"`
+		}{
+			CustodialId: "636",
+			PublicKey:   "0x8d86F9D4A4eae41Dc3B68034895EA97BcA90e8c1",
+			TrackingId:  "45c67314-7995-4890-89d6-e5af987754ac",
+		}}
 
 	accountData := map[string]string{
 		"TrackingId":  accountResp.Result.TrackingId,
@@ -131,8 +132,7 @@ func (fsd *fsData) create_account(ctx context.Context, sym string, input []byte)
 	if err != nil {
 		return res, err
 	}
-
-	res.FlagSet = []uint32{USERFLAG_ACCOUNT_CREATED}
+	res.FlagSet = append(res.FlagSet, USERFLAG_ACCOUNT_CREATED)
 	return res, err
 }
 
@@ -156,16 +156,33 @@ func (fsd *fsData) checkIdentifier(ctx context.Context, sym string, input []byte
 	return res, nil
 }
 
-
-func (fsd *fsData) unlock(ctx context.Context,sym string,input []byte) (resource.Result,error){
+func (fsd *fsData) unLock(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	//res.FlagSet = []uint32{USERFLAG_ACCOUNT_UNLOCKED}
-	if fsd.st.MatchFlag(USERFLAG_ACCOUNT_UNLOCKED, false) {
-		res.FlagSet = append(res.FlagSet, USERFLAG_ACCOUNT_UNLOCKED)
-	} else {
-		res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_UNLOCKED)
+	pin := string(input)
+	if len(input) > 0 {
+		if pin == "0000" {
+			res.FlagSet = append(res.FlagSet, USERFLAG_INCORRECTPIN)
+			res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_UNLOCKED)
+			return res, nil
+		}
+		if fsd.st.MatchFlag(USERFLAG_ACCOUNT_UNLOCKED, false) {
+			res.FlagSet = append(res.FlagSet, USERFLAG_ACCOUNT_UNLOCKED)
+		} else {
+			res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_UNLOCKED)
+		}
 	}
-	return res,nil
+	return res, nil
+}
+
+func (fsd *fsData) ResetIncorrectPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	res := resource.Result{}
+	isIncorrectPinSet := fsd.st.MatchFlag(USERFLAG_INCORRECTPIN, true)
+	if isIncorrectPinSet {
+		res.FlagReset = append(res.FlagReset, USERFLAG_INCORRECTPIN)
+	} else {
+		res.FlagReset = append(res.FlagReset, USERFLAG_INCORRECTPIN)
+	}
+	return res, nil
 }
 
 func (fsd *fsData) check_account_status(ctx context.Context, sym string, input []byte) (resource.Result, error) {
@@ -192,15 +209,13 @@ func (fsd *fsData) check_account_status(ctx context.Context, sym string, input [
 
 	accountData["Status"] = status
 
-	if status == "SUCCESS" {
+	if status == "REVERTED" {
 		res.FlagSet = append(res.FlagSet, USERFLAG_ACCOUNT_SUCCESS)
-		res.FlagReset = append(res.FlagReset,USERFLAG_ACCOUNT_PENDING)
+		res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_PENDING)
 	} else {
 		res.FlagReset = append(res.FlagSet, USERFLAG_ACCOUNT_SUCCESS)
-		res.FlagSet = append(res.FlagReset,USERFLAG_ACCOUNT_PENDING)
+		res.FlagSet = append(res.FlagReset, USERFLAG_ACCOUNT_PENDING)
 	}
-
-	
 
 	updatedJsonData, err := json.Marshal(accountData)
 	if err != nil {
@@ -259,17 +274,11 @@ func checkAccountStatus(trackingId string) (string, error) {
 	return status, nil
 }
 
-func  (fsd *fsData) quit(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+func (fsd *fsData) quit(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{
-		Content: "",
+		Content: "Your account is being created",
 	}
-	st := fsd.st
-	if(st.MatchFlag(USERFLAG_ACCOUNT_UNLOCKED,true)){
-	     //res.FlagReset = []uint32{USERFLAG_ACCOUNT_UNLOCKED}
-		// res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_UNLOCKED)
-	}else {
-		res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_UNLOCKED)
-	}
+	res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_UNLOCKED)
 	return res, nil
 }
 
@@ -480,6 +489,44 @@ func (fsd *fsData) get_sender(ctx context.Context, sym string, input []byte) (re
 	return res, nil
 }
 
+
+func (fsd *fsData) quitWithBalance(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	res := resource.Result{
+	}
+	fp := fsd.path + "_data"
+
+	jsonData, err := os.ReadFile(fp)
+	if err != nil {
+		return res, err
+	}
+
+	var accountData map[string]string
+	err = json.Unmarshal(jsonData, &accountData)
+	if err != nil {
+		return res, err
+	}
+	resp, err := http.Get(checkBalanceURL + accountData["PublicKey"])
+	if err != nil {
+		return res, nil
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return res, nil
+	}
+
+	var balanceResp balanceResponse
+	err = json.Unmarshal(body, &balanceResp)
+	if err != nil {
+		return res, nil
+	}
+	balance := balanceResp.Result.Balance
+	res.Content =  fmt.Sprintf("Your account balance is: %s", balance)
+	res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_UNLOCKED)
+	return res, nil
+}
+
 var (
 	scriptDir = path.Join("services", "registration")
 )
@@ -497,12 +544,13 @@ func main() {
 	fmt.Fprintf(os.Stderr, "starting session at symbol '%s' using resource dir: %s\n", root, dir)
 
 	ctx := context.Background()
-	st := state.NewState(7)
+	st := state.NewState(9)
 	st.UseDebug()
 	state.FlagDebugger.Register(USERFLAG_LANGUAGE_SET, "LANGUAGE_CHANGE")
 	state.FlagDebugger.Register(USERFLAG_ACCOUNT_CREATED, "ACCOUNT_CREATED")
 	state.FlagDebugger.Register(USERFLAG_ACCOUNT_SUCCESS, "ACCOUNT_SUCCESS")
 	state.FlagDebugger.Register(USERFLAG_ACCOUNT_PENDING, "ACCOUNT_PENDING")
+	state.FlagDebugger.Register(USERFLAG_INCORRECTPIN, "INCORRECTPIN")
 
 	rfs := resource.NewFsResource(scriptDir)
 	ca := cache.NewCache()
@@ -519,6 +567,7 @@ func main() {
 	}
 	pr := persist.NewFsPersister(dp)
 	en, err := engine.NewPersistedEngine(ctx, cfg, pr, rfs)
+
 	if err != nil {
 		pr = pr.WithContent(&st, ca)
 		err = pr.Save(cfg.SessionId)
@@ -535,13 +584,13 @@ func main() {
 	fp := path.Join(dp, sessionId)
 	fs := &fsData{
 		path: fp,
-		st: &st,
+		st:   &st,
 	}
 	rfs.AddLocalFunc("select_language", fs.SetLanguageSelected)
 	rfs.AddLocalFunc("create_account", fs.create_account)
 	rfs.AddLocalFunc("check_identifier", fs.checkIdentifier)
 	rfs.AddLocalFunc("check_account_status", fs.check_account_status)
-	rfs.AddLocalFunc("unlock_account", fs.unlock)
+	rfs.AddLocalFunc("unlock_account", fs.unLock)
 	rfs.AddLocalFunc("quit", fs.quit)
 	rfs.AddLocalFunc("check_balance", fs.checkBalance)
 	rfs.AddLocalFunc("validate_recipient", fs.validate_recipient)
@@ -550,8 +599,11 @@ func main() {
 	rfs.AddLocalFunc("validate_amount", fs.validate_amount)
 	rfs.AddLocalFunc("get_recipient", fs.get_recipient)
 	rfs.AddLocalFunc("get_sender", fs.get_sender)
+	rfs.AddLocalFunc("reset_incorrect", fs.ResetIncorrectPin)
+	rfs.AddLocalFunc("quit_with_balance",fs.quitWithBalance)
 
 	cont, err := en.Init(ctx)
+	en.SetDebugger(engine.NewSimpleDebug(nil))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "engine init exited with error: %v\n", err)
 		os.Exit(1)

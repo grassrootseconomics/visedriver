@@ -4,5 +4,5 @@ MOUT back 0
 HALT
 INCMP ^ 0
 INCMP my_balance 1
-INCMP my_community_balance 2
+INCMP community_balance 2
 

@@ -1,3 +1,4 @@
 LOAD create_account 0
+LOAD quit 0
 HALT
-MOVE quit
+

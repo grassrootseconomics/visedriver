@@ -1,7 +1,6 @@
 LOAD transaction_reset 0
 MOUT back 0
 HALT
-INCMP ^ 0
-LOAD validate_recipient 0
-MAP validate_recipient
-MOVE amount
+LOAD validate_recipient 20
+INCMP _ 0
+INCMP amount *

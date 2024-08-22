@@ -27,6 +27,8 @@ const (
 	USERFLAG_INVALID_RECIPIENT
 	USERFLAG_INVALID_RECIPIENT_WITH_INVITE
 	USERFLAG_INCORRECTPIN
+	USERFLAG_UNLOCKFORUPDATE
+	USERFLAG_INVALID_AMOUNT
 )
 
 const (
@@ -385,6 +387,39 @@ func (fsd *fsData) transaction_reset(ctx context.Context, sym string, input []by
 	return res, nil
 }
 
+func (fsd *fsData) reset_transaction_amount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	res := resource.Result{}
+	fp := fsd.path + "_data"
+
+	jsonData, err := os.ReadFile(fp)
+	if err != nil {
+		return res, err
+	}
+
+	var accountData map[string]string
+	err = json.Unmarshal(jsonData, &accountData)
+	if err != nil {
+		return res, err
+	}
+
+	// reset the amount
+	accountData["Amount"] = ""
+
+	updatedJsonData, err := json.Marshal(accountData)
+	if err != nil {
+		return res, err
+	}
+
+	err = os.WriteFile(fp, updatedJsonData, 0644)
+	if err != nil {
+		return res, err
+	}
+
+	res.FlagReset = append(res.FlagReset, USERFLAG_INVALID_AMOUNT)
+
+	return res, nil
+}
+
 func (fsd *fsData) max_amount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
@@ -411,26 +446,30 @@ func (fsd *fsData) validate_amount(ctx context.Context, sym string, input []byte
 		return res, err
 	}
 
-	// mimic invalid amount check
-	if amount == "0" {
-		// res.FlagSet = []uint32{invalidAmount}
+	if amount != "0" {
+		// mimic invalid amount
+		if amount == "00" {
+			res.FlagSet = append(res.FlagSet, USERFLAG_INVALID_AMOUNT)
+			res.Content = amount
+
+			return res, nil
+		}
+
 		res.Content = amount
 
+		accountData["Amount"] = amount
+
+		updatedJsonData, err := json.Marshal(accountData)
+		if err != nil {
+			return res, err
+		}
+
+		err = os.WriteFile(fp, updatedJsonData, 0644)
+		if err != nil {
+			return res, err
+		}
+
 		return res, nil
-	}
-
-	res.Content = amount
-
-	accountData["Amount"] = amount
-
-	updatedJsonData, err := json.Marshal(accountData)
-	if err != nil {
-		return res, err
-	}
-
-	err = os.WriteFile(fp, updatedJsonData, 0644)
-	if err != nil {
-		return res, err
 	}
 
 	return res, nil
@@ -529,7 +568,7 @@ func main() {
 	fmt.Fprintf(os.Stderr, "starting session at symbol '%s' using resource dir: %s\n", root, dir)
 
 	ctx := context.Background()
-	st := state.NewState(9)
+	st := state.NewState(15)
 	st.UseDebug()
 	state.FlagDebugger.Register(USERFLAG_LANGUAGE_SET, "LANGUAGE_CHANGE")
 	state.FlagDebugger.Register(USERFLAG_ACCOUNT_CREATED, "ACCOUNT_CREATED")
@@ -582,6 +621,7 @@ func main() {
 	rfs.AddLocalFunc("transaction_reset", fs.transaction_reset)
 	rfs.AddLocalFunc("max_amount", fs.max_amount)
 	rfs.AddLocalFunc("validate_amount", fs.validate_amount)
+	rfs.AddLocalFunc("reset_transaction_amount", fs.reset_transaction_amount)
 	rfs.AddLocalFunc("get_recipient", fs.get_recipient)
 	rfs.AddLocalFunc("get_sender", fs.get_sender)
 	rfs.AddLocalFunc("reset_incorrect", fs.ResetIncorrectPin)

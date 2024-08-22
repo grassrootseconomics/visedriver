@@ -14,6 +14,7 @@ import (
 
 	"git.defalsify.org/vise.git/cache"
 	"git.defalsify.org/vise.git/engine"
+	"git.defalsify.org/vise.git/lang"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/state"
@@ -74,6 +75,16 @@ type balanceResponse struct {
 type fsData struct {
 	path string
 	st   *state.State
+}
+
+func codeFromCtx(ctx context.Context) string {
+	var code string
+	engine.Logg.DebugCtxf(ctx, "in msg", "ctx", ctx, "val", code)
+	if ctx.Value("Language") != nil {
+		lang := ctx.Value("Language").(lang.Language)
+		code = lang.Code
+	}
+	return code
 }
 
 func (fsd *fsData) SetLanguageSelected(ctx context.Context, sym string, input []byte) (resource.Result, error) {
@@ -269,8 +280,12 @@ func checkAccountStatus(trackingId string) (string, error) {
 }
 
 func (fsd *fsData) quit(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res := resource.Result{
-		Content: "Your account is being created",
+	res := resource.Result{}
+	switch codeFromCtx(ctx) {
+	case "swa":
+		res.Content = "Asante kwa kutumia huduma ya Sarafu. Kwaheri!"
+	default:
+		res.Content = "Thank you for using Sarafu. Goodbye!"
 	}
 	res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_UNLOCKED)
 	return res, nil

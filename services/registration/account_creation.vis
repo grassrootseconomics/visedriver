@@ -1,4 +1,4 @@
-LOAD create_account 0
+RELOAD verify_pin
+CATCH create_pin_mismatch 20 1
 LOAD quit 0
 HALT
-

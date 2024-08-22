@@ -1,0 +1,5 @@
+LOAD create_account 0
+MOUT exit 0
+HALT
+LOAD save_pin 0
+INCMP confirm_create_pin *

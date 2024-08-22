@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"flag"
@@ -29,6 +30,9 @@ const (
 	USERFLAG_INCORRECTPIN
 	USERFLAG_UNLOCKFORUPDATE
 	USERFLAG_INVALID_AMOUNT
+	USERFLAG_QUERYPIN
+	USERFLAG_VALIDPIN
+	USERFLAG_INVALIDPIN
 )
 
 const (
@@ -551,6 +555,62 @@ func (fsd *fsData) quitWithBalance(ctx context.Context, sym string, input []byte
 	return res, nil
 }
 
+func (fsd *fsData) save_pin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	res := resource.Result{}
+	accountPIN := string(input)
+	fp := fsd.path + "_data"
+
+	jsonData, err := os.ReadFile(fp)
+	if err != nil {
+		return res, err
+	}
+
+	var accountData map[string]string
+	err = json.Unmarshal(jsonData, &accountData)
+	if err != nil {
+		return res, err
+	}
+
+	accountData["AccountPIN"] = accountPIN
+
+	updatedJsonData, err := json.Marshal(accountData)
+	if err != nil {
+		return res, err
+	}
+
+	err = os.WriteFile(fp, updatedJsonData, 0644)
+	if err != nil {
+		return res, err
+	}
+
+	return res, nil
+}
+
+func (fsd *fsData) verify_pin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	res := resource.Result{}
+	fp := fsd.path + "_data"
+
+	jsonData, err := os.ReadFile(fp)
+	if err != nil {
+		return res, err
+	}
+
+	var accountData map[string]string
+	err = json.Unmarshal(jsonData, &accountData)
+	if err != nil {
+		return res, err
+	}
+
+	if bytes.Equal(input, []byte(accountData["AccountPIN"])) {
+		res.FlagSet = []uint32{USERFLAG_VALIDPIN}
+		res.FlagReset = []uint32{USERFLAG_INVALIDPIN}
+	} else {
+		res.FlagSet = []uint32{USERFLAG_INVALIDPIN}
+	}
+
+	return res, nil
+}
+
 var (
 	scriptDir = path.Join("services", "registration")
 )
@@ -612,6 +672,8 @@ func main() {
 	}
 	rfs.AddLocalFunc("select_language", fs.SetLanguageSelected)
 	rfs.AddLocalFunc("create_account", fs.create_account)
+	rfs.AddLocalFunc("save_pin", fs.save_pin)
+	rfs.AddLocalFunc("verify_pin", fs.verify_pin)
 	rfs.AddLocalFunc("check_identifier", fs.checkIdentifier)
 	rfs.AddLocalFunc("check_account_status", fs.check_account_status)
 	rfs.AddLocalFunc("unlock_account", fs.unLock)

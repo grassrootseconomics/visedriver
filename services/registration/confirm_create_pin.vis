@@ -1,0 +1,4 @@
+LOAD save_pin 0
+HALT
+LOAD verify_pin 8
+INCMP account_creation *

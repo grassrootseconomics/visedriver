@@ -1,3 +1,4 @@
+LOAD reset_transaction_amount 0
 RELOAD validate_recipient
 CATCH invalid_recipient 13 1
 LOAD max_amount 10

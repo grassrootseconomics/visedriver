@@ -1,5 +1,6 @@
 RELOAD validate_amount
 MAP validate_amount
+CATCH invalid_amount 17 1
 RELOAD get_recipient
 MAP get_recipient
 RELOAD get_sender

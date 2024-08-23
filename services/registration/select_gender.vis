@@ -1,6 +1,10 @@
+LOAD save_familyname 0
 MOUT male 1
 MOUT female 2
 MOUT other_gender 3
 MOUT back 0
 HALT
 INCMP _ 0
+INCMP enter_yob 1
+INCMP enter_yob 2
+INCMP enter_yob 3

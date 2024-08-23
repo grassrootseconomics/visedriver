@@ -1,0 +1,6 @@
+LOAD save_firstname 0
+MOUT back 0
+HALT
+INCMP _ 0
+INCMP select_gender *
+

@@ -1,3 +1,5 @@
+LOAD save_gender 0
 MOUT back 0
 HALT
 INCMP _ 0
+INCMP enter_location *

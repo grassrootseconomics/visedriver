@@ -1,3 +1,4 @@
+LOAD reset_unlocked 0
 MOUT my_balance 1
 MOUT community_balance 2
 MOUT back 0

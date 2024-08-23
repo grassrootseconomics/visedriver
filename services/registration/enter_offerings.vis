@@ -6,5 +6,3 @@ HALT
 LOAD save_offerings 0
 INCMP _ 0
 INCMP pin_entry *
-
-

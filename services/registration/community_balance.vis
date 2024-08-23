@@ -3,4 +3,3 @@ CATCH incorrect_pin 15 1
 CATCH pin_entry 12 0
 LOAD quit_with_balance 0
 HALT
-

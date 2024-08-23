@@ -362,8 +362,21 @@ func (fsd *fsData) checkIdentifier(ctx context.Context, sym string, input []byte
 func (fsd *fsData) unLock(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	pin := string(input)
-	if len(input) > 0 {
-		if pin == "0000" {
+	fp := fsd.path + "_data"
+
+	jsonData, err := os.ReadFile(fp)
+	if err != nil {
+		return res, err
+	}
+
+	var accountData map[string]string
+	err = json.Unmarshal(jsonData, &accountData)
+	if err != nil {
+		return res, err
+	}
+
+	if len(input) > 1 {
+		if pin != accountData["AccountPIN"] {
 			res.FlagSet = append(res.FlagSet, USERFLAG_INCORRECTPIN)
 			res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_UNLOCKED)
 			return res, nil

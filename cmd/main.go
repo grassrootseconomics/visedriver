@@ -34,7 +34,6 @@ const (
 	USERFLAG_QUERYPIN
 	USERFLAG_VALIDPIN
 	USERFLAG_INVALIDPIN
-	USERFLAG_UNLOCKFORUPDATE
 )
 
 const (
@@ -136,7 +135,6 @@ func (fsd *fsData) saveFamilyName(cxt context.Context, sym string, input []byte)
 	if len(input) > 0 {
 		//Save name
 		secondname := string(input)
-		fmt.Println("FamilyName:", secondname)
 		accountData["FamilyName"] = secondname
 		updatedJsonData, err := json.Marshal(accountData)
 		if err != nil {
@@ -165,7 +163,6 @@ func (fsd *fsData) saveYOB(cxt context.Context, sym string, input []byte) (resou
 	}
 	if len(input) > 0 {
 		yob := string(input)
-		fmt.Println("YOB", yob)
 		accountData["YOB"] = yob
 		updatedJsonData, err := json.Marshal(accountData)
 		if err != nil {
@@ -195,7 +192,6 @@ func (fsd *fsData) saveLocation(cxt context.Context, sym string, input []byte) (
 	}
 	if len(input) > 0 {
 		location := string(input)
-		fmt.Println("Location:", location)
 		accountData["Location"] = location
 		updatedJsonData, err := json.Marshal(accountData)
 		if err != nil {
@@ -228,9 +224,12 @@ func (fsd *fsData) saveGender(ctx context.Context, sym string, input []byte) (re
 		gender := string(input)
 
 		switch gender {
-		case "1" : gender = "Male"
-		case "2" : gender = "Female"
-		case "3" : gender = "Other"
+		case "1":
+			gender = "Male"
+		case "2":
+			gender = "Female"
+		case "3":
+			gender = "Other"
 		}
 		fmt.Println("gender", gender)
 		accountData["Gender"] = gender
@@ -261,7 +260,6 @@ func (fsd *fsData) saveOfferings(ctx context.Context, sym string, input []byte) 
 	}
 	if len(input) > 0 {
 		offerings := string(input)
-		fmt.Println("Offerings:", offerings)
 		accountData["Offerings"] = offerings
 		updatedJsonData, err := json.Marshal(accountData)
 		if err != nil {
@@ -346,13 +344,10 @@ func (fsd *fsData) resetUnlockForUpdate(ctx context.Context, sym string, input [
 	return res, nil
 }
 
-func (fsd *fsData) resetAccountUnlocked(ctx context.Context,sym string,input []byte) (resource.Result,error){
-  res := resource.Result{}
-  st := fsd.st
-  isSet := st.MatchFlag(USERFLAG_ACCOUNT_UNLOCKED,true)
-  res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_UNLOCKED)
-  fmt.Println("ISSET:",isSet)
-  return res,nil
+func (fsd *fsData) resetAccountUnlocked(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	res := resource.Result{}
+	res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_UNLOCKED)
+	return res, nil
 }
 
 func (fsd *fsData) checkIdentifier(ctx context.Context, sym string, input []byte) (resource.Result, error) {
@@ -385,11 +380,9 @@ func (fsd *fsData) unLock(ctx context.Context, sym string, input []byte) (resour
 			return res, nil
 		}
 		if fsd.st.MatchFlag(USERFLAG_ACCOUNT_UNLOCKED, false) {
-			//res.FlagSet = append(res.FlagSet, USERFLAG_UNLOCKFORUPDATE)
 			res.FlagSet = append(res.FlagSet, USERFLAG_ACCOUNT_UNLOCKED)
 		} else {
 			res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_UNLOCKED)
-			//res.FlagReset = append(res.FlagReset, USERFLAG_UNLOCKFORUPDATE)
 		}
 	}
 	return res, nil
@@ -735,9 +728,8 @@ func (fsd *fsData) get_recipient(ctx context.Context, sym string, input []byte) 
 	return res, nil
 }
 
-
-func (fsd *fsData) getProfileInfo(ctx context.Context,sym string,input []byte) (resource.Result,error){
-	res :=  resource.Result{}
+func (fsd *fsData) getProfileInfo(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	res := resource.Result{}
 	fp := fsd.path + "_data"
 
 	jsonData, err := os.ReadFile(fp)
@@ -750,18 +742,15 @@ func (fsd *fsData) getProfileInfo(ctx context.Context,sym string,input []byte) (
 	if err != nil {
 		return res, err
 	}
-	name :=  accountData["FirstName"]
-    gender := accountData["Gender"]
-    age := accountData["YOB"]
-    location := accountData["Location"]
+	name := accountData["FirstName"]
+	gender := accountData["Gender"]
+	age := accountData["YOB"]
+	location := accountData["Location"]
 
-    // Format the data into a string
-    formattedData := fmt.Sprintf("Name: %s\nGender: %s\nAge: %s\nLocation: %s\n", name, gender, age, location)
-	
-
+	formattedData := fmt.Sprintf("Name: %s\nGender: %s\nAge: %s\nLocation: %s\n", name, gender, age, location)
 	res.Content = formattedData
 
-	return res,nil
+	return res, nil
 }
 
 func (fsd *fsData) get_sender(ctx context.Context, sym string, input []byte) (resource.Result, error) {
@@ -960,12 +949,9 @@ func main() {
 	rfs.AddLocalFunc("save_offerings", fs.saveOfferings)
 	rfs.AddLocalFunc("quit_with_balance", fs.quitWithBalance)
 	rfs.AddLocalFunc("show_update_success", fs.ShowUpdateSuccess)
-	rfs.AddLocalFunc("reset_unlocked",fs.resetAccountUnlocked)
+	rfs.AddLocalFunc("reset_unlocked", fs.resetAccountUnlocked)
 	rfs.AddLocalFunc("reset_unlock_for_update", fs.resetUnlockForUpdate)
-	rfs.AddLocalFunc("get_profile_info",fs.getProfileInfo)
-
-
-	
+	rfs.AddLocalFunc("get_profile_info", fs.getProfileInfo)
 
 	cont, err := en.Init(ctx)
 	en.SetDebugger(engine.NewSimpleDebug(nil))

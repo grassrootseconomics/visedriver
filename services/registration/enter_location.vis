@@ -1,3 +1,4 @@
+CATCH incorrect_date_format 21 1
 LOAD save_yob 0
 MOUT back 0
 HALT

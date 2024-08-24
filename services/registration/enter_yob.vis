@@ -2,4 +2,5 @@ LOAD save_gender 0
 MOUT back 0
 HALT
 INCMP _ 0
+LOAD verify_yob 8
 INCMP enter_location *

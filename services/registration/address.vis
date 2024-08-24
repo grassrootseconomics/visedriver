@@ -3,4 +3,3 @@ RELOAD check_identifier
 MAP check_identifier
 HALT
 MOVE quit
-

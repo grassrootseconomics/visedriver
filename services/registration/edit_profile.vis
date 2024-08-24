@@ -14,6 +14,3 @@ INCMP select_gender 2
 INCMP enter_yob 3
 INCMP enter_loca 4
 INCMP view_profile 6
-
-
-

@@ -300,18 +300,7 @@ func (fsd *fsData) create_account(ctx context.Context, sym string, input []byte)
 	}
 	f.Close()
 
-	//accountResp, err := createAccount()
-	accountResp := accountResponse{
-		Ok: true,
-		Result: struct {
-			CustodialId json.Number `json:"custodialId"`
-			PublicKey   string      `json:"publicKey"`
-			TrackingId  string      `json:"trackingId"`
-		}{
-			CustodialId: "636",
-			PublicKey:   "0x8d86F9D4A4eae41Dc3B68034895EA97BcA90e8c1",
-			TrackingId:  "45c67314-7995-4890-89d6-e5af987754ac",
-		}}
+	accountResp, err := createAccount()
 
 	if err != nil {
 		fmt.Println("Failed to create account:", err)
@@ -373,8 +362,21 @@ func (fsd *fsData) checkIdentifier(ctx context.Context, sym string, input []byte
 func (fsd *fsData) unLock(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	pin := string(input)
-	if len(input) > 0 {
-		if pin == "0000" {
+	fp := fsd.path + "_data"
+
+	jsonData, err := os.ReadFile(fp)
+	if err != nil {
+		return res, err
+	}
+
+	var accountData map[string]string
+	err = json.Unmarshal(jsonData, &accountData)
+	if err != nil {
+		return res, err
+	}
+
+	if len(input) > 1 {
+		if pin != accountData["AccountPIN"] {
 			res.FlagSet = append(res.FlagSet, USERFLAG_INCORRECTPIN)
 			res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_UNLOCKED)
 			return res, nil
@@ -428,7 +430,7 @@ func (fsd *fsData) check_account_status(ctx context.Context, sym string, input [
 
 	accountData["Status"] = status
 
-	if status == "REVERTED" {
+	if status == "SUCCESS" {
 		res.FlagSet = append(res.FlagSet, USERFLAG_ACCOUNT_SUCCESS)
 		res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_PENDING)
 	} else {

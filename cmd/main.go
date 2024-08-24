@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"regexp"
 	"time"
 
 	"git.defalsify.org/vise.git/cache"
@@ -34,6 +35,7 @@ const (
 	USERFLAG_QUERYPIN
 	USERFLAG_VALIDPIN
 	USERFLAG_INVALIDPIN
+	USERFLAG_INCORRECTDATEFORMAT
 )
 
 const (
@@ -87,7 +89,7 @@ func codeFromCtx(ctx context.Context) string {
 	return code
 }
 
-func (fsd *fsData) saveFirstName(cxt context.Context, sym string, input []byte) (resource.Result, error) {
+func (fsd *fsData) save_firstname(cxt context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	fp := fsd.path + "_data"
 
@@ -118,7 +120,7 @@ func (fsd *fsData) saveFirstName(cxt context.Context, sym string, input []byte) 
 	return res, nil
 }
 
-func (fsd *fsData) saveFamilyName(cxt context.Context, sym string, input []byte) (resource.Result, error) {
+func (fsd *fsData) save_familyname(cxt context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	fp := fsd.path + "_data"
 
@@ -149,7 +151,7 @@ func (fsd *fsData) saveFamilyName(cxt context.Context, sym string, input []byte)
 
 	return res, nil
 }
-func (fsd *fsData) saveYOB(cxt context.Context, sym string, input []byte) (resource.Result, error) {
+func (fsd *fsData) save_yob(cxt context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	fp := fsd.path + "_data"
 	jsonData, err := os.ReadFile(fp)
@@ -178,7 +180,7 @@ func (fsd *fsData) saveYOB(cxt context.Context, sym string, input []byte) (resou
 	return res, nil
 }
 
-func (fsd *fsData) saveLocation(cxt context.Context, sym string, input []byte) (resource.Result, error) {
+func (fsd *fsData) save_location(cxt context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	fp := fsd.path + "_data"
 	jsonData, err := os.ReadFile(fp)
@@ -208,7 +210,7 @@ func (fsd *fsData) saveLocation(cxt context.Context, sym string, input []byte) (
 	return res, nil
 }
 
-func (fsd *fsData) saveGender(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+func (fsd *fsData) save_gender(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	fp := fsd.path + "_data"
 	jsonData, err := os.ReadFile(fp)
@@ -231,7 +233,6 @@ func (fsd *fsData) saveGender(ctx context.Context, sym string, input []byte) (re
 		case "3":
 			gender = "Other"
 		}
-		fmt.Println("gender", gender)
 		accountData["Gender"] = gender
 		updatedJsonData, err := json.Marshal(accountData)
 		if err != nil {
@@ -246,7 +247,7 @@ func (fsd *fsData) saveGender(ctx context.Context, sym string, input []byte) (re
 	return res, nil
 }
 
-func (fsd *fsData) saveOfferings(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+func (fsd *fsData) save_offerings(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	fp := fsd.path + "_data"
 	jsonData, err := os.ReadFile(fp)
@@ -273,7 +274,7 @@ func (fsd *fsData) saveOfferings(ctx context.Context, sym string, input []byte) 
 	return res, nil
 }
 
-func (fsd *fsData) SetLanguageSelected(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+func (fsd *fsData) set_language(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	inputStr := string(input)
 	res := resource.Result{}
 	switch inputStr {
@@ -327,19 +328,19 @@ func (fsd *fsData) create_account(ctx context.Context, sym string, input []byte)
 	return res, err
 }
 
-func (fsd *fsData) resetUnlockForUpdate(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+func (fsd *fsData) reset_unlock_for_update(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	res.FlagReset = append(res.FlagReset, USERFLAG_UNLOCKFORUPDATE)
 	return res, nil
 }
 
-func (fsd *fsData) resetAccountUnlocked(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+func (fsd *fsData) reset_account_unlocked(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_UNLOCKED)
 	return res, nil
 }
 
-func (fsd *fsData) checkIdentifier(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+func (fsd *fsData) check_identifier(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	fp := fsd.path + "_data"
 
@@ -359,7 +360,7 @@ func (fsd *fsData) checkIdentifier(ctx context.Context, sym string, input []byte
 	return res, nil
 }
 
-func (fsd *fsData) unLock(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+func (fsd *fsData) unlock(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	pin := string(input)
 	fp := fsd.path + "_data"
@@ -382,6 +383,8 @@ func (fsd *fsData) unLock(ctx context.Context, sym string, input []byte) (resour
 			return res, nil
 		}
 		if fsd.st.MatchFlag(USERFLAG_ACCOUNT_UNLOCKED, false) {
+			res.FlagReset = append(res.FlagReset, USERFLAG_INCORRECTPIN)
+			res.FlagSet = append(res.FlagSet, USERFLAG_UNLOCKFORUPDATE)
 			res.FlagSet = append(res.FlagSet, USERFLAG_ACCOUNT_UNLOCKED)
 		} else {
 			res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_UNLOCKED)
@@ -390,7 +393,7 @@ func (fsd *fsData) unLock(ctx context.Context, sym string, input []byte) (resour
 	return res, nil
 }
 
-func (fsd *fsData) ResetIncorrectPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+func (fsd *fsData) reset_incorrect_pin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	isIncorrectPinSet := fsd.st.MatchFlag(USERFLAG_INCORRECTPIN, true)
 	if isIncorrectPinSet {
@@ -401,10 +404,7 @@ func (fsd *fsData) ResetIncorrectPin(ctx context.Context, sym string, input []by
 	return res, nil
 }
 
-func (fsd *fsData) ShowUpdateSuccess(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res := resource.Result{}
-	return res, nil
-}
+
 
 func (fsd *fsData) check_account_status(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
@@ -507,7 +507,28 @@ func (fsd *fsData) quit(ctx context.Context, sym string, input []byte) (resource
 	return res, nil
 }
 
-func (fsd *fsData) checkBalance(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+func (fsd *fsData) verify_yob(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	res := resource.Result{}
+	date := string(input)
+
+	dateRegex := regexp.MustCompile(`^\d{2}/\d{2}/\d{4}$`)
+	isCorrectFormat := dateRegex.MatchString(date)
+	if !isCorrectFormat {
+		res.FlagSet = append(res.FlagSet, USERFLAG_INCORRECTDATEFORMAT)
+	} else {
+		res.FlagReset = append(res.FlagReset, USERFLAG_INCORRECTDATEFORMAT)
+	}
+
+	return res, nil
+}
+
+func (fsd *fsData) reser_incorrect_yob(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	res := resource.Result{}
+	res.FlagReset = append(res.FlagReset, USERFLAG_INCORRECTDATEFORMAT)
+	return res, nil
+}
+
+func (fsd *fsData) check_balance(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
 	fp := fsd.path + "_data"
@@ -730,7 +751,7 @@ func (fsd *fsData) get_recipient(ctx context.Context, sym string, input []byte) 
 	return res, nil
 }
 
-func (fsd *fsData) getProfileInfo(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+func (fsd *fsData) get_profile_info(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	fp := fsd.path + "_data"
 
@@ -775,7 +796,7 @@ func (fsd *fsData) get_sender(ctx context.Context, sym string, input []byte) (re
 	return res, nil
 }
 
-func (fsd *fsData) quitWithBalance(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+func (fsd *fsData) quit_with_balance(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	fp := fsd.path + "_data"
 
@@ -926,15 +947,15 @@ func main() {
 		path: fp,
 		st:   &st,
 	}
-	rfs.AddLocalFunc("select_language", fs.SetLanguageSelected)
+	rfs.AddLocalFunc("select_language", fs.set_language)
 	rfs.AddLocalFunc("create_account", fs.create_account)
 	rfs.AddLocalFunc("save_pin", fs.save_pin)
 	rfs.AddLocalFunc("verify_pin", fs.verify_pin)
-	rfs.AddLocalFunc("check_identifier", fs.checkIdentifier)
+	rfs.AddLocalFunc("check_identifier", fs.check_identifier)
 	rfs.AddLocalFunc("check_account_status", fs.check_account_status)
-	rfs.AddLocalFunc("unlock_account", fs.unLock)
+	rfs.AddLocalFunc("unlock_account", fs.unlock)
 	rfs.AddLocalFunc("quit", fs.quit)
-	rfs.AddLocalFunc("check_balance", fs.checkBalance)
+	rfs.AddLocalFunc("check_balance", fs.check_balance)
 	rfs.AddLocalFunc("validate_recipient", fs.validate_recipient)
 	rfs.AddLocalFunc("transaction_reset", fs.transaction_reset)
 	rfs.AddLocalFunc("max_amount", fs.max_amount)
@@ -942,18 +963,19 @@ func main() {
 	rfs.AddLocalFunc("reset_transaction_amount", fs.reset_transaction_amount)
 	rfs.AddLocalFunc("get_recipient", fs.get_recipient)
 	rfs.AddLocalFunc("get_sender", fs.get_sender)
-	rfs.AddLocalFunc("reset_incorrect", fs.ResetIncorrectPin)
-	rfs.AddLocalFunc("save_firstname", fs.saveFirstName)
-	rfs.AddLocalFunc("save_familyname", fs.saveFamilyName)
-	rfs.AddLocalFunc("save_gender", fs.saveGender)
-	rfs.AddLocalFunc("save_location", fs.saveLocation)
-	rfs.AddLocalFunc("save_yob", fs.saveYOB)
-	rfs.AddLocalFunc("save_offerings", fs.saveOfferings)
-	rfs.AddLocalFunc("quit_with_balance", fs.quitWithBalance)
-	rfs.AddLocalFunc("show_update_success", fs.ShowUpdateSuccess)
-	rfs.AddLocalFunc("reset_unlocked", fs.resetAccountUnlocked)
-	rfs.AddLocalFunc("reset_unlock_for_update", fs.resetUnlockForUpdate)
-	rfs.AddLocalFunc("get_profile_info", fs.getProfileInfo)
+	rfs.AddLocalFunc("reset_incorrect", fs.reset_incorrect_pin)
+	rfs.AddLocalFunc("save_firstname", fs.save_firstname)
+	rfs.AddLocalFunc("save_familyname", fs.save_familyname)
+	rfs.AddLocalFunc("save_gender", fs.save_gender)
+	rfs.AddLocalFunc("save_location", fs.save_location)
+	rfs.AddLocalFunc("save_yob", fs.save_yob)
+	rfs.AddLocalFunc("save_offerings", fs.save_offerings)
+	rfs.AddLocalFunc("quit_with_balance", fs.quit_with_balance)
+	rfs.AddLocalFunc("reset_unlocked", fs.reset_account_unlocked)
+	rfs.AddLocalFunc("reset_unlock_for_update", fs.reset_unlock_for_update)
+	rfs.AddLocalFunc("get_profile_info", fs.get_profile_info)
+	rfs.AddLocalFunc("verify_yob", fs.verify_yob)
+	rfs.AddLocalFunc("reset_incorrect_date_format", fs.reser_incorrect_yob)
 
 	cont, err := en.Init(ctx)
 	en.SetDebugger(engine.NewSimpleDebug(nil))

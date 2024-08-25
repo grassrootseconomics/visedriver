@@ -517,7 +517,7 @@ func (fsd *fsData) verify_yob(ctx context.Context, sym string, input []byte) (re
 	return res, nil
 }
 
-func (fsd *fsData) reser_incorrect_yob(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+func (fsd *fsData) reset_incorrect_yob(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	res.FlagReset = append(res.FlagReset, USERFLAG_INCORRECTDATEFORMAT)
 	return res, nil
@@ -970,7 +970,7 @@ func main() {
 	rfs.AddLocalFunc("reset_unlock_for_update", fs.reset_unlock_for_update)
 	rfs.AddLocalFunc("get_profile_info", fs.get_profile_info)
 	rfs.AddLocalFunc("verify_yob", fs.verify_yob)
-	rfs.AddLocalFunc("reset_incorrect_date_format", fs.reser_incorrect_yob)
+	rfs.AddLocalFunc("reset_incorrect_date_format", fs.reset_incorrect_yob)
 
 	cont, err := en.Init(ctx)
 	en.SetDebugger(engine.NewSimpleDebug(nil))

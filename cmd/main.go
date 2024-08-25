@@ -395,12 +395,7 @@ func (fsd *fsData) unlock(ctx context.Context, sym string, input []byte) (resour
 
 func (fsd *fsData) reset_incorrect_pin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	isIncorrectPinSet := fsd.st.MatchFlag(USERFLAG_INCORRECTPIN, true)
-	if isIncorrectPinSet {
-		res.FlagReset = append(res.FlagReset, USERFLAG_INCORRECTPIN)
-	} else {
-		res.FlagReset = append(res.FlagReset, USERFLAG_INCORRECTPIN)
-	}
+	res.FlagReset = append(res.FlagReset, USERFLAG_INCORRECTPIN)
 	return res, nil
 }
 

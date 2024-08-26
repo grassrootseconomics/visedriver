@@ -17,25 +17,9 @@ import (
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/state"
+	"git.grassecon.net/urdt/ussd/internal/models"
 	"git.grassecon.net/urdt/ussd/internal/server/handlers"
 	"git.grassecon.net/urdt/ussd/internal/utils"
-)
-
-const (
-	USERFLAG_LANGUAGE_SET = iota + state.FLAG_USERSTART
-	USERFLAG_ACCOUNT_CREATED
-	USERFLAG_ACCOUNT_PENDING
-	USERFLAG_ACCOUNT_SUCCESS
-	USERFLAG_ACCOUNT_UNLOCKED
-	USERFLAG_INVALID_RECIPIENT
-	USERFLAG_INVALID_RECIPIENT_WITH_INVITE
-	USERFLAG_INCORRECTPIN
-	USERFLAG_UNLOCKFORUPDATE
-	USERFLAG_INVALID_AMOUNT
-	USERFLAG_QUERYPIN
-	USERFLAG_VALIDPIN
-	USERFLAG_INVALIDPIN
-	USERFLAG_INCORRECTDATEFORMAT
 )
 
 type fsData struct {
@@ -251,7 +235,7 @@ func (fsd *fsData) set_language(ctx context.Context, sym string, input []byte) (
 	default:
 	}
 
-	res.FlagSet = append(res.FlagSet, USERFLAG_LANGUAGE_SET)
+	res.FlagSet = append(res.FlagSet, models.USERFLAG_LANGUAGE_SET)
 
 	return res, nil
 }
@@ -286,19 +270,19 @@ func (fsd *fsData) create_account(ctx context.Context, sym string, input []byte)
 	if err != nil {
 		return res, err
 	}
-	res.FlagSet = append(res.FlagSet, USERFLAG_ACCOUNT_CREATED)
+	res.FlagSet = append(res.FlagSet, models.USERFLAG_ACCOUNT_CREATED)
 	return res, err
 }
 
 func (fsd *fsData) reset_unlock_for_update(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	res.FlagReset = append(res.FlagReset, USERFLAG_UNLOCKFORUPDATE)
+	res.FlagReset = append(res.FlagReset, models.USERFLAG_UNLOCKFORUPDATE)
 	return res, nil
 }
 
 func (fsd *fsData) reset_account_unlocked(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_UNLOCKED)
+	res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_UNLOCKED)
 	return res, nil
 }
 
@@ -340,16 +324,16 @@ func (fsd *fsData) unlock(ctx context.Context, sym string, input []byte) (resour
 
 	if len(input) > 1 {
 		if pin != accountData["AccountPIN"] {
-			res.FlagSet = append(res.FlagSet, USERFLAG_INCORRECTPIN)
-			res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_UNLOCKED)
+			res.FlagSet = append(res.FlagSet, models.USERFLAG_INCORRECTPIN)
+			res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_UNLOCKED)
 			return res, nil
 		}
-		if fsd.st.MatchFlag(USERFLAG_ACCOUNT_UNLOCKED, false) {
-			res.FlagReset = append(res.FlagReset, USERFLAG_INCORRECTPIN)
-			res.FlagSet = append(res.FlagSet, USERFLAG_UNLOCKFORUPDATE)
-			res.FlagSet = append(res.FlagSet, USERFLAG_ACCOUNT_UNLOCKED)
+		if fsd.st.MatchFlag(models.USERFLAG_ACCOUNT_UNLOCKED, false) {
+			res.FlagReset = append(res.FlagReset, models.USERFLAG_INCORRECTPIN)
+			res.FlagSet = append(res.FlagSet, models.USERFLAG_UNLOCKFORUPDATE)
+			res.FlagSet = append(res.FlagSet, models.USERFLAG_ACCOUNT_UNLOCKED)
 		} else {
-			res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_UNLOCKED)
+			res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_UNLOCKED)
 		}
 	}
 	return res, nil
@@ -357,7 +341,7 @@ func (fsd *fsData) unlock(ctx context.Context, sym string, input []byte) (resour
 
 func (fsd *fsData) reset_incorrect_pin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	res.FlagReset = append(res.FlagReset, USERFLAG_INCORRECTPIN)
+	res.FlagReset = append(res.FlagReset, models.USERFLAG_INCORRECTPIN)
 	return res, nil
 }
 
@@ -387,11 +371,11 @@ func (fsd *fsData) check_account_status(ctx context.Context, sym string, input [
 	accountData["Status"] = status
 
 	if status == "SUCCESS" {
-		res.FlagSet = append(res.FlagSet, USERFLAG_ACCOUNT_SUCCESS)
-		res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_PENDING)
+		res.FlagSet = append(res.FlagSet, models.USERFLAG_ACCOUNT_SUCCESS)
+		res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_PENDING)
 	} else {
-		res.FlagReset = append(res.FlagSet, USERFLAG_ACCOUNT_SUCCESS)
-		res.FlagSet = append(res.FlagReset, USERFLAG_ACCOUNT_PENDING)
+		res.FlagReset = append(res.FlagSet, models.USERFLAG_ACCOUNT_SUCCESS)
+		res.FlagSet = append(res.FlagReset, models.USERFLAG_ACCOUNT_PENDING)
 	}
 
 	updatedJsonData, err := json.Marshal(accountData)
@@ -415,7 +399,7 @@ func (fsd *fsData) quit(ctx context.Context, sym string, input []byte) (resource
 	default:
 		res.Content = "Thank you for using Sarafu. Goodbye!"
 	}
-	res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_UNLOCKED)
+	res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_UNLOCKED)
 	return res, nil
 }
 
@@ -426,9 +410,9 @@ func (fsd *fsData) verify_yob(ctx context.Context, sym string, input []byte) (re
 	dateRegex := regexp.MustCompile(`^\d{2}/\d{2}/\d{4}$`)
 	isCorrectFormat := dateRegex.MatchString(date)
 	if !isCorrectFormat {
-		res.FlagSet = append(res.FlagSet, USERFLAG_INCORRECTDATEFORMAT)
+		res.FlagSet = append(res.FlagSet, models.USERFLAG_INCORRECTDATEFORMAT)
 	} else {
-		res.FlagReset = append(res.FlagReset, USERFLAG_INCORRECTDATEFORMAT)
+		res.FlagReset = append(res.FlagReset, models.USERFLAG_INCORRECTDATEFORMAT)
 	}
 
 	return res, nil
@@ -436,7 +420,7 @@ func (fsd *fsData) verify_yob(ctx context.Context, sym string, input []byte) (re
 
 func (fsd *fsData) reset_incorrect_yob(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	res.FlagReset = append(res.FlagReset, USERFLAG_INCORRECTDATEFORMAT)
+	res.FlagReset = append(res.FlagReset, models.USERFLAG_INCORRECTDATEFORMAT)
 	return res, nil
 }
 
@@ -482,7 +466,7 @@ func (fsd *fsData) validate_recipient(ctx context.Context, sym string, input []b
 	if recipient != "0" {
 		// mimic invalid number check
 		if recipient == "000" {
-			res.FlagSet = append(res.FlagSet, USERFLAG_INVALID_RECIPIENT)
+			res.FlagSet = append(res.FlagSet, models.USERFLAG_INVALID_RECIPIENT)
 			res.Content = recipient
 
 			return res, nil
@@ -532,7 +516,7 @@ func (fsd *fsData) transaction_reset(ctx context.Context, sym string, input []by
 		return res, err
 	}
 
-	res.FlagReset = append(res.FlagReset, USERFLAG_INVALID_RECIPIENT, USERFLAG_INVALID_RECIPIENT_WITH_INVITE)
+	res.FlagReset = append(res.FlagReset, models.USERFLAG_INVALID_RECIPIENT, models.USERFLAG_INVALID_RECIPIENT_WITH_INVITE)
 
 	return res, nil
 }
@@ -565,7 +549,7 @@ func (fsd *fsData) reset_transaction_amount(ctx context.Context, sym string, inp
 		return res, err
 	}
 
-	res.FlagReset = append(res.FlagReset, USERFLAG_INVALID_AMOUNT)
+	res.FlagReset = append(res.FlagReset, models.USERFLAG_INVALID_AMOUNT)
 
 	return res, nil
 }
@@ -599,7 +583,7 @@ func (fsd *fsData) validate_amount(ctx context.Context, sym string, input []byte
 	if amount != "0" {
 		// mimic invalid amount
 		if amount == "00" {
-			res.FlagSet = append(res.FlagSet, USERFLAG_INVALID_AMOUNT)
+			res.FlagSet = append(res.FlagSet, models.USERFLAG_INVALID_AMOUNT)
 			res.Content = amount
 
 			return res, nil
@@ -725,7 +709,7 @@ func (fsd *fsData) quit_with_balance(ctx context.Context, sym string, input []by
 		return res, nil
 	}
 	res.Content = fmt.Sprintf("Your account balance is: %s", balance)
-	res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_UNLOCKED)
+	res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_UNLOCKED)
 	return res, nil
 }
 
@@ -776,10 +760,10 @@ func (fsd *fsData) verify_pin(ctx context.Context, sym string, input []byte) (re
 	}
 
 	if bytes.Equal(input, []byte(accountData["AccountPIN"])) {
-		res.FlagSet = []uint32{USERFLAG_VALIDPIN}
-		res.FlagReset = []uint32{USERFLAG_INVALIDPIN}
+		res.FlagSet = []uint32{models.USERFLAG_VALIDPIN}
+		res.FlagReset = []uint32{models.USERFLAG_PINMISMATCH}
 	} else {
-		res.FlagSet = []uint32{USERFLAG_INVALIDPIN}
+		res.FlagSet = []uint32{models.USERFLAG_PINMISMATCH}
 	}
 
 	return res, nil
@@ -804,11 +788,11 @@ func main() {
 	ctx := context.Background()
 	st := state.NewState(15)
 	st.UseDebug()
-	state.FlagDebugger.Register(USERFLAG_LANGUAGE_SET, "LANGUAGE_CHANGE")
-	state.FlagDebugger.Register(USERFLAG_ACCOUNT_CREATED, "ACCOUNT_CREATED")
-	state.FlagDebugger.Register(USERFLAG_ACCOUNT_SUCCESS, "ACCOUNT_SUCCESS")
-	state.FlagDebugger.Register(USERFLAG_ACCOUNT_PENDING, "ACCOUNT_PENDING")
-	state.FlagDebugger.Register(USERFLAG_INCORRECTPIN, "INCORRECTPIN")
+	state.FlagDebugger.Register(models.USERFLAG_LANGUAGE_SET, "LANGUAGE_CHANGE")
+	state.FlagDebugger.Register(models.USERFLAG_ACCOUNT_CREATED, "ACCOUNT_CREATED")
+	state.FlagDebugger.Register(models.USERFLAG_ACCOUNT_SUCCESS, "ACCOUNT_SUCCESS")
+	state.FlagDebugger.Register(models.USERFLAG_ACCOUNT_PENDING, "ACCOUNT_PENDING")
+	state.FlagDebugger.Register(models.USERFLAG_INCORRECTPIN, "INCORRECTPIN")
 
 	rfs := resource.NewFsResource(scriptDir)
 	ca := cache.NewCache()

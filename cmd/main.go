@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"path"
 	"regexp"
@@ -19,6 +17,8 @@ import (
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/state"
+	"git.grassecon.net/urdt/ussd/internal/server/handlers"
+	"git.grassecon.net/urdt/ussd/internal/utils"
 )
 
 const (
@@ -37,42 +37,6 @@ const (
 	USERFLAG_INVALIDPIN
 	USERFLAG_INCORRECTDATEFORMAT
 )
-
-const (
-	createAccountURL = "https://custodial.sarafu.africa/api/account/create"
-	trackStatusURL   = "https://custodial.sarafu.africa/api/track/"
-	checkBalanceURL  = "https://custodial.sarafu.africa/api/account/status/"
-)
-
-type accountResponse struct {
-	Ok     bool `json:"ok"`
-	Result struct {
-		CustodialId json.Number `json:"custodialId"`
-		PublicKey   string      `json:"publicKey"`
-		TrackingId  string      `json:"trackingId"`
-	} `json:"result"`
-}
-
-type trackStatusResponse struct {
-	Ok     bool `json:"ok"`
-	Result struct {
-		Transaction struct {
-			CreatedAt     time.Time   `json:"createdAt"`
-			Status        string      `json:"status"`
-			TransferValue json.Number `json:"transferValue"`
-			TxHash        string      `json:"txHash"`
-			TxType        string      `json:"txType"`
-		}
-	} `json:"result"`
-}
-
-type balanceResponse struct {
-	Ok     bool `json:"ok"`
-	Result struct {
-		Balance string      `json:"balance"`
-		Nonce   json.Number `json:"nonce"`
-	} `json:"result"`
-}
 
 type fsData struct {
 	path string
@@ -300,9 +264,7 @@ func (fsd *fsData) create_account(ctx context.Context, sym string, input []byte)
 		return res, err
 	}
 	f.Close()
-
-	accountResp, err := createAccount()
-
+	accountResp, err := handlers.CreateAccount()
 	if err != nil {
 		fmt.Println("Failed to create account:", err)
 		return res, err
@@ -399,8 +361,6 @@ func (fsd *fsData) reset_incorrect_pin(ctx context.Context, sym string, input []
 	return res, nil
 }
 
-
-
 func (fsd *fsData) check_account_status(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	fp := fsd.path + "_data"
@@ -416,7 +376,8 @@ func (fsd *fsData) check_account_status(ctx context.Context, sym string, input [
 		return res, err
 	}
 
-	status, err := checkAccountStatus(accountData["TrackingId"])
+	//status, err := checkAccountStatus(accountData["TrackingId"])
+	status, err := handlers.CheckAccountStatus(accountData["TrackingId"])
 
 	if err != nil {
 		fmt.Println("Error checking account status:", err)
@@ -444,50 +405,6 @@ func (fsd *fsData) check_account_status(ctx context.Context, sym string, input [
 	}
 
 	return res, nil
-}
-
-func createAccount() (*accountResponse, error) {
-	resp, err := http.Post(createAccountURL, "application/json", nil)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var accountResp accountResponse
-	err = json.Unmarshal(body, &accountResp)
-	if err != nil {
-		return nil, err
-	}
-
-	return &accountResp, nil
-}
-
-func checkAccountStatus(trackingId string) (string, error) {
-	resp, err := http.Get(trackStatusURL + trackingId)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	var trackResp trackStatusResponse
-	err = json.Unmarshal(body, &trackResp)
-	if err != nil {
-		return "", err
-	}
-
-	status := trackResp.Result.Transaction.Status
-
-	return status, nil
 }
 
 func (fsd *fsData) quit(ctx context.Context, sym string, input []byte) (resource.Result, error) {
@@ -527,37 +444,19 @@ func (fsd *fsData) check_balance(ctx context.Context, sym string, input []byte) 
 	res := resource.Result{}
 
 	fp := fsd.path + "_data"
-
 	jsonData, err := os.ReadFile(fp)
 	if err != nil {
 		return res, err
 	}
-
 	var accountData map[string]string
 	err = json.Unmarshal(jsonData, &accountData)
 	if err != nil {
 		return res, err
 	}
-
-	resp, err := http.Get(checkBalanceURL + accountData["PublicKey"])
+	balance, err := handlers.CheckBalance(accountData["PublicKey"])
 	if err != nil {
 		return res, nil
 	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return res, nil
-	}
-
-	var balanceResp balanceResponse
-	err = json.Unmarshal(body, &balanceResp)
-	if err != nil {
-		return res, nil
-	}
-
-	balance := balanceResp.Result.Balance
-
 	res.Content = balance
 
 	return res, nil
@@ -760,12 +659,28 @@ func (fsd *fsData) get_profile_info(ctx context.Context, sym string, input []byt
 	if err != nil {
 		return res, err
 	}
-	name := accountData["FirstName"]
+	name := accountData["FirstName"] + " " + accountData["FamilyName"]
 	gender := accountData["Gender"]
-	age := accountData["YOB"]
+	yob := accountData["YOB"]
 	location := accountData["Location"]
+	offerings := accountData["Offerings"]
 
-	formattedData := fmt.Sprintf("Name: %s\nGender: %s\nAge: %s\nLocation: %s\n", name, gender, age, location)
+	layout := "02/01/2006"
+
+	birthdate, err := time.Parse(layout, yob)
+	if err != nil {
+		return res, err
+	}
+
+	currentDate := time.Now()
+	formattedDate := currentDate.Format(layout)
+	today, err := time.Parse(layout, formattedDate)
+	if err != nil {
+		return res, nil
+	}
+	age := utils.CalculateAge(birthdate, today)
+
+	formattedData := fmt.Sprintf("Name: %s\nGender: %s\nAge: %d\nLocation: %s\nYou provide: %s\n", name, gender, age, location, offerings)
 	res.Content = formattedData
 
 	return res, nil
@@ -805,23 +720,10 @@ func (fsd *fsData) quit_with_balance(ctx context.Context, sym string, input []by
 	if err != nil {
 		return res, err
 	}
-	resp, err := http.Get(checkBalanceURL + accountData["PublicKey"])
+	balance, err := handlers.CheckBalance(accountData["PublicKey"])
 	if err != nil {
 		return res, nil
 	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return res, nil
-	}
-
-	var balanceResp balanceResponse
-	err = json.Unmarshal(body, &balanceResp)
-	if err != nil {
-		return res, nil
-	}
-	balance := balanceResp.Result.Balance
 	res.Content = fmt.Sprintf("Your account balance is: %s", balance)
 	res.FlagReset = append(res.FlagReset, USERFLAG_ACCOUNT_UNLOCKED)
 	return res, nil

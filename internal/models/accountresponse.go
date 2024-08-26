@@ -2,19 +2,14 @@ package models
 
 import (
 	"encoding/json"
-	"time"
+
 )
 
-
-type trackStatusResponse struct {
+type AccountResponse struct {
 	Ok     bool `json:"ok"`
 	Result struct {
-		Transaction struct {
-			CreatedAt     time.Time   `json:"createdAt"`
-			Status        string      `json:"status"`
-			TransferValue json.Number `json:"transferValue"`
-			TxHash        string      `json:"txHash"`
-			TxType        string      `json:"txType"`
-		}
+		CustodialId json.Number `json:"custodialId"`
+		PublicKey   string      `json:"publicKey"`
+		TrackingId  string      `json:"trackingId"`
 	} `json:"result"`
 }

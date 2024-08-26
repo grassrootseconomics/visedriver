@@ -40,6 +40,17 @@ func main() {
 	state.FlagDebugger.Register(models.USERFLAG_ACCOUNT_SUCCESS, "ACCOUNT_SUCCESS")
 	state.FlagDebugger.Register(models.USERFLAG_ACCOUNT_PENDING, "ACCOUNT_PENDING")
 	state.FlagDebugger.Register(models.USERFLAG_INCORRECTPIN, "INCORRECTPIN")
+	state.FlagDebugger.Register(models.USERFLAG_INCORRECTDATEFORMAT,"INVALIDDATEFORMAT")
+	state.FlagDebugger.Register(models.USERFLAG_INVALID_RECIPIENT,"INVALIDRECIPIENT")
+	state.FlagDebugger.Register(models.USERFLAG_PINMISMATCH,"PINMISMATCH")
+	state.FlagDebugger.Register(models.USERFLAG_QUERYPIN,"QUERYPIN")
+	state.FlagDebugger.Register(models.USERFLAG_INVALID_RECIPIENT_WITH_INVITE,"INVALIDRECIPIENT_WITH_INVITE")
+	state.FlagDebugger.Register(models.USERFLAG_INVALID_AMOUNT,"INVALIDAMOUNT")
+	state.FlagDebugger.Register(models.USERFLAG_UNLOCKFORUPDATE,"UNLOCKFORUPDATE")
+	state.FlagDebugger.Register(models.USERFLAG_VALIDPIN,"VALIDPIN")
+	state.FlagDebugger.Register(models.USERFLAG_VALIDPIN,"ACCOUNTUNLOCKED")
+	
+	
 
 	rfs := resource.NewFsResource(scriptDir)
 	ca := cache.NewCache()

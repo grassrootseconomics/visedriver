@@ -229,7 +229,8 @@ func (h *Handlers) SaveYob(cxt context.Context, sym string, input []byte) (resou
 	if err != nil {
 		return res, err
 	}
-	if len(input) > 0 {
+	yob := string(input)
+	if len(yob) > 4 {
 		yob := string(input)
 		accountData["YOB"] = yob
 		updatedJsonData, err := json.Marshal(accountData)

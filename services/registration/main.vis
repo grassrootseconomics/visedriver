@@ -8,8 +8,8 @@ MOUT help 4
 MOUT quit 9
 HALT
 INCMP send 1
-INCMP vouchers 2
+INCMP quit 2
 INCMP my_account 3
-INCMP help 4
+INCMP quit 4
 INCMP quit 9
 INCMP . *

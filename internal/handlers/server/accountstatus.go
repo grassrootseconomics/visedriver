@@ -1,4 +1,4 @@
-package handlers
+package server
 
 import (
 	"encoding/json"
@@ -8,7 +8,6 @@ import (
 	"git.grassecon.net/urdt/ussd/config"
 	"git.grassecon.net/urdt/ussd/internal/models"
 )
-
 
 func CheckAccountStatus(trackingId string) (string, error) {
 	resp, err := http.Get(config.TrackStatusURL + trackingId)

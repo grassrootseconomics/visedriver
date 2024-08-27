@@ -9,6 +9,19 @@ import (
 	"git.grassecon.net/urdt/ussd/internal/models"
 )
 
+// CheckAccountStatus retrieves the status of an account transaction based on the provided tracking ID.
+//
+// Parameters:
+//   - trackingId: A unique identifier for the account.This should be obtained from a previous call to
+//     CreateAccount or a similar function that returns an AccountResponse. The `trackingId` field in the
+//     AccountResponse struct can be used here to check the account status.
+//
+//
+// Returns:
+//   - string: The status of the transaction as a string. If there is an error during the request or processing, this will be an empty string.
+//   - error: An error if any occurred during the HTTP request, reading the response, or unmarshalling the JSON data.
+//     If no error occurs, this will be nil.
+//
 func CheckAccountStatus(trackingId string) (string, error) {
 	resp, err := http.Get(config.TrackStatusURL + trackingId)
 	if err != nil {

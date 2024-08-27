@@ -33,7 +33,7 @@ func main() {
 	fmt.Fprintf(os.Stderr, "starting session at symbol '%s' using resource dir: %s\n", root, dir)
 
 	ctx := context.Background()
-	st := state.NewState(14)
+	st := state.NewState(15)
 	st.UseDebug()
 	state.FlagDebugger.Register(models.USERFLAG_LANGUAGE_SET, "LANGUAGE_CHANGE")
 	state.FlagDebugger.Register(models.USERFLAG_ACCOUNT_CREATED, "ACCOUNT_CREATED")
@@ -49,8 +49,7 @@ func main() {
 	state.FlagDebugger.Register(models.USERFLAG_UNLOCKFORUPDATE,"UNLOCKFORUPDATE")
 	state.FlagDebugger.Register(models.USERFLAG_VALIDPIN,"VALIDPIN")
 	state.FlagDebugger.Register(models.USERFLAG_VALIDPIN,"ACCOUNTUNLOCKED")
-	
-	
+	state.FlagDebugger.Register(models.USERFLAG_ACCOUNT_CREATION_FAILED,"ACCOUNT_CREATION_FAILED")
 
 	rfs := resource.NewFsResource(scriptDir)
 	ca := cache.NewCache()

@@ -64,7 +64,7 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 
 	accountResp, err := server.CreateAccount()
 	if err != nil {
-		fmt.Println("Failed to create account:", err)
+		res.FlagSet = append(res.FlagSet, models.USERFLAG_ACCOUNT_CREATION_FAILED)
 		return res, err
 	}
 

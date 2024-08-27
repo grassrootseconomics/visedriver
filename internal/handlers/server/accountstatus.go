@@ -14,7 +14,7 @@ import (
 // Parameters:
 //   - trackingId: A unique identifier for the account.This should be obtained from a previous call to
 //     CreateAccount or a similar function that returns an AccountResponse. The `trackingId` field in the
-//     AccountResponse struct can be used here to check the account status.
+//     AccountResponse struct can be used here to check the account status during a transaction.
 //
 //
 // Returns:

@@ -3,9 +3,7 @@ package ussd
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"os"
 	"regexp"
 	"time"
 
@@ -24,7 +22,8 @@ type FSData struct {
 }
 
 type Handlers struct {
-	fs *FSData
+	fs                 *FSData
+	accountFileHandler *utils.AccountFileHandler
 }
 
 func NewHandlers(path string, st *state.State) *Handlers {
@@ -33,6 +32,7 @@ func NewHandlers(path string, st *state.State) *Handlers {
 			Path: path,
 			St:   st,
 		},
+		accountFileHandler: utils.NewAccountFileHandler(path + "_data"),
 	}
 }
 
@@ -56,12 +56,12 @@ func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (r
 
 func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	fp := h.fs.Path + "_data"
-	f, err := os.OpenFile(fp, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+
+	err := h.accountFileHandler.EnsureFileExists()
 	if err != nil {
 		return res, err
 	}
-	f.Close()
+
 	accountResp, err := server.CreateAccount()
 	if err != nil {
 		fmt.Println("Failed to create account:", err)
@@ -75,15 +75,11 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 		"Status":      "PENDING",
 	}
 
-	jsonData, err := json.Marshal(accountData)
+	err = h.accountFileHandler.WriteAccountData(accountData)
 	if err != nil {
 		return res, err
 	}
 
-	err = os.WriteFile(fp, jsonData, 0644)
-	if err != nil {
-		return res, err
-	}
 	res.FlagSet = append(res.FlagSet, models.USERFLAG_ACCOUNT_CREATED)
 	return res, err
 }
@@ -93,27 +89,15 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 func (h *Handlers) SavePin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	accountPIN := string(input)
-	fp := h.fs.Path + "_data"
 
-	jsonData, err := os.ReadFile(fp)
-	if err != nil {
-		return res, err
-	}
-
-	var accountData map[string]string
-	err = json.Unmarshal(jsonData, &accountData)
+	accountData, err := h.accountFileHandler.ReadAccountData()
 	if err != nil {
 		return res, err
 	}
 
 	accountData["AccountPIN"] = accountPIN
 
-	updatedJsonData, err := json.Marshal(accountData)
-	if err != nil {
-		return res, err
-	}
-
-	err = os.WriteFile(fp, updatedJsonData, 0644)
+	err = h.accountFileHandler.WriteAccountData(accountData)
 	if err != nil {
 		return res, err
 	}
@@ -123,15 +107,8 @@ func (h *Handlers) SavePin(ctx context.Context, sym string, input []byte) (resou
 
 func (h *Handlers) VerifyPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	fp := h.fs.Path + "_data"
 
-	jsonData, err := os.ReadFile(fp)
-	if err != nil {
-		return res, err
-	}
-
-	var accountData map[string]string
-	err = json.Unmarshal(jsonData, &accountData)
+	accountData, err := h.accountFileHandler.ReadAccountData()
 	if err != nil {
 		return res, err
 	}
@@ -159,27 +136,16 @@ func codeFromCtx(ctx context.Context) string {
 //SaveFirstname updates the first name in a JSON data file with the provided input.
 func (h *Handlers) SaveFirstname(cxt context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	fp := h.fs.Path + "_data"
 
-	jsonData, err := os.ReadFile(fp)
-	if err != nil {
-		return res, err
-	}
-
-	var accountData map[string]string
-	err = json.Unmarshal(jsonData, &accountData)
+	accountData, err := h.accountFileHandler.ReadAccountData()
 	if err != nil {
 		return res, err
 	}
 	if len(input) > 0 {
 		name := string(input)
 		accountData["FirstName"] = name
-		updatedJsonData, err := json.Marshal(accountData)
-		if err != nil {
-			return res, err
-		}
 
-		err = os.WriteFile(fp, updatedJsonData, 0644)
+		err = h.accountFileHandler.WriteAccountData(accountData)
 		if err != nil {
 			return res, err
 		}
@@ -191,28 +157,16 @@ func (h *Handlers) SaveFirstname(cxt context.Context, sym string, input []byte) 
 //SaveFamilyname updates the family name in a JSON data file with the provided input.
 func (h *Handlers) SaveFamilyname(cxt context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	fp := h.fs.Path + "_data"
 
-	jsonData, err := os.ReadFile(fp)
-	if err != nil {
-		return res, err
-	}
-
-	var accountData map[string]string
-	err = json.Unmarshal(jsonData, &accountData)
+	accountData, err := h.accountFileHandler.ReadAccountData()
 	if err != nil {
 		return res, err
 	}
 	if len(input) > 0 {
-		//Save name
 		secondname := string(input)
 		accountData["FamilyName"] = secondname
-		updatedJsonData, err := json.Marshal(accountData)
-		if err != nil {
-			return res, err
-		}
 
-		err = os.WriteFile(fp, updatedJsonData, 0644)
+		err = h.accountFileHandler.WriteAccountData(accountData)
 		if err != nil {
 			return res, err
 		}
@@ -224,26 +178,18 @@ func (h *Handlers) SaveFamilyname(cxt context.Context, sym string, input []byte)
 //SaveYOB updates the Year of Birth(YOB) in a JSON data file with the provided input.
 func (h *Handlers) SaveYob(cxt context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	fp := h.fs.Path + "_data"
-	jsonData, err := os.ReadFile(fp)
+
+	accountData, err := h.accountFileHandler.ReadAccountData()
 	if err != nil {
 		return res, err
 	}
-	var accountData map[string]string
-	err = json.Unmarshal(jsonData, &accountData)
-	if err != nil {
-		return res, err
-	}
+
 	yob := string(input)
 	if len(yob) > 4 {
 		yob := string(input)
 		accountData["YOB"] = yob
-		updatedJsonData, err := json.Marshal(accountData)
-		if err != nil {
-			return res, err
-		}
 
-		err = os.WriteFile(fp, updatedJsonData, 0644)
+		err = h.accountFileHandler.WriteAccountData(accountData)
 		if err != nil {
 			return res, err
 		}
@@ -255,29 +201,20 @@ func (h *Handlers) SaveYob(cxt context.Context, sym string, input []byte) (resou
 //SaveLocation updates the location in a JSON data file with the provided input.
 func (h *Handlers) SaveLocation(cxt context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	fp := h.fs.Path + "_data"
-	jsonData, err := os.ReadFile(fp)
+
+	accountData, err := h.accountFileHandler.ReadAccountData()
 	if err != nil {
 		return res, err
 	}
-	var accountData map[string]string
-	err = json.Unmarshal(jsonData, &accountData)
-	if err != nil {
-		return res, err
-	}
+
 	if len(input) > 0 {
 		location := string(input)
 		accountData["Location"] = location
-		updatedJsonData, err := json.Marshal(accountData)
+
+		err = h.accountFileHandler.WriteAccountData(accountData)
 		if err != nil {
 			return res, err
 		}
-
-		err = os.WriteFile(fp, updatedJsonData, 0644)
-		if err != nil {
-			return res, err
-		}
-
 	}
 
 	return res, nil
@@ -286,16 +223,12 @@ func (h *Handlers) SaveLocation(cxt context.Context, sym string, input []byte) (
 //SaveGender updates the gender in a JSON data file with the provided input.
 func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	fp := h.fs.Path + "_data"
-	jsonData, err := os.ReadFile(fp)
+
+	accountData, err := h.accountFileHandler.ReadAccountData()
 	if err != nil {
 		return res, err
 	}
-	var accountData map[string]string
-	err = json.Unmarshal(jsonData, &accountData)
-	if err != nil {
-		return res, err
-	}
+
 	if len(input) > 0 {
 		gender := string(input)
 
@@ -308,12 +241,8 @@ func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (re
 			gender = "Other"
 		}
 		accountData["Gender"] = gender
-		updatedJsonData, err := json.Marshal(accountData)
-		if err != nil {
-			return res, err
-		}
 
-		err = os.WriteFile(fp, updatedJsonData, 0644)
+		err = h.accountFileHandler.WriteAccountData(accountData)
 		if err != nil {
 			return res, err
 		}
@@ -324,24 +253,17 @@ func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (re
 //SaveOfferings updates the offerings(goods and services provided by the user) in a JSON data file with the provided input.
 func (h *Handlers) SaveOfferings(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	fp := h.fs.Path + "_data"
-	jsonData, err := os.ReadFile(fp)
+
+	accountData, err := h.accountFileHandler.ReadAccountData()
 	if err != nil {
 		return res, err
 	}
-	var accountData map[string]string
-	err = json.Unmarshal(jsonData, &accountData)
-	if err != nil {
-		return res, err
-	}
+
 	if len(input) > 0 {
 		offerings := string(input)
 		accountData["Offerings"] = offerings
-		updatedJsonData, err := json.Marshal(accountData)
-		if err != nil {
-			return res, err
-		}
-		err = os.WriteFile(fp, updatedJsonData, 0644)
+
+		err = h.accountFileHandler.WriteAccountData(accountData)
 		if err != nil {
 			return res, err
 		}
@@ -363,15 +285,8 @@ func (h *Handlers) ResetAccountUnlocked(ctx context.Context, sym string, input [
 
 func (h *Handlers) CheckIdentifier(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	fp := h.fs.Path + "_data"
 
-	jsonData, err := os.ReadFile(fp)
-	if err != nil {
-		return res, err
-	}
-
-	var accountData map[string]string
-	err = json.Unmarshal(jsonData, &accountData)
+	accountData, err := h.accountFileHandler.ReadAccountData()
 	if err != nil {
 		return res, err
 	}
@@ -384,15 +299,8 @@ func (h *Handlers) CheckIdentifier(ctx context.Context, sym string, input []byte
 func (h *Handlers) Unlock(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	pin := string(input)
-	fp := h.fs.Path + "_data"
 
-	jsonData, err := os.ReadFile(fp)
-	if err != nil {
-		return res, err
-	}
-
-	var accountData map[string]string
-	err = json.Unmarshal(jsonData, &accountData)
+	accountData, err := h.accountFileHandler.ReadAccountData()
 	if err != nil {
 		return res, err
 	}
@@ -422,18 +330,12 @@ func (h *Handlers) ResetIncorrectPin(ctx context.Context, sym string, input []by
 
 func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	fp := h.fs.Path + "_data"
 
-	jsonData, err := os.ReadFile(fp)
+	accountData, err := h.accountFileHandler.ReadAccountData()
 	if err != nil {
 		return res, err
 	}
 
-	var accountData map[string]string
-	err = json.Unmarshal(jsonData, &accountData)
-	if err != nil {
-		return res, err
-	}
 	status, err := server.CheckAccountStatus(accountData["TrackingId"])
 
 	if err != nil {
@@ -451,12 +353,7 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 		res.FlagSet = append(res.FlagReset, models.USERFLAG_ACCOUNT_PENDING)
 	}
 
-	updatedJsonData, err := json.Marshal(accountData)
-	if err != nil {
-		return res, err
-	}
-
-	err = os.WriteFile(fp, updatedJsonData, 0644)
+	err = h.accountFileHandler.WriteAccountData(accountData)
 	if err != nil {
 		return res, err
 	}
@@ -500,16 +397,11 @@ func (h *Handlers) ResetIncorrectYob(ctx context.Context, sym string, input []by
 func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
-	fp := h.fs.Path + "_data"
-	jsonData, err := os.ReadFile(fp)
+	accountData, err := h.accountFileHandler.ReadAccountData()
 	if err != nil {
 		return res, err
 	}
-	var accountData map[string]string
-	err = json.Unmarshal(jsonData, &accountData)
-	if err != nil {
-		return res, err
-	}
+
 	balance, err := server.CheckBalance(accountData["PublicKey"])
 	if err != nil {
 		return res, nil
@@ -523,15 +415,7 @@ func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []by
 	res := resource.Result{}
 	recipient := string(input)
 
-	fp := h.fs.Path + "_data"
-
-	jsonData, err := os.ReadFile(fp)
-	if err != nil {
-		return res, err
-	}
-
-	var accountData map[string]string
-	err = json.Unmarshal(jsonData, &accountData)
+	accountData, err := h.accountFileHandler.ReadAccountData()
 	if err != nil {
 		return res, err
 	}
@@ -547,12 +431,7 @@ func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []by
 
 		accountData["Recipient"] = recipient
 
-		updatedJsonData, err := json.Marshal(accountData)
-		if err != nil {
-			return res, err
-		}
-
-		err = os.WriteFile(fp, updatedJsonData, 0644)
+		err = h.accountFileHandler.WriteAccountData(accountData)
 		if err != nil {
 			return res, err
 		}
@@ -563,15 +442,7 @@ func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []by
 
 func (h *Handlers) TransactionReset(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	fp := h.fs.Path + "_data"
-
-	jsonData, err := os.ReadFile(fp)
-	if err != nil {
-		return res, err
-	}
-
-	var accountData map[string]string
-	err = json.Unmarshal(jsonData, &accountData)
+	accountData, err := h.accountFileHandler.ReadAccountData()
 	if err != nil {
 		return res, err
 	}
@@ -579,12 +450,7 @@ func (h *Handlers) TransactionReset(ctx context.Context, sym string, input []byt
 	// reset the recipient
 	accountData["Recipient"] = ""
 
-	updatedJsonData, err := json.Marshal(accountData)
-	if err != nil {
-		return res, err
-	}
-
-	err = os.WriteFile(fp, updatedJsonData, 0644)
+	err = h.accountFileHandler.WriteAccountData(accountData)
 	if err != nil {
 		return res, err
 	}
@@ -596,15 +462,7 @@ func (h *Handlers) TransactionReset(ctx context.Context, sym string, input []byt
 
 func (h *Handlers) ResetTransactionAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	fp := h.fs.Path + "_data"
-
-	jsonData, err := os.ReadFile(fp)
-	if err != nil {
-		return res, err
-	}
-
-	var accountData map[string]string
-	err = json.Unmarshal(jsonData, &accountData)
+	accountData, err := h.accountFileHandler.ReadAccountData()
 	if err != nil {
 		return res, err
 	}
@@ -612,12 +470,7 @@ func (h *Handlers) ResetTransactionAmount(ctx context.Context, sym string, input
 	// reset the amount
 	accountData["Amount"] = ""
 
-	updatedJsonData, err := json.Marshal(accountData)
-	if err != nil {
-		return res, err
-	}
-
-	err = os.WriteFile(fp, updatedJsonData, 0644)
+	err = h.accountFileHandler.WriteAccountData(accountData)
 	if err != nil {
 		return res, err
 	}
@@ -640,15 +493,7 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 	res := resource.Result{}
 	amount := string(input)
 
-	fp := h.fs.Path + "_data"
-
-	jsonData, err := os.ReadFile(fp)
-	if err != nil {
-		return res, err
-	}
-
-	var accountData map[string]string
-	err = json.Unmarshal(jsonData, &accountData)
+	accountData, err := h.accountFileHandler.ReadAccountData()
 	if err != nil {
 		return res, err
 	}
@@ -666,12 +511,7 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 
 		accountData["Amount"] = amount
 
-		updatedJsonData, err := json.Marshal(accountData)
-		if err != nil {
-			return res, err
-		}
-
-		err = os.WriteFile(fp, updatedJsonData, 0644)
+		err = h.accountFileHandler.WriteAccountData(accountData)
 		if err != nil {
 			return res, err
 		}
@@ -684,15 +524,8 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 
 func (h *Handlers) GetRecipient(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	fp := h.fs.Path + "_data"
 
-	jsonData, err := os.ReadFile(fp)
-	if err != nil {
-		return res, err
-	}
-
-	var accountData map[string]string
-	err = json.Unmarshal(jsonData, &accountData)
+	accountData, err := h.accountFileHandler.ReadAccountData()
 	if err != nil {
 		return res, err
 	}
@@ -705,15 +538,8 @@ func (h *Handlers) GetRecipient(ctx context.Context, sym string, input []byte) (
 // GetProfileInfo retrieves and formats the profile information of a user from a JSON data file.
 func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	fp := h.fs.Path + "_data"
 
-	jsonData, err := os.ReadFile(fp)
-	if err != nil {
-		return res, err
-	}
-
-	var accountData map[string]string
-	err = json.Unmarshal(jsonData, &accountData)
+	accountData, err := h.accountFileHandler.ReadAccountData()
 	if err != nil {
 		return res, err
 	}
@@ -748,15 +574,8 @@ func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte)
 // GetSender retrieves the public key from a JSON data file.
 func (h *Handlers) GetSender(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	fp := h.fs.Path + "_data"
 
-	jsonData, err := os.ReadFile(fp)
-	if err != nil {
-		return res, err
-	}
-
-	var accountData map[string]string
-	err = json.Unmarshal(jsonData, &accountData)
+	accountData, err := h.accountFileHandler.ReadAccountData()
 	if err != nil {
 		return res, err
 	}
@@ -768,15 +587,8 @@ func (h *Handlers) GetSender(ctx context.Context, sym string, input []byte) (res
 
 func (h *Handlers) QuitWithBalance(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	fp := h.fs.Path + "_data"
 
-	jsonData, err := os.ReadFile(fp)
-	if err != nil {
-		return res, err
-	}
-
-	var accountData map[string]string
-	err = json.Unmarshal(jsonData, &accountData)
+	accountData, err := h.accountFileHandler.ReadAccountData()
 	if err != nil {
 		return res, err
 	}

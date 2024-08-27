@@ -2,7 +2,8 @@ package utils
 
 import "time"
 
-
+// CalculateAge calculates the age based on a given birthdate and the current date in the format dd/mm/yy
+// It adjusts for cases where the current date is before the birthday in the current year.
 func CalculateAge(birthdate, today time.Time) int {
 	today = today.In(birthdate.Location())
 	ty, tm, td := today.Date()

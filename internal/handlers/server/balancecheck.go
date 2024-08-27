@@ -9,6 +9,9 @@ import (
 	"git.grassecon.net/urdt/ussd/internal/models"
 )
 
+// CheckBalance retrieves the balance for a given public key from the custodial balance API endpoint.
+// Parameters:
+//   - publicKey: The public key associated with the account whose balance needs to be checked.
 func CheckBalance(publicKey string) (string, error) {
 
 	resp, err := http.Get(config.BalanceURL + publicKey)

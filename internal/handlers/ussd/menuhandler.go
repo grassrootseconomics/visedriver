@@ -13,8 +13,8 @@ import (
 	"git.defalsify.org/vise.git/lang"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/state"
-	"git.grassecon.net/urdt/ussd/internal/models"
 	"git.grassecon.net/urdt/ussd/internal/handlers/server"
+	"git.grassecon.net/urdt/ussd/internal/models"
 	"git.grassecon.net/urdt/ussd/internal/utils"
 )
 
@@ -426,8 +426,6 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 	if err != nil {
 		return res, err
 	}
-
-	//status, err := checkAccountStatus(accountData["TrackingId"])
 	status, err := server.CheckAccountStatus(accountData["TrackingId"])
 
 	if err != nil {

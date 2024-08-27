@@ -61,6 +61,13 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 		return res, err
 	}
 
+	// if an account exists, set the flag and return
+	existingAccountData, err := h.accountFileHandler.ReadAccountData()
+	if existingAccountData != nil {
+		res.FlagSet = append(res.FlagSet, models.USERFLAG_ACCOUNT_CREATED)
+		return res, err
+	}
+
 	accountResp, err := server.CreateAccount()
 	if err != nil {
 		res.FlagSet = append(res.FlagSet, models.USERFLAG_ACCOUNT_CREATION_FAILED)
@@ -119,6 +126,7 @@ func (h *Handlers) VerifyPin(ctx context.Context, sym string, input []byte) (res
 	if bytes.Equal(input, []byte(accountData["AccountPIN"])) {
 		res.FlagSet = []uint32{models.USERFLAG_VALIDPIN}
 		res.FlagReset = []uint32{models.USERFLAG_PINMISMATCH}
+		res.FlagSet = append(res.FlagSet, models.USERFLAG_PIN_SET)
 	} else {
 		res.FlagSet = []uint32{models.USERFLAG_PINMISMATCH}
 	}

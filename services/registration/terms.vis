@@ -4,4 +4,4 @@ MOUT yes 0
 MOUT no 1
 HALT
 INCMP create_pin 0
-INCMP _ *
+INCMP quit *

@@ -43,7 +43,7 @@ func main() {
 	state.FlagDebugger.Register(models.USERFLAG_INCORRECTDATEFORMAT,"INVALIDDATEFORMAT")
 	state.FlagDebugger.Register(models.USERFLAG_INVALID_RECIPIENT,"INVALIDRECIPIENT")
 	state.FlagDebugger.Register(models.USERFLAG_PINMISMATCH,"PINMISMATCH")
-	state.FlagDebugger.Register(models.USERFLAG_QUERYPIN,"QUERYPIN")
+	state.FlagDebugger.Register(models.USERFLAG_PIN_SET,"PIN_SET")
 	state.FlagDebugger.Register(models.USERFLAG_INVALID_RECIPIENT_WITH_INVITE,"INVALIDRECIPIENT_WITH_INVITE")
 	state.FlagDebugger.Register(models.USERFLAG_INVALID_AMOUNT,"INVALIDAMOUNT")
 	state.FlagDebugger.Register(models.USERFLAG_UNLOCKFORUPDATE,"UNLOCKFORUPDATE")

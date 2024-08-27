@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/lang"
@@ -505,36 +506,57 @@ func (h *Handlers) MaxAmount(ctx context.Context, sym string, input []byte) (res
 }
 
 func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res := resource.Result{}
-	amount := string(input)
+    res := resource.Result{}
+    amountStr := string(input)
 
-	accountData, err := h.accountFileHandler.ReadAccountData()
-	if err != nil {
-		return res, err
-	}
+    accountData, err := h.accountFileHandler.ReadAccountData()
+    if err != nil {
+        return res, err
+    }
 
-	if amount != "0" {
-		// mimic invalid amount
-		if amount == "00" {
-			res.FlagSet = append(res.FlagSet, models.USERFLAG_INVALID_AMOUNT)
-			res.Content = amount
+    balanceStr, err := server.CheckBalance(accountData["PublicKey"])
+    if err != nil {
+        return res, err
+    }
+    res.Content = balanceStr
 
-			return res, nil
-		}
+    // Parse the balance
+    balanceParts := strings.Split(balanceStr, " ")
+    if len(balanceParts) != 2 {
+        return res, fmt.Errorf("unexpected balance format: %s", balanceStr)
+    }
+    balanceValue, err := strconv.ParseFloat(balanceParts[0], 64)
+    if err != nil {
+        return res, fmt.Errorf("failed to parse balance: %v", err)
+    }
 
-		res.Content = amount
+    // Parse the input amount
+    if amountStr != "0" {
+        inputAmount, err := strconv.ParseFloat(amountStr, 64)
+        if err != nil {
+            res.FlagSet = append(res.FlagSet, models.USERFLAG_INVALID_AMOUNT)
+            res.Content = amountStr
+            return res, nil
+        }
 
-		accountData["Amount"] = amount
+        if inputAmount > balanceValue {
+            res.FlagSet = append(res.FlagSet, models.USERFLAG_INVALID_AMOUNT)
+            res.Content = amountStr
+            return res, nil
+        }
 
-		err = h.accountFileHandler.WriteAccountData(accountData)
-		if err != nil {
-			return res, err
-		}
+        res.Content = amountStr
+        accountData["Amount"] = amountStr
 
-		return res, nil
-	}
+        err = h.accountFileHandler.WriteAccountData(accountData)
+        if err != nil {
+            return res, err
+        }
 
-	return res, nil
+        return res, nil
+    }
+
+    return res, nil
 }
 
 func (h *Handlers) GetRecipient(ctx context.Context, sym string, input []byte) (resource.Result, error) {

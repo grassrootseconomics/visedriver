@@ -107,6 +107,13 @@ func (h *Handlers) SavePin(ctx context.Context, sym string, input []byte) (resou
 		return res, err
 	}
 
+	// Validate that the PIN is a 4-digit number
+    if !isValidPIN(accountPIN) {
+        res.FlagSet = append(res.FlagSet, models.USERFLAG_INCORRECTPIN)
+        return res, nil
+    }
+
+	res.FlagReset = append(res.FlagReset, models.USERFLAG_INCORRECTPIN)
 	accountData["AccountPIN"] = accountPIN
 
 	err = h.accountFileHandler.WriteAccountData(accountData)
@@ -134,6 +141,11 @@ func (h *Handlers) VerifyPin(ctx context.Context, sym string, input []byte) (res
 	}
 
 	return res, nil
+}
+
+func isValidPIN(pin string) bool {
+    match, _ := regexp.MatchString(`^\d{4}$`, pin)
+    return match
 }
 
 func codeFromCtx(ctx context.Context) string {

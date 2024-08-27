@@ -3,5 +3,7 @@ CATCH account_creation_failed 22 1
 MOUT exit 0
 HALT
 LOAD save_pin 0
+RELOAD save_pin
+CATCH . 15 1
 INCMP quit 0
 INCMP confirm_create_pin *

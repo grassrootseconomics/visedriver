@@ -73,8 +73,13 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 		"PublicKey":   accountResp.Result.PublicKey,
 		"CustodialId": accountResp.Result.CustodialId.String(),
 		"Status":      "PENDING",
+		"Gender":      "Not provided",
+		"YOB":         "Not provided",
+		"Location":    "Not provided",
+		"Offerings":   "Not provided",
+		"FirstName":   "Not provided",
+		"FamilyName":  "Not provided",
 	}
-
 	err = h.accountFileHandler.WriteAccountData(accountData)
 	if err != nil {
 		return res, err
@@ -84,8 +89,7 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 	return res, err
 }
 
-
-//SavePin persists the user's PIN choice into the filesystem
+// SavePin persists the user's PIN choice into the filesystem
 func (h *Handlers) SavePin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	accountPIN := string(input)
@@ -133,7 +137,7 @@ func codeFromCtx(ctx context.Context) string {
 	return code
 }
 
-//SaveFirstname updates the first name in a JSON data file with the provided input.
+// SaveFirstname updates the first name in a JSON data file with the provided input.
 func (h *Handlers) SaveFirstname(cxt context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
@@ -154,7 +158,7 @@ func (h *Handlers) SaveFirstname(cxt context.Context, sym string, input []byte) 
 	return res, nil
 }
 
-//SaveFamilyname updates the family name in a JSON data file with the provided input.
+// SaveFamilyname updates the family name in a JSON data file with the provided input.
 func (h *Handlers) SaveFamilyname(cxt context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
@@ -175,7 +179,7 @@ func (h *Handlers) SaveFamilyname(cxt context.Context, sym string, input []byte)
 	return res, nil
 }
 
-//SaveYOB updates the Year of Birth(YOB) in a JSON data file with the provided input.
+// SaveYOB updates the Year of Birth(YOB) in a JSON data file with the provided input.
 func (h *Handlers) SaveYob(cxt context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
@@ -198,7 +202,7 @@ func (h *Handlers) SaveYob(cxt context.Context, sym string, input []byte) (resou
 	return res, nil
 }
 
-//SaveLocation updates the location in a JSON data file with the provided input.
+// SaveLocation updates the location in a JSON data file with the provided input.
 func (h *Handlers) SaveLocation(cxt context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
@@ -220,7 +224,7 @@ func (h *Handlers) SaveLocation(cxt context.Context, sym string, input []byte) (
 	return res, nil
 }
 
-//SaveGender updates the gender in a JSON data file with the provided input.
+// SaveGender updates the gender in a JSON data file with the provided input.
 func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
@@ -250,7 +254,7 @@ func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (re
 	return res, nil
 }
 
-//SaveOfferings updates the offerings(goods and services provided by the user) in a JSON data file with the provided input.
+// SaveOfferings updates the offerings(goods and services provided by the user) in a JSON data file with the provided input.
 func (h *Handlers) SaveOfferings(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
@@ -538,38 +542,42 @@ func (h *Handlers) GetRecipient(ctx context.Context, sym string, input []byte) (
 // GetProfileInfo retrieves and formats the profile information of a user from a JSON data file.
 func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-
+	var age string
 	accountData, err := h.accountFileHandler.ReadAccountData()
 	if err != nil {
 		return res, err
 	}
-	name := accountData["FirstName"] + " " + accountData["FamilyName"]
+	var name string
+	if accountData["FirstName"] == "Not provided" || accountData["FamilyName"] == "Not provided" {
+		name = "Not provided"
+	} else {
+		name = accountData["FirstName"] + " " + accountData["FamilyName"]
+	}
+
 	gender := accountData["Gender"]
 	yob := accountData["YOB"]
 	location := accountData["Location"]
 	offerings := accountData["Offerings"]
-
 	layout := "02/01/2006"
-
 	birthdate, err := time.Parse(layout, yob)
 	if err != nil {
 		return res, err
 	}
-
-	currentDate := time.Now()
-	formattedDate := currentDate.Format(layout)
-	today, err := time.Parse(layout, formattedDate)
-	if err != nil {
-		return res, nil
+	if yob == "Not provided" {
+		age = "Not provided"
+	} else {
+		currentDate := time.Now()
+		formattedDate := currentDate.Format(layout)
+		today, err := time.Parse(layout, formattedDate)
+		if err != nil {
+			return res, nil
+		}
+		age = string(utils.CalculateAge(birthdate, today))
 	}
-	age := utils.CalculateAge(birthdate, today)
-
-	formattedData := fmt.Sprintf("Name: %s\nGender: %s\nAge: %d\nLocation: %s\nYou provide: %s\n", name, gender, age, location, offerings)
+	formattedData := fmt.Sprintf("Name: %s\nGender: %s\nAge: %s\nLocation: %s\nYou provide: %s\n", name, gender, age, location, offerings)
 	res.Content = formattedData
-
 	return res, nil
 }
-
 
 // GetSender retrieves the public key from a JSON data file.
 func (h *Handlers) GetSender(ctx context.Context, sym string, input []byte) (resource.Result, error) {

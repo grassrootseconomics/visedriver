@@ -20,3 +20,16 @@ func CalculateAge(birthdate, today time.Time) int {
 	}
 	return age
 }
+
+// CalculateAgeWithYOB calculates the age based on the given year of birth (YOB).
+// It subtracts the YOB from the current year to determine the age.
+//
+// Parameters:
+//   yob: The year of birth as an integer.
+//
+// Returns:
+//   The calculated age as an integer.
+func CalculateAgeWithYOB(yob int) int {
+    currentYear := time.Now().Year()
+    return currentYear - yob
+}

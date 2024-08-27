@@ -88,6 +88,8 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 	return res, err
 }
 
+
+//SavePin persists the user's PIN choice into the filesystem
 func (h *Handlers) SavePin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	accountPIN := string(input)
@@ -154,6 +156,7 @@ func codeFromCtx(ctx context.Context) string {
 	return code
 }
 
+//SaveFirstname updates the first name in a JSON data file with the provided input.
 func (h *Handlers) SaveFirstname(cxt context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	fp := h.fs.Path + "_data"
@@ -185,6 +188,7 @@ func (h *Handlers) SaveFirstname(cxt context.Context, sym string, input []byte) 
 	return res, nil
 }
 
+//SaveFamilyname updates the family name in a JSON data file with the provided input.
 func (h *Handlers) SaveFamilyname(cxt context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	fp := h.fs.Path + "_data"
@@ -217,6 +221,7 @@ func (h *Handlers) SaveFamilyname(cxt context.Context, sym string, input []byte)
 	return res, nil
 }
 
+//SaveYOB updates the Year of Birth(YOB) in a JSON data file with the provided input.
 func (h *Handlers) SaveYob(cxt context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	fp := h.fs.Path + "_data"
@@ -247,6 +252,7 @@ func (h *Handlers) SaveYob(cxt context.Context, sym string, input []byte) (resou
 	return res, nil
 }
 
+//SaveLocation updates the location in a JSON data file with the provided input.
 func (h *Handlers) SaveLocation(cxt context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	fp := h.fs.Path + "_data"
@@ -277,6 +283,7 @@ func (h *Handlers) SaveLocation(cxt context.Context, sym string, input []byte) (
 	return res, nil
 }
 
+//SaveGender updates the gender in a JSON data file with the provided input.
 func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	fp := h.fs.Path + "_data"
@@ -314,6 +321,7 @@ func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (re
 	return res, nil
 }
 
+//SaveOfferings updates the offerings(goods and services provided by the user) in a JSON data file with the provided input.
 func (h *Handlers) SaveOfferings(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	fp := h.fs.Path + "_data"
@@ -694,6 +702,7 @@ func (h *Handlers) GetRecipient(ctx context.Context, sym string, input []byte) (
 	return res, nil
 }
 
+// GetProfileInfo retrieves and formats the profile information of a user from a JSON data file.
 func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	fp := h.fs.Path + "_data"
@@ -735,6 +744,8 @@ func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte)
 	return res, nil
 }
 
+
+// GetSender retrieves the public key from a JSON data file.
 func (h *Handlers) GetSender(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	fp := h.fs.Path + "_data"

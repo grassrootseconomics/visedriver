@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -389,11 +390,11 @@ func (h *Handlers) VerifyYob(ctx context.Context, sym string, input []byte) (res
 	res := resource.Result{}
 	date := string(input)
 	_, err := strconv.Atoi(date)
-    if err != nil {
-        // If conversion fails, input is not numeric
-        res.FlagSet = append(res.FlagSet, models.USERFLAG_INCORRECTDATEFORMAT)
-        return res, nil
-    }
+	if err != nil {
+		// If conversion fails, input is not numeric
+		res.FlagSet = append(res.FlagSet, models.USERFLAG_INCORRECTDATEFORMAT)
+		return res, nil
+	}
 
 	if len(date) == 4 {
 		res.FlagReset = append(res.FlagReset, models.USERFLAG_INCORRECTDATEFORMAT)
@@ -515,59 +516,62 @@ func (h *Handlers) MaxAmount(ctx context.Context, sym string, input []byte) (res
 }
 
 func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-    res := resource.Result{}
-    amountStr := string(input)
+	res := resource.Result{}
+	amountStr := string(input)
 
-    accountData, err := h.accountFileHandler.ReadAccountData()
-    if err != nil {
-        return res, err
-    }
+	accountData, err := h.accountFileHandler.ReadAccountData()
+	if err != nil {
+		return res, err
+	}
 
-    balanceStr, err := server.CheckBalance(accountData["PublicKey"])
-    if err != nil {
-        return res, err
-    }
-    res.Content = balanceStr
+	balanceStr, err := server.CheckBalance(accountData["PublicKey"])
+	if err != nil {
+		return res, err
+	}
+	res.Content = balanceStr
 
-    // Parse the balance
-    balanceParts := strings.Split(balanceStr, " ")
-    if len(balanceParts) != 2 {
-        return res, fmt.Errorf("unexpected balance format: %s", balanceStr)
-    }
-    balanceValue, err := strconv.ParseFloat(balanceParts[0], 64)
-    if err != nil {
-        return res, fmt.Errorf("failed to parse balance: %v", err)
-    }
+	// Parse the balance
+	balanceParts := strings.Split(balanceStr, " ")
+	if len(balanceParts) != 2 {
+		return res, fmt.Errorf("unexpected balance format: %s", balanceStr)
+	}
+	balanceValue, err := strconv.ParseFloat(balanceParts[0], 64)
+	if err != nil {
+		return res, fmt.Errorf("failed to parse balance: %v", err)
+	}
 
-    // Parse the input amount
-    if amountStr != "0" {
-        inputAmount, err := strconv.ParseFloat(amountStr, 64)
-        if err != nil {
-            res.FlagSet = append(res.FlagSet, models.USERFLAG_INVALID_AMOUNT)
-            res.Content = amountStr
-            return res, nil
-        }
+	// Extract numeric part from input
+	re := regexp.MustCompile(`^(\d+(\.\d+)?)\s*(?:CELO)?$`)
+	matches := re.FindStringSubmatch(strings.TrimSpace(amountStr))
+	if len(matches) < 2 {
+		res.FlagSet = append(res.FlagSet, models.USERFLAG_INVALID_AMOUNT)
+		res.Content = amountStr
+		return res, nil
+	}
 
-        if inputAmount > balanceValue {
-            res.FlagSet = append(res.FlagSet, models.USERFLAG_INVALID_AMOUNT)
-            res.Content = amountStr
-            return res, nil
-        }
+	inputAmount, err := strconv.ParseFloat(matches[1], 64)
+	if err != nil {
+		res.FlagSet = append(res.FlagSet, models.USERFLAG_INVALID_AMOUNT)
+		res.Content = amountStr
+		return res, nil
+	}
 
-        res.Content = amountStr
-        accountData["Amount"] = amountStr
+	if inputAmount > balanceValue {
+		res.FlagSet = append(res.FlagSet, models.USERFLAG_INVALID_AMOUNT)
+		res.Content = amountStr
+		return res, nil
+	}
 
-        err = h.accountFileHandler.WriteAccountData(accountData)
-        if err != nil {
-            return res, err
-        }
+	res.Content = fmt.Sprintf("%.3f", inputAmount) // Format to 3 decimal places
+	accountData["Amount"] = res.Content
 
-        return res, nil
-    }
+	err = h.accountFileHandler.WriteAccountData(accountData)
+	if err != nil {
+		return res, err
+	}
 
-    return res, nil
+	return res, nil
 }
-
 func (h *Handlers) GetRecipient(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 

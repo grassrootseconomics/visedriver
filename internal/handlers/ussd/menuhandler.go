@@ -499,8 +499,17 @@ func (h *Handlers) ResetTransactionAmount(ctx context.Context, sym string, input
 func (h *Handlers) MaxAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
-	// mimic a max amount
-	res.Content = "10.00"
+	accountData, err := h.accountFileHandler.ReadAccountData()
+	if err != nil {
+		return res, err
+	}
+
+	balance, err := server.CheckBalance(accountData["PublicKey"])
+	if err != nil {
+		return res, nil
+	}
+
+	res.Content = balance
 
 	return res, nil
 }

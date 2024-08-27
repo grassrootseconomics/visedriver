@@ -1,5 +1,4 @@
 LOAD reset_unlocked 0
-LOAD get_profile_info 0
 MOUT edit_name 1
 MOUT edit_gender 2
 MOUT edit_yob 3

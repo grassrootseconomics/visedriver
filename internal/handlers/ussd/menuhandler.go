@@ -4,8 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"regexp"
-	"time"
+	"strconv"
 
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/lang"
@@ -189,7 +188,7 @@ func (h *Handlers) SaveYob(cxt context.Context, sym string, input []byte) (resou
 	}
 
 	yob := string(input)
-	if len(yob) > 4 {
+	if len(yob) == 4 {
 		yob := string(input)
 		accountData["YOB"] = yob
 
@@ -380,13 +379,17 @@ func (h *Handlers) Quit(ctx context.Context, sym string, input []byte) (resource
 func (h *Handlers) VerifyYob(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	date := string(input)
+	_, err := strconv.Atoi(date)
+    if err != nil {
+        // If conversion fails, input is not numeric
+        res.FlagSet = append(res.FlagSet, models.USERFLAG_INCORRECTDATEFORMAT)
+        return res, nil
+    }
 
-	dateRegex := regexp.MustCompile(`^\d{2}/\d{2}/\d{4}$`)
-	isCorrectFormat := dateRegex.MatchString(date)
-	if !isCorrectFormat {
-		res.FlagSet = append(res.FlagSet, models.USERFLAG_INCORRECTDATEFORMAT)
-	} else {
+	if len(date) == 4 {
 		res.FlagReset = append(res.FlagReset, models.USERFLAG_INCORRECTDATEFORMAT)
+	} else {
+		res.FlagSet = append(res.FlagSet, models.USERFLAG_INCORRECTDATEFORMAT)
 	}
 
 	return res, nil
@@ -558,21 +561,14 @@ func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte)
 	yob := accountData["YOB"]
 	location := accountData["Location"]
 	offerings := accountData["Offerings"]
-	layout := "02/01/2006"
-	birthdate, err := time.Parse(layout, yob)
-	if err != nil {
-		return res, err
-	}
 	if yob == "Not provided" {
 		age = "Not provided"
 	} else {
-		currentDate := time.Now()
-		formattedDate := currentDate.Format(layout)
-		today, err := time.Parse(layout, formattedDate)
+		ageInt, err := strconv.Atoi(yob)
 		if err != nil {
 			return res, nil
 		}
-		age = string(utils.CalculateAge(birthdate, today))
+		age = strconv.Itoa(utils.CalculateAgeWithYOB(ageInt))
 	}
 	formattedData := fmt.Sprintf("Name: %s\nGender: %s\nAge: %s\nLocation: %s\nYou provide: %s\n", name, gender, age, location, offerings)
 	res.Content = formattedData

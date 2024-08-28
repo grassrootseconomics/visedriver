@@ -1,8 +1,11 @@
 CATCH incorrect_date_format 21 1
 LOAD save_yob 0
+CATCH update_success 16 1
 MOUT back 0
 HALT
 INCMP _ 0
+LOAD save_location 0
+CATCH pin_entry 23 1
 INCMP enter_offerings *
 
 

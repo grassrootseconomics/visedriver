@@ -108,10 +108,10 @@ func (h *Handlers) SavePin(ctx context.Context, sym string, input []byte) (resou
 	}
 
 	// Validate that the PIN is a 4-digit number
-    if !isValidPIN(accountPIN) {
-        res.FlagSet = append(res.FlagSet, models.USERFLAG_INCORRECTPIN)
-        return res, nil
-    }
+	if !isValidPIN(accountPIN) {
+		res.FlagSet = append(res.FlagSet, models.USERFLAG_INCORRECTPIN)
+		return res, nil
+	}
 
 	res.FlagReset = append(res.FlagReset, models.USERFLAG_INCORRECTPIN)
 	accountData["AccountPIN"] = accountPIN
@@ -119,6 +119,24 @@ func (h *Handlers) SavePin(ctx context.Context, sym string, input []byte) (resou
 	err = h.accountFileHandler.WriteAccountData(accountData)
 	if err != nil {
 		return res, err
+	}
+
+	return res, nil
+}
+
+func (h *Handlers) SetResetSingleEdit(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	res := resource.Result{}
+	menuOPtion := string(input)
+
+	switch menuOPtion {
+	case "2":
+		res.FlagSet = append(res.FlagSet, models.USERFLAG_SINGLE_EDIT)
+	case "3":
+		res.FlagSet = append(res.FlagSet, models.USERFLAG_SINGLE_EDIT)
+	case "4":
+		res.FlagSet = append(res.FlagSet, models.USERFLAG_SINGLE_EDIT)
+	default:
+		res.FlagReset = append(res.FlagReset, models.USERFLAG_SINGLE_EDIT)
 	}
 
 	return res, nil
@@ -144,8 +162,8 @@ func (h *Handlers) VerifyPin(ctx context.Context, sym string, input []byte) (res
 }
 
 func isValidPIN(pin string) bool {
-    match, _ := regexp.MatchString(`^\d{4}$`, pin)
-    return match
+	match, _ := regexp.MatchString(`^\d{4}$`, pin)
+	return match
 }
 
 func codeFromCtx(ctx context.Context) string {

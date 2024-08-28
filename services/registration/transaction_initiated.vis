@@ -6,7 +6,4 @@ MAP get_recipient
 RELOAD get_sender
 MAP get_sender
 LOAD initiate_transaction 0
-RELOAD transaction_reset
-MOUT quit 9
 HALT
-INCMP quit 9

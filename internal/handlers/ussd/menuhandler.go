@@ -706,8 +706,29 @@ func (h *Handlers) QuitWithBalance(ctx context.Context, sym string, input []byte
 func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
+	accountData, err := h.accountFileHandler.ReadAccountData()
+	if err != nil {
+		return res, err
+	}
+
 	// TODO
 	// Use the amount, recipient and sender to call the API and initialize the transaction
+
+	switch codeFromCtx(ctx) {
+	case "swa":
+		res.Content = fmt.Sprintf("Ombi lako limetumwa. %s atapokea %s kutoka kwa %s.", accountData["Recipient"], accountData["Amount"], accountData["PublicKey"])
+	default:
+		res.Content = fmt.Sprintf("Your request has been sent. %s will receive %s from %s.", accountData["Recipient"], accountData["Amount"], accountData["PublicKey"])
+	}
+
+	// reset the transaction
+	accountData["Recipient"] = ""
+	accountData["Amount"] = ""
+
+	err = h.accountFileHandler.WriteAccountData(accountData)
+	if err != nil {
+		return res, err
+	}
 
 	res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_UNLOCKED)
 	return res, nil

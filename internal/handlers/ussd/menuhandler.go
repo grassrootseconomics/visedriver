@@ -739,6 +739,9 @@ func (h *Handlers) QuitWithBalance(ctx context.Context, sym string, input []byte
 // on the JSON file.
 func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
+	code := codeFromCtx(ctx)
+	l := gotext.NewLocale(translationDir, code)
+	l.AddDomain("default")
 
 	accountData, err := h.accountFileHandler.ReadAccountData()
 	if err != nil {
@@ -748,12 +751,7 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 	// TODO
 	// Use the amount, recipient and sender to call the API and initialize the transaction
 
-	switch codeFromCtx(ctx) {
-	case "swa":
-		res.Content = fmt.Sprintf("Ombi lako limetumwa. %s atapokea %s kutoka kwa %s.", accountData["Recipient"], accountData["Amount"], accountData["PublicKey"])
-	default:
-		res.Content = fmt.Sprintf("Your request has been sent. %s will receive %s from %s.", accountData["Recipient"], accountData["Amount"], accountData["PublicKey"])
-	}
+	res.Content = l.Get("Your request has been sent. %s will receive %s from %s.", accountData["Recipient"], accountData["Amount"], accountData["PublicKey"])
 
 	// reset the transaction
 	accountData["Recipient"] = ""

@@ -44,6 +44,7 @@ func NewHandlers(path string, st *state.State) *Handlers {
 	}
 }
 
+// SetLanguage sets the language across the menu
 func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	inputStr := string(input)
 	res := resource.Result{}
@@ -62,6 +63,9 @@ func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (r
 	return res, nil
 }
 
+// CreateAccount checks if any account exists on the JSON data file, and if not
+// creates an account on the API,
+// sets the default values and flags
 func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
@@ -151,6 +155,9 @@ func (h *Handlers) SetResetSingleEdit(ctx context.Context, sym string, input []b
 	return res, nil
 }
 
+// VerifyPin checks whether the confirmation PIN is similar to the account PIN
+// If similar, it sets the USERFLAG_PIN_SET flag allowing the user 
+// to access the main menu
 func (h *Handlers) VerifyPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
@@ -170,6 +177,7 @@ func (h *Handlers) VerifyPin(ctx context.Context, sym string, input []byte) (res
 	return res, nil
 }
 
+// isValidPIN checks whether the given input is a 4 digit number
 func isValidPIN(pin string) bool {
 	match, _ := regexp.MatchString(`^\d{4}$`, pin)
 	return match
@@ -335,6 +343,7 @@ func (h *Handlers) ResetAccountUnlocked(ctx context.Context, sym string, input [
 	return res, nil
 }
 
+// CheckIdentifier retrieves the PublicKey from the JSON data file.
 func (h *Handlers) CheckIdentifier(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
@@ -383,6 +392,8 @@ func (h *Handlers) ResetIncorrectPin(ctx context.Context, sym string, input []by
 	return res, nil
 }
 
+// CheckAccountStatus queries the API using the TrackingId and sets flags
+// based on the account status
 func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
@@ -416,6 +427,7 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 	return res, nil
 }
 
+// Quit displays the Thank you message and exits the menu
 func (h *Handlers) Quit(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	switch codeFromCtx(ctx) {
@@ -428,6 +440,7 @@ func (h *Handlers) Quit(ctx context.Context, sym string, input []byte) (resource
 	return res, nil
 }
 
+// VerifyYob verifies the length of the given input
 func (h *Handlers) VerifyYob(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	date := string(input)
@@ -453,6 +466,8 @@ func (h *Handlers) ResetIncorrectYob(ctx context.Context, sym string, input []by
 	return res, nil
 }
 
+// CheckBalance retrieves the balance from the API using the "PublicKey" and sets 
+// the balance as the result content
 func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
@@ -470,6 +485,7 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 	return res, nil
 }
 
+// ValidateRecipient validates that the given input is a valid phone number.
 func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	recipient := string(input)
@@ -499,6 +515,8 @@ func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []by
 	return res, nil
 }
 
+// TransactionReset resets the previous transaction data (Recipient and Amount)
+// as well as the invalid flags
 func (h *Handlers) TransactionReset(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	accountData, err := h.accountFileHandler.ReadAccountData()
@@ -520,6 +538,7 @@ func (h *Handlers) TransactionReset(ctx context.Context, sym string, input []byt
 	return res, nil
 }
 
+// ResetTransactionAmount resets the transaction amount and invalid flag
 func (h *Handlers) ResetTransactionAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	accountData, err := h.accountFileHandler.ReadAccountData()
@@ -540,6 +559,8 @@ func (h *Handlers) ResetTransactionAmount(ctx context.Context, sym string, input
 	return res, nil
 }
 
+// MaxAmount gets the current balance from the API and sets it as 
+// the result content.
 func (h *Handlers) MaxAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
@@ -558,6 +579,8 @@ func (h *Handlers) MaxAmount(ctx context.Context, sym string, input []byte) (res
 	return res, nil
 }
 
+// ValidateAmount ensures that the given input is a valid amount and that
+// it is not more than the current balance.
 func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	amountStr := string(input)
@@ -615,6 +638,8 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 
 	return res, nil
 }
+
+// GetRecipient returns the transaction recipient from a JSON data file.
 func (h *Handlers) GetRecipient(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
@@ -690,7 +715,6 @@ func (h *Handlers) GetAmount(ctx context.Context, sym string, input []byte) (res
 }
 
 
-
 // QuickWithBalance retrieves the balance for a given public key from the custodial balance API endpoint before
 // gracefully exiting the session.
 func (h *Handlers) QuitWithBalance(ctx context.Context, sym string, input []byte) (resource.Result, error) {
@@ -711,11 +735,34 @@ func (h *Handlers) QuitWithBalance(ctx context.Context, sym string, input []byte
 	return res, nil
 }
 
+// InitiateTransaction returns a confirmation and resets the transaction data
+// on the JSON file.
 func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
+	accountData, err := h.accountFileHandler.ReadAccountData()
+	if err != nil {
+		return res, err
+	}
+
 	// TODO
 	// Use the amount, recipient and sender to call the API and initialize the transaction
+
+	switch codeFromCtx(ctx) {
+	case "swa":
+		res.Content = fmt.Sprintf("Ombi lako limetumwa. %s atapokea %s kutoka kwa %s.", accountData["Recipient"], accountData["Amount"], accountData["PublicKey"])
+	default:
+		res.Content = fmt.Sprintf("Your request has been sent. %s will receive %s from %s.", accountData["Recipient"], accountData["Amount"], accountData["PublicKey"])
+	}
+
+	// reset the transaction
+	accountData["Recipient"] = ""
+	accountData["Amount"] = ""
+
+	err = h.accountFileHandler.WriteAccountData(accountData)
+	if err != nil {
+		return res, err
+	}
 
 	res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_UNLOCKED)
 	return res, nil

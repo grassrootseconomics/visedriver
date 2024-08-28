@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
@@ -15,6 +16,12 @@ import (
 	"git.grassecon.net/urdt/ussd/internal/handlers/server"
 	"git.grassecon.net/urdt/ussd/internal/models"
 	"git.grassecon.net/urdt/ussd/internal/utils"
+	"gopkg.in/leonelquinteros/gotext.v1"
+)
+
+var (
+	scriptDir      = path.Join( "services", "registration")
+	translationDir = path.Join(scriptDir, "locale")
 )
 
 type FSData struct {
@@ -126,11 +133,9 @@ func (h *Handlers) SavePin(ctx context.Context, sym string, input []byte) (resou
 
 func (h *Handlers) SetResetSingleEdit(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	menuOPtion := string(input)
-
-	switch menuOPtion {
+	menuOption := string(input)
+	switch menuOption {
 	case "2":
-		fmt.Println("Resetting unlock for update")
 		res.FlagReset = append(res.FlagSet, models.USERFLAG_UNLOCKFORUPDATE)
 		res.FlagSet = append(res.FlagSet, models.USERFLAG_SINGLE_EDIT)
 	case "3":
@@ -685,11 +690,14 @@ func (h *Handlers) GetAmount(ctx context.Context, sym string, input []byte) (res
 }
 
 
+
 // QuickWithBalance retrieves the balance for a given public key from the custodial balance API endpoint before
 // gracefully exiting the session.
 func (h *Handlers) QuitWithBalance(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-
+	code := codeFromCtx(ctx)
+	l := gotext.NewLocale(translationDir, code)
+	l.AddDomain("default")
 	accountData, err := h.accountFileHandler.ReadAccountData()
 	if err != nil {
 		return res, err
@@ -698,7 +706,7 @@ func (h *Handlers) QuitWithBalance(ctx context.Context, sym string, input []byte
 	if err != nil {
 		return res, nil
 	}
-	res.Content = fmt.Sprintf("Your account balance is: %s", balance)
+	res.Content = l.Get("Your account balance is %s", balance)
 	res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_UNLOCKED)
 	return res, nil
 }

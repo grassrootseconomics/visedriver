@@ -494,8 +494,9 @@ func (h *Handlers) TransactionReset(ctx context.Context, sym string, input []byt
 		return res, err
 	}
 
-	// reset the recipient
+	// reset the transaction
 	accountData["Recipient"] = ""
+	accountData["Amount"] = ""
 
 	err = h.accountFileHandler.WriteAccountData(accountData)
 	if err != nil {
@@ -662,6 +663,21 @@ func (h *Handlers) GetSender(ctx context.Context, sym string, input []byte) (res
 	return res, nil
 }
 
+// GetAmount retrieves the amount from a JSON data file.
+func (h *Handlers) GetAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	res := resource.Result{}
+
+	accountData, err := h.accountFileHandler.ReadAccountData()
+	if err != nil {
+		return res, err
+	}
+
+	res.Content = accountData["Amount"]
+
+	return res, nil
+}
+
+
 func (h *Handlers) QuitWithBalance(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
@@ -674,6 +690,16 @@ func (h *Handlers) QuitWithBalance(ctx context.Context, sym string, input []byte
 		return res, nil
 	}
 	res.Content = fmt.Sprintf("Your account balance is: %s", balance)
+	res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_UNLOCKED)
+	return res, nil
+}
+
+func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	res := resource.Result{}
+
+	// TODO
+	// Use the amount, recipient and sender to call the API and initialize the transaction
+
 	res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_UNLOCKED)
 	return res, nil
 }

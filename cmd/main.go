@@ -101,6 +101,7 @@ func main() {
 	rfs.AddLocalFunc("reset_transaction_amount", ussdHandlers.ResetTransactionAmount)
 	rfs.AddLocalFunc("get_recipient", ussdHandlers.GetRecipient)
 	rfs.AddLocalFunc("get_sender", ussdHandlers.GetSender)
+	rfs.AddLocalFunc("get_amount", ussdHandlers.GetAmount)
 	rfs.AddLocalFunc("reset_incorrect", ussdHandlers.ResetIncorrectPin)
 	rfs.AddLocalFunc("save_firstname", ussdHandlers.SaveFirstname)
 	rfs.AddLocalFunc("save_familyname", ussdHandlers.SaveFamilyname)
@@ -115,6 +116,7 @@ func main() {
 	rfs.AddLocalFunc("verify_yob", ussdHandlers.VerifyYob)
 	rfs.AddLocalFunc("reset_incorrect_date_format", ussdHandlers.ResetIncorrectYob)
 	rfs.AddLocalFunc("set_reset_single_edit", ussdHandlers.SetResetSingleEdit)
+	rfs.AddLocalFunc("initiate_transaction", ussdHandlers.InitiateTransaction)
 
 	cont, err := en.Init(ctx)
 	en.SetDebugger(engine.NewSimpleDebug(nil))

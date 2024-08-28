@@ -1,4 +1,6 @@
-LOAD reset_unlocked 0
+LOAD reset_unlocked 16
+LOAD reset_unlock_for_update 0
+RELOAD reset_unlock_for_update
 MOUT edit_name 1
 MOUT edit_gender 2
 MOUT edit_yob 3
@@ -9,6 +11,7 @@ MOUT back 0
 HALT
 INCMP _ 0
 LOAD set_reset_single_edit 0
+RELOAD set_reset_single_edit
 INCMP enter_name 1
 INCMP select_gender 2
 INCMP enter_yob 3

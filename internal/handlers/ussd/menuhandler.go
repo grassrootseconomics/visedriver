@@ -135,6 +135,7 @@ func (h *Handlers) SavePin(ctx context.Context, sym string, input []byte) (resou
 	return res, nil
 }
 
+//SetResetSingleEdit sets and resets  flags to allow gradual editing of profile information. 
 func (h *Handlers) SetResetSingleEdit(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	menuOption := string(input)
@@ -183,6 +184,8 @@ func isValidPIN(pin string) bool {
 	return match
 }
 
+
+//codeFromCtx retrieves language codes from the context that can be used for handling translations
 func codeFromCtx(ctx context.Context) string {
 	var code string
 	engine.Logg.DebugCtxf(ctx, "in msg", "ctx", ctx, "val", code)
@@ -331,12 +334,14 @@ func (h *Handlers) SaveOfferings(ctx context.Context, sym string, input []byte) 
 	return res, nil
 }
 
+//ResetUnlockForUpdate resets the unlockforupdate flag to correctly show appropriate nodes as a user provides the profile data.
 func (h *Handlers) ResetUnlockForUpdate(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	res.FlagReset = append(res.FlagReset, models.USERFLAG_UNLOCKFORUPDATE)
 	return res, nil
 }
 
+//ResetAccountUnlocked locks an account that had already been unlocked.
 func (h *Handlers) ResetAccountUnlocked(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_UNLOCKED)
@@ -386,6 +391,7 @@ func (h *Handlers) Unlock(ctx context.Context, sym string, input []byte) (resour
 	return res, nil
 }
 
+//ResetIncorrectPin resets the incorrect pin flag  after a new PIN attempt.
 func (h *Handlers) ResetIncorrectPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	res.FlagReset = append(res.FlagReset, models.USERFLAG_INCORRECTPIN)
@@ -460,6 +466,7 @@ func (h *Handlers) VerifyYob(ctx context.Context, sym string, input []byte) (res
 	return res, nil
 }
 
+//ResetIncorrectYob resets the incorrect date format after a new attempt 
 func (h *Handlers) ResetIncorrectYob(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	res.FlagReset = append(res.FlagReset, models.USERFLAG_INCORRECTDATEFORMAT)

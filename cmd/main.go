@@ -12,8 +12,8 @@ import (
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/state"
-	"git.grassecon.net/urdt/ussd/internal/models"
 	"git.grassecon.net/urdt/ussd/internal/handlers/ussd"
+	"git.grassecon.net/urdt/ussd/internal/models"
 )
 
 var (
@@ -33,23 +33,24 @@ func main() {
 	fmt.Fprintf(os.Stderr, "starting session at symbol '%s' using resource dir: %s\n", root, dir)
 
 	ctx := context.Background()
-	st := state.NewState(15)
+	st := state.NewState(16)
 	st.UseDebug()
 	state.FlagDebugger.Register(models.USERFLAG_LANGUAGE_SET, "LANGUAGE_CHANGE")
 	state.FlagDebugger.Register(models.USERFLAG_ACCOUNT_CREATED, "ACCOUNT_CREATED")
 	state.FlagDebugger.Register(models.USERFLAG_ACCOUNT_SUCCESS, "ACCOUNT_SUCCESS")
 	state.FlagDebugger.Register(models.USERFLAG_ACCOUNT_PENDING, "ACCOUNT_PENDING")
 	state.FlagDebugger.Register(models.USERFLAG_INCORRECTPIN, "INCORRECTPIN")
-	state.FlagDebugger.Register(models.USERFLAG_INCORRECTDATEFORMAT,"INVALIDDATEFORMAT")
-	state.FlagDebugger.Register(models.USERFLAG_INVALID_RECIPIENT,"INVALIDRECIPIENT")
-	state.FlagDebugger.Register(models.USERFLAG_PINMISMATCH,"PINMISMATCH")
-	state.FlagDebugger.Register(models.USERFLAG_PIN_SET,"PIN_SET")
-	state.FlagDebugger.Register(models.USERFLAG_INVALID_RECIPIENT_WITH_INVITE,"INVALIDRECIPIENT_WITH_INVITE")
-	state.FlagDebugger.Register(models.USERFLAG_INVALID_AMOUNT,"INVALIDAMOUNT")
-	state.FlagDebugger.Register(models.USERFLAG_UNLOCKFORUPDATE,"UNLOCKFORUPDATE")
-	state.FlagDebugger.Register(models.USERFLAG_VALIDPIN,"VALIDPIN")
-	state.FlagDebugger.Register(models.USERFLAG_VALIDPIN,"ACCOUNTUNLOCKED")
-	state.FlagDebugger.Register(models.USERFLAG_ACCOUNT_CREATION_FAILED,"ACCOUNT_CREATION_FAILED")
+	state.FlagDebugger.Register(models.USERFLAG_INCORRECTDATEFORMAT, "INVALIDDATEFORMAT")
+	state.FlagDebugger.Register(models.USERFLAG_INVALID_RECIPIENT, "INVALIDRECIPIENT")
+	state.FlagDebugger.Register(models.USERFLAG_PINMISMATCH, "PINMISMATCH")
+	state.FlagDebugger.Register(models.USERFLAG_PIN_SET, "PIN_SET")
+	state.FlagDebugger.Register(models.USERFLAG_INVALID_RECIPIENT_WITH_INVITE, "INVALIDRECIPIENT_WITH_INVITE")
+	state.FlagDebugger.Register(models.USERFLAG_INVALID_AMOUNT, "INVALIDAMOUNT")
+	state.FlagDebugger.Register(models.USERFLAG_UNLOCKFORUPDATE, "UNLOCKFORUPDATE")
+	state.FlagDebugger.Register(models.USERFLAG_VALIDPIN, "VALIDPIN")
+	state.FlagDebugger.Register(models.USERFLAG_VALIDPIN, "ACCOUNTUNLOCKED")
+	state.FlagDebugger.Register(models.USERFLAG_ACCOUNT_CREATION_FAILED, "ACCOUNT_CREATION_FAILED")
+	state.FlagDebugger.Register(models.USERFLAG_SINGLE_EDIT, "SINGLEEDIT")
 
 	rfs := resource.NewFsResource(scriptDir)
 	ca := cache.NewCache()
@@ -113,6 +114,7 @@ func main() {
 	rfs.AddLocalFunc("get_profile_info", ussdHandlers.GetProfileInfo)
 	rfs.AddLocalFunc("verify_yob", ussdHandlers.VerifyYob)
 	rfs.AddLocalFunc("reset_incorrect_date_format", ussdHandlers.ResetIncorrectYob)
+	rfs.AddLocalFunc("set_reset_single_edit", ussdHandlers.SetResetSingleEdit)
 
 	cont, err := en.Init(ctx)
 	en.SetDebugger(engine.NewSimpleDebug(nil))

@@ -1,0 +1,1 @@
+Your request has been sent. {{.get_recipient}} will receive {{.get_amount}} from {{.get_sender}}.

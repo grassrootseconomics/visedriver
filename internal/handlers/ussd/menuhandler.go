@@ -130,10 +130,14 @@ func (h *Handlers) SetResetSingleEdit(ctx context.Context, sym string, input []b
 
 	switch menuOPtion {
 	case "2":
+		fmt.Println("Resetting unlock for update")
+		res.FlagReset = append(res.FlagSet, models.USERFLAG_UNLOCKFORUPDATE)
 		res.FlagSet = append(res.FlagSet, models.USERFLAG_SINGLE_EDIT)
 	case "3":
+		res.FlagReset = append(res.FlagSet, models.USERFLAG_UNLOCKFORUPDATE)
 		res.FlagSet = append(res.FlagSet, models.USERFLAG_SINGLE_EDIT)
 	case "4":
+		res.FlagReset = append(res.FlagSet, models.USERFLAG_UNLOCKFORUPDATE)
 		res.FlagSet = append(res.FlagSet, models.USERFLAG_SINGLE_EDIT)
 	default:
 		res.FlagReset = append(res.FlagReset, models.USERFLAG_SINGLE_EDIT)
@@ -339,6 +343,8 @@ func (h *Handlers) CheckIdentifier(ctx context.Context, sym string, input []byte
 	return res, nil
 }
 
+// Unlock attempts to unlock the next sequential nodes by verifying the provided PIN against the already set PIN.
+// It sets the required flags that control the flow.
 func (h *Handlers) Unlock(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	pin := string(input)
@@ -348,7 +354,7 @@ func (h *Handlers) Unlock(ctx context.Context, sym string, input []byte) (resour
 		return res, err
 	}
 
-	if len(input) > 1 {
+	if len(input) == 4 {
 		if pin != accountData["AccountPIN"] {
 			res.FlagSet = append(res.FlagSet, models.USERFLAG_INCORRECTPIN)
 			res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_UNLOCKED)
@@ -359,6 +365,7 @@ func (h *Handlers) Unlock(ctx context.Context, sym string, input []byte) (resour
 			res.FlagSet = append(res.FlagSet, models.USERFLAG_UNLOCKFORUPDATE)
 			res.FlagSet = append(res.FlagSet, models.USERFLAG_ACCOUNT_UNLOCKED)
 		} else {
+			res.FlagSet = append(res.FlagSet, models.USERFLAG_UNLOCKFORUPDATE)
 			res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_UNLOCKED)
 		}
 	}
@@ -662,6 +669,8 @@ func (h *Handlers) GetSender(ctx context.Context, sym string, input []byte) (res
 	return res, nil
 }
 
+// QuickWithBalance retrieves the balance for a given public key from the custodial balance API endpoint before
+// gracefully exiting the session.
 func (h *Handlers) QuitWithBalance(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 

@@ -59,6 +59,15 @@ func NewHandlers(path string, st *state.State) *Handlers {
 	}
 }
 
+// Define the regex pattern as a constant
+const pinPattern = `^\d{4}$`
+
+// isValidPIN checks whether the given input is a 4 digit number
+func isValidPIN(pin string) bool {
+	match, _ := regexp.MatchString(pinPattern, pin)
+	return match
+}
+
 // SetLanguage sets the language across the menu
 func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	inputStr := string(input)
@@ -191,13 +200,6 @@ func (h *Handlers) VerifyPin(ctx context.Context, sym string, input []byte) (res
 
 	return res, nil
 }
-
-// isValidPIN checks whether the given input is a 4 digit number
-func isValidPIN(pin string) bool {
-	match, _ := regexp.MatchString(`^\d{4}$`, pin)
-	return match
-}
-
 
 //codeFromCtx retrieves language codes from the context that can be used for handling translations
 func codeFromCtx(ctx context.Context) string {

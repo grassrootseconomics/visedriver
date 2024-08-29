@@ -2,7 +2,7 @@ LOAD save_familyname 0
 CATCH update_success 16 1
 MOUT male 1
 MOUT female 2
-MOUT other_gender 3
+MOUT unspecified 3
 MOUT back 0
 HALT
 LOAD save_gender 0

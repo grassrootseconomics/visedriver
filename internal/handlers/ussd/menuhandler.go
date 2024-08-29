@@ -42,7 +42,6 @@ func (s *ServerAccountCreator) CreateAccount() (*models.AccountResponse, error) 
 
 type Handlers struct {
 	fs                 *FSData
-	//accountFileHandler *utils.AccountFileHandler
 	accountCreator     AccountCreator
 	accountFileHandler utils.AccountFileHandlerInterface
 	accountService server.AccountServiceInterface

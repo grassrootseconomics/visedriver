@@ -31,7 +31,9 @@ type FSData struct {
 
 type Handlers struct {
 	fs                 *FSData
-	accountFileHandler *utils.AccountFileHandler
+	//accountFileHandler *utils.AccountFileHandler
+	accountFileHandler utils.AccountFileHandlerInterface
+	accountService server.AccountServiceInterface
 }
 
 func NewHandlers(path string, st *state.State) *Handlers {
@@ -41,6 +43,7 @@ func NewHandlers(path string, st *state.State) *Handlers {
 			St:   st,
 		},
 		accountFileHandler: utils.NewAccountFileHandler(path + "_data"),
+		accountService: &server.AccountService{},
 	}
 }
 
@@ -81,7 +84,7 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 		return res, err
 	}
 
-	accountResp, err := server.CreateAccount()
+	accountResp, err := h.accountService.CreateAccount()
 	if err != nil {
 		res.FlagSet = append(res.FlagSet, models.USERFLAG_ACCOUNT_CREATION_FAILED)
 		return res, err

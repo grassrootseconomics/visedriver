@@ -59,14 +59,7 @@ func NewHandlers(path string, st *state.State) *Handlers {
 	}
 }
 
-// Define the regex pattern as a constant
-const pinPattern = `^\d{4}$`
 
-// isValidPIN checks whether the given input is a 4 digit number
-func isValidPIN(pin string) bool {
-	match, _ := regexp.MatchString(pinPattern, pin)
-	return match
-}
 
 // Define the regex pattern as a constant
 const pinPattern = `^\d{4}$`
@@ -467,7 +460,7 @@ func (h *Handlers) Quit(ctx context.Context, sym string, input []byte) (resource
 	l.AddDomain("default")
 	
 	res.Content = l.Get("Thank you for using Sarafu. Goodbye!")
-	res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_UNLOCKED)
+	res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_AUTHORIZED)
 	return res, nil
 }
 

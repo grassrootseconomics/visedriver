@@ -193,8 +193,8 @@ func TestCreateAccount_Success(t *testing.T) {
 			TrackingId  string      `json:"trackingId"`
 		}{
 			CustodialId: "12",
-			PublicKey:   "some-public-key",
-			TrackingId:  "some-tracking-id",
+			PublicKey:   "0x8E0XSCSVA",
+			TrackingId:  "d95a7e83-196c-4fd0-866fSGAGA",
 		},
 	}
 	mockCreateAccountService.On("CreateAccount").Return(expectedAccountResp, nil)

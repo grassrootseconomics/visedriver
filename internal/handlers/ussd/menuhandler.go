@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	scriptDir      = path.Join( "services", "registration")
+	scriptDir      = path.Join("services", "registration")
 	translationDir = path.Join(scriptDir, "locale")
 )
 
@@ -44,7 +44,7 @@ type Handlers struct {
 	fs                 *FSData
 	accountCreator     AccountCreator
 	accountFileHandler utils.AccountFileHandlerInterface
-	accountService server.AccountServiceInterface
+	accountService     server.AccountServiceInterface
 }
 
 func NewHandlers(path string, st *state.State) *Handlers {
@@ -55,7 +55,7 @@ func NewHandlers(path string, st *state.State) *Handlers {
 		},
 		accountFileHandler: utils.NewAccountFileHandler(path + "_data"),
 		accountCreator:     &ServerAccountCreator{},
-		accountService: &server.AccountService{},
+		accountService:     &server.AccountService{},
 	}
 }
 
@@ -150,19 +150,19 @@ func (h *Handlers) SavePin(ctx context.Context, sym string, input []byte) (resou
 	return res, nil
 }
 
-//SetResetSingleEdit sets and resets  flags to allow gradual editing of profile information. 
+// SetResetSingleEdit sets and resets  flags to allow gradual editing of profile information.
 func (h *Handlers) SetResetSingleEdit(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	menuOption := string(input)
 	switch menuOption {
 	case "2":
-		res.FlagReset = append(res.FlagSet, models.USERFLAG_UNLOCKFORUPDATE)
+		res.FlagReset = append(res.FlagSet, models.USERFLAG_ALLOW_UPDATE)
 		res.FlagSet = append(res.FlagSet, models.USERFLAG_SINGLE_EDIT)
 	case "3":
-		res.FlagReset = append(res.FlagSet, models.USERFLAG_UNLOCKFORUPDATE)
+		res.FlagReset = append(res.FlagSet, models.USERFLAG_ALLOW_UPDATE)
 		res.FlagSet = append(res.FlagSet, models.USERFLAG_SINGLE_EDIT)
 	case "4":
-		res.FlagReset = append(res.FlagSet, models.USERFLAG_UNLOCKFORUPDATE)
+		res.FlagReset = append(res.FlagSet, models.USERFLAG_ALLOW_UPDATE)
 		res.FlagSet = append(res.FlagSet, models.USERFLAG_SINGLE_EDIT)
 	default:
 		res.FlagReset = append(res.FlagReset, models.USERFLAG_SINGLE_EDIT)
@@ -172,7 +172,7 @@ func (h *Handlers) SetResetSingleEdit(ctx context.Context, sym string, input []b
 }
 
 // VerifyPin checks whether the confirmation PIN is similar to the account PIN
-// If similar, it sets the USERFLAG_PIN_SET flag allowing the user 
+// If similar, it sets the USERFLAG_PIN_SET flag allowing the user
 // to access the main menu
 func (h *Handlers) VerifyPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
@@ -199,8 +199,7 @@ func isValidPIN(pin string) bool {
 	return match
 }
 
-
-//codeFromCtx retrieves language codes from the context that can be used for handling translations
+// codeFromCtx retrieves language codes from the context that can be used for handling translations
 func codeFromCtx(ctx context.Context) string {
 	var code string
 	engine.Logg.DebugCtxf(ctx, "in msg", "ctx", ctx, "val", code)
@@ -316,7 +315,7 @@ func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (re
 		case "2":
 			gender = "Female"
 		case "3":
-			gender = "Other"
+			gender = "Unspecified"
 		}
 		accountData["Gender"] = gender
 
@@ -349,17 +348,17 @@ func (h *Handlers) SaveOfferings(ctx context.Context, sym string, input []byte) 
 	return res, nil
 }
 
-//ResetUnlockForUpdate resets the unlockforupdate flag to correctly show appropriate nodes as a user provides the profile data.
-func (h *Handlers) ResetUnlockForUpdate(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+// ResetAllowUpdate resets the allowupdate flag that allows a user to update  profile data.
+func (h *Handlers) ResetAllowUpdate(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	res.FlagReset = append(res.FlagReset, models.USERFLAG_UNLOCKFORUPDATE)
+	res.FlagReset = append(res.FlagReset, models.USERFLAG_ALLOW_UPDATE)
 	return res, nil
 }
 
-//ResetAccountUnlocked locks an account that had already been unlocked.
-func (h *Handlers) ResetAccountUnlocked(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+// ResetAccountAuthorized resets the account authorization flag after a successful PIN entry.
+func (h *Handlers) ResetAccountAuthorized(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_UNLOCKED)
+	res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_AUTHORIZED)
 	return res, nil
 }
 
@@ -377,9 +376,9 @@ func (h *Handlers) CheckIdentifier(ctx context.Context, sym string, input []byte
 	return res, nil
 }
 
-// Unlock attempts to unlock the next sequential nodes by verifying the provided PIN against the already set PIN.
+// Authorize attempts to unlock the next sequential nodes by verifying the provided PIN against the already set PIN.
 // It sets the required flags that control the flow.
-func (h *Handlers) Unlock(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	pin := string(input)
 
@@ -391,22 +390,22 @@ func (h *Handlers) Unlock(ctx context.Context, sym string, input []byte) (resour
 	if len(input) == 4 {
 		if pin != accountData["AccountPIN"] {
 			res.FlagSet = append(res.FlagSet, models.USERFLAG_INCORRECTPIN)
-			res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_UNLOCKED)
+			res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_AUTHORIZED)
 			return res, nil
 		}
-		if h.fs.St.MatchFlag(models.USERFLAG_ACCOUNT_UNLOCKED, false) {
+		if h.fs.St.MatchFlag(models.USERFLAG_ACCOUNT_AUTHORIZED, false) {
 			res.FlagReset = append(res.FlagReset, models.USERFLAG_INCORRECTPIN)
-			res.FlagSet = append(res.FlagSet, models.USERFLAG_UNLOCKFORUPDATE)
-			res.FlagSet = append(res.FlagSet, models.USERFLAG_ACCOUNT_UNLOCKED)
+			res.FlagSet = append(res.FlagSet, models.USERFLAG_ALLOW_UPDATE)
+			res.FlagSet = append(res.FlagSet, models.USERFLAG_ACCOUNT_AUTHORIZED)
 		} else {
-			res.FlagSet = append(res.FlagSet, models.USERFLAG_UNLOCKFORUPDATE)
-			res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_UNLOCKED)
+			res.FlagSet = append(res.FlagSet, models.USERFLAG_ALLOW_UPDATE)
+			res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_AUTHORIZED)
 		}
 	}
 	return res, nil
 }
 
-//ResetIncorrectPin resets the incorrect pin flag  after a new PIN attempt.
+// ResetIncorrectPin resets the incorrect pin flag  after a new PIN attempt.
 func (h *Handlers) ResetIncorrectPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	res.FlagReset = append(res.FlagReset, models.USERFLAG_INCORRECTPIN)
@@ -457,7 +456,7 @@ func (h *Handlers) Quit(ctx context.Context, sym string, input []byte) (resource
 	default:
 		res.Content = "Thank you for using Sarafu. Goodbye!"
 	}
-	res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_UNLOCKED)
+	res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_AUTHORIZED)
 	return res, nil
 }
 
@@ -481,14 +480,14 @@ func (h *Handlers) VerifyYob(ctx context.Context, sym string, input []byte) (res
 	return res, nil
 }
 
-//ResetIncorrectYob resets the incorrect date format after a new attempt 
+// ResetIncorrectYob resets the incorrect date format after a new attempt
 func (h *Handlers) ResetIncorrectYob(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	res.FlagReset = append(res.FlagReset, models.USERFLAG_INCORRECTDATEFORMAT)
 	return res, nil
 }
 
-// CheckBalance retrieves the balance from the API using the "PublicKey" and sets 
+// CheckBalance retrieves the balance from the API using the "PublicKey" and sets
 // the balance as the result content
 func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
@@ -581,7 +580,7 @@ func (h *Handlers) ResetTransactionAmount(ctx context.Context, sym string, input
 	return res, nil
 }
 
-// MaxAmount gets the current balance from the API and sets it as 
+// MaxAmount gets the current balance from the API and sets it as
 // the result content.
 func (h *Handlers) MaxAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
@@ -736,7 +735,6 @@ func (h *Handlers) GetAmount(ctx context.Context, sym string, input []byte) (res
 	return res, nil
 }
 
-
 // QuickWithBalance retrieves the balance for a given public key from the custodial balance API endpoint before
 // gracefully exiting the session.
 func (h *Handlers) QuitWithBalance(ctx context.Context, sym string, input []byte) (resource.Result, error) {
@@ -753,7 +751,7 @@ func (h *Handlers) QuitWithBalance(ctx context.Context, sym string, input []byte
 		return res, nil
 	}
 	res.Content = l.Get("Your account balance is %s", balance)
-	res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_UNLOCKED)
+	res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_AUTHORIZED)
 	return res, nil
 }
 
@@ -784,6 +782,6 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 		return res, err
 	}
 
-	res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_UNLOCKED)
+	res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_AUTHORIZED)
 	return res, nil
 }

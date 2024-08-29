@@ -59,6 +59,24 @@ func NewHandlers(path string, st *state.State) *Handlers {
 	}
 }
 
+// Define the regex pattern as a constant
+const pinPattern = `^\d{4}$`
+
+// isValidPIN checks whether the given input is a 4 digit number
+func isValidPIN(pin string) bool {
+	match, _ := regexp.MatchString(pinPattern, pin)
+	return match
+}
+
+// Define the regex pattern as a constant
+const pinPattern = `^\d{4}$`
+
+// isValidPIN checks whether the given input is a 4 digit number
+func isValidPIN(pin string) bool {
+	match, _ := regexp.MatchString(pinPattern, pin)
+	return match
+}
+
 // SetLanguage sets the language across the menu
 func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	inputStr := string(input)
@@ -89,10 +107,9 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 		return res, err
 	}
 
-	// if an account exists, set the flag and return
+	// if an account exists, return to prevent duplicate account creation
 	existingAccountData, err := h.accountFileHandler.ReadAccountData()
 	if existingAccountData != nil {
-		res.FlagSet = append(res.FlagSet, models.USERFLAG_ACCOUNT_CREATED)
 		return res, err
 	}
 
@@ -193,13 +210,7 @@ func (h *Handlers) VerifyPin(ctx context.Context, sym string, input []byte) (res
 	return res, nil
 }
 
-// isValidPIN checks whether the given input is a 4 digit number
-func isValidPIN(pin string) bool {
-	match, _ := regexp.MatchString(`^\d{4}$`, pin)
-	return match
-}
-
-// codeFromCtx retrieves language codes from the context that can be used for handling translations
+//codeFromCtx retrieves language codes from the context that can be used for handling translations
 func codeFromCtx(ctx context.Context) string {
 	var code string
 	engine.Logg.DebugCtxf(ctx, "in msg", "ctx", ctx, "val", code)
@@ -450,13 +461,13 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 // Quit displays the Thank you message and exits the menu
 func (h *Handlers) Quit(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	switch codeFromCtx(ctx) {
-	case "swa":
-		res.Content = "Asante kwa kutumia huduma ya Sarafu. Kwaheri!"
-	default:
-		res.Content = "Thank you for using Sarafu. Goodbye!"
-	}
-	res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_AUTHORIZED)
+
+	code := codeFromCtx(ctx)
+	l := gotext.NewLocale(translationDir, code)
+	l.AddDomain("default")
+	
+	res.Content = l.Get("Thank you for using Sarafu. Goodbye!")
+	res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_UNLOCKED)
 	return res, nil
 }
 

@@ -452,12 +452,12 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 // Quit displays the Thank you message and exits the menu
 func (h *Handlers) Quit(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	switch codeFromCtx(ctx) {
-	case "swa":
-		res.Content = "Asante kwa kutumia huduma ya Sarafu. Kwaheri!"
-	default:
-		res.Content = "Thank you for using Sarafu. Goodbye!"
-	}
+
+	code := codeFromCtx(ctx)
+	l := gotext.NewLocale(translationDir, code)
+	l.AddDomain("default")
+	
+	res.Content = l.Get("Thank you for using Sarafu. Goodbye!")
 	res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_UNLOCKED)
 	return res, nil
 }

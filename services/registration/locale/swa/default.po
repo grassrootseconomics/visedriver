@@ -3,3 +3,6 @@ msgstr "Salio lako ni %s"
 
 msgid "Your request has been sent. %s will receive %s from %s."
 msgstr "Ombi lako limetumwa. %s atapokea %s kutoka kwa %s."
+
+msgid "Thank you for using Sarafu. Goodbye!"
+msgstr "Asante kwa kutumia huduma ya Sarafu. Kwaheri!"

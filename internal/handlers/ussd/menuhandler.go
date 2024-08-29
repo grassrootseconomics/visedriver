@@ -89,10 +89,9 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 		return res, err
 	}
 
-	// if an account exists, set the flag and return
+	// if an account exists, return to prevent duplicate account creation
 	existingAccountData, err := h.accountFileHandler.ReadAccountData()
 	if existingAccountData != nil {
-		res.FlagSet = append(res.FlagSet, models.USERFLAG_ACCOUNT_CREATED)
 		return res, err
 	}
 

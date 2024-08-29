@@ -29,9 +29,21 @@ type FSData struct {
 	St   *state.State
 }
 
+type AccountCreator interface {
+	CreateAccount() (*models.AccountResponse, error)
+}
+
+// ServerAccountCreator implements AccountCreator using the server package
+type ServerAccountCreator struct{}
+
+func (s *ServerAccountCreator) CreateAccount() (*models.AccountResponse, error) {
+	return server.CreateAccount()
+}
+
 type Handlers struct {
 	fs                 *FSData
 	//accountFileHandler *utils.AccountFileHandler
+	accountCreator     AccountCreator
 	accountFileHandler utils.AccountFileHandlerInterface
 	accountService server.AccountServiceInterface
 }
@@ -43,6 +55,7 @@ func NewHandlers(path string, st *state.State) *Handlers {
 			St:   st,
 		},
 		accountFileHandler: utils.NewAccountFileHandler(path + "_data"),
+		accountCreator:     &ServerAccountCreator{},
 		accountService: &server.AccountService{},
 	}
 }

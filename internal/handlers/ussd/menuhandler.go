@@ -29,20 +29,9 @@ type FSData struct {
 	St   *state.State
 }
 
-type AccountCreator interface {
-	CreateAccount() (*models.AccountResponse, error)
-}
-
-// ServerAccountCreator implements AccountCreator using the server package
-type ServerAccountCreator struct{}
-
-func (s *ServerAccountCreator) CreateAccount() (*models.AccountResponse, error) {
-	return server.CreateAccount()
-}
 
 type Handlers struct {
 	fs                 *FSData
-	accountCreator     AccountCreator
 	accountFileHandler utils.AccountFileHandlerInterface
 	accountService     server.AccountServiceInterface
 }
@@ -54,7 +43,6 @@ func NewHandlers(path string, st *state.State) *Handlers {
 			St:   st,
 		},
 		accountFileHandler: utils.NewAccountFileHandler(path + "_data"),
-		accountCreator:     &ServerAccountCreator{},
 		accountService:     &server.AccountService{},
 	}
 }
@@ -426,7 +414,7 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 		return res, err
 	}
 
-	status, err := server.CheckAccountStatus(accountData["TrackingId"])
+	status, err := h.accountService.CheckAccountStatus(accountData["TrackingId"])
 
 	if err != nil {
 		fmt.Println("Error checking account status:", err)
@@ -501,7 +489,7 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 		return res, err
 	}
 
-	balance, err := server.CheckBalance(accountData["PublicKey"])
+	balance, err := h.accountService.CheckBalance(accountData["PublicKey"])
 	if err != nil {
 		return res, nil
 	}
@@ -594,7 +582,7 @@ func (h *Handlers) MaxAmount(ctx context.Context, sym string, input []byte) (res
 		return res, err
 	}
 
-	balance, err := server.CheckBalance(accountData["PublicKey"])
+	balance, err := h.accountService.CheckBalance(accountData["PublicKey"])
 	if err != nil {
 		return res, nil
 	}
@@ -615,7 +603,7 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 		return res, err
 	}
 
-	balanceStr, err := server.CheckBalance(accountData["PublicKey"])
+	balanceStr, err := h.accountService.CheckBalance(accountData["PublicKey"])
 	if err != nil {
 		return res, err
 	}
@@ -750,7 +738,7 @@ func (h *Handlers) QuitWithBalance(ctx context.Context, sym string, input []byte
 	if err != nil {
 		return res, err
 	}
-	balance, err := server.CheckBalance(accountData["PublicKey"])
+	balance, err := h.accountService.CheckBalance(accountData["PublicKey"])
 	if err != nil {
 		return res, nil
 	}

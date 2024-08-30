@@ -752,7 +752,7 @@ func TestSaveGender(t *testing.T) {
 				mockFileHandler.On("WriteAccountData", mock.MatchedBy(func(data map[string]string) bool {
 					return data["Gender"] == tt.expectedGender
 				})).Return(tt.writeError)
-			} else if len(tt.input) == 0 {
+			}  else if len(tt.input) == 0 {
 				// For empty input, no WriteAccountData call should be made
 				mockFileHandler.On("WriteAccountData", mock.Anything).Maybe().Return(tt.writeError)
 			}
@@ -781,3 +781,98 @@ func TestSaveGender(t *testing.T) {
 		})
 	}
 }
+
+func TestGetSender(t *testing.T) {
+	mockAccountFileHandler := new(mocks.MockAccountFileHandler)
+	h := &Handlers{
+		accountFileHandler: mockAccountFileHandler,
+	}
+
+	tests := []struct {
+		name           string
+		expectedResult resource.Result
+		accountData    map[string]string
+	}{
+		{
+			name: "Valid public key",
+			expectedResult: resource.Result{
+				Content: "test-public-key",
+			},
+			accountData: map[string]string{
+				"PublicKey": "test-public-key",
+			},
+		},
+		{
+			name: "Missing public key",
+			expectedResult: resource.Result{
+				Content: "",
+			},
+			accountData: map[string]string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Reset the mock state
+			mockAccountFileHandler.Mock = mock.Mock{}
+
+			mockAccountFileHandler.On("ReadAccountData").Return(tt.accountData, nil)
+
+			result, err := h.GetSender(context.Background(), "", nil)
+
+			if err != nil {
+				t.Fatalf("Error occurred: %v", err)
+			}
+
+			assert.Equal(t, tt.expectedResult.Content, result.Content)
+			mockAccountFileHandler.AssertCalled(t, "ReadAccountData")
+		})
+	}
+}
+
+func TestGetAmount(t *testing.T) {
+	mockAccountFileHandler := new(mocks.MockAccountFileHandler)
+	h := &Handlers{
+		accountFileHandler: mockAccountFileHandler,
+	}
+
+	tests := []struct {
+		name           string
+		expectedResult resource.Result
+		accountData    map[string]string
+	}{
+		{
+			name: "Valid amount",
+			expectedResult: resource.Result{
+				Content: "0.003",
+			},
+			accountData: map[string]string{
+				"Amount": "0.003",
+			},
+		},
+		{
+			name:           "Missing amount",
+			expectedResult: resource.Result{},
+			accountData: map[string]string{
+				"Amount": "",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Reset the mock state
+			mockAccountFileHandler.Mock = mock.Mock{}
+
+			mockAccountFileHandler.On("ReadAccountData").Return(tt.accountData, nil)
+
+			result, err := h.GetAmount(context.Background(), "", nil)
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedResult.Content, result.Content)
+
+			mockAccountFileHandler.AssertCalled(t, "ReadAccountData")
+		})
+	}
+}
+

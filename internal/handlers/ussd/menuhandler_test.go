@@ -15,14 +15,24 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockAccountCreator implements AccountCreator for testing
-type MockAccountCreator struct {
-	mockResponse *models.AccountResponse
-	mockError    error
+// MockAccountService implements AccountServiceInterface for testing
+type MockAccountService struct {
+	mock.Mock
 }
 
-func (m *MockAccountCreator) CreateAccount() (*models.AccountResponse, error) {
-	return m.mockResponse, m.mockError
+func (m *MockAccountService) CreateAccount() (*models.AccountResponse, error) {
+	args := m.Called()
+	return args.Get(0).(*models.AccountResponse), args.Error(1)
+}
+
+func (m *MockAccountService) CheckBalance(publicKey string) (string, error) {
+	args := m.Called(publicKey)
+	return args.String(0), args.Error(1)
+}
+
+func (m *MockAccountService) CheckAccountStatus(trackingId string) (string, error) {
+	args := m.Called(trackingId)
+	return args.String(0), args.Error(1)
 }
 
 func TestCreateAccount(t *testing.T) {
@@ -41,26 +51,29 @@ func TestCreateAccount(t *testing.T) {
 	// Initialize account file handler
 	accountFileHandler := utils.NewAccountFileHandler(accountFilePath)
 
-	// Create a mock account creator
-	mockAccountCreator := &MockAccountCreator{
-		mockResponse: &models.AccountResponse{
-			Ok: true,
-			Result: struct {
-				CustodialId json.Number `json:"custodialId"`
-				PublicKey   string      `json:"publicKey"`
-				TrackingId  string      `json:"trackingId"`
-			}{
-				CustodialId: "test-custodial-id",
-				PublicKey:   "test-public-key",
-				TrackingId:  "test-tracking-id",
-			},
+	// Create a mock account service
+	mockAccountService := &MockAccountService{}
+	mockAccountResponse := &models.AccountResponse{
+		Ok: true,
+		Result: struct {
+			CustodialId json.Number `json:"custodialId"`
+			PublicKey   string      `json:"publicKey"`
+			TrackingId  string      `json:"trackingId"`
+		}{
+			CustodialId: "test-custodial-id",
+			PublicKey:   "test-public-key",
+			TrackingId:  "test-tracking-id",
 		},
 	}
 
-	// Initialize Handlers with mock account creator
+	// Set up expectations for the mock account service
+	mockAccountService.On("CreateAccount").Return(mockAccountResponse, nil)
+
+	// Initialize Handlers with mock account service
 	h := &Handlers{
+		fs:                 &FSData{Path: accountFilePath},
 		accountFileHandler: accountFileHandler,
-		accountCreator:     mockAccountCreator,
+		accountService:     mockAccountService,
 	}
 
 	tests := []struct {
@@ -102,9 +115,7 @@ func TestCreateAccount(t *testing.T) {
 				"FirstName":   "Not provided",
 				"FamilyName":  "Not provided",
 			},
-			expectedResult: resource.Result{
-				FlagSet: []uint32{models.USERFLAG_ACCOUNT_CREATED},
-			},
+			expectedResult: resource.Result{},
 			expectedData: map[string]string{
 				"TrackingId":  "test-tracking-id",
 				"PublicKey":   "test-public-key",
@@ -173,8 +184,6 @@ func TestCreateAccount(t *testing.T) {
 	}
 }
 
-
-
 func TestCreateAccount_Success(t *testing.T) {
 	mockAccountFileHandler := new(mocks.MockAccountFileHandler)
 	mockCreateAccountService := new(mocks.MockAccountService)
@@ -203,20 +212,16 @@ func TestCreateAccount_Success(t *testing.T) {
 	mockAccountFileHandler.On("WriteAccountData", mock.Anything).Return(nil)
 
 	handlers := &Handlers{
-		accountService:     mockCreateAccountService,
+		accountService: mockCreateAccountService,
 	}
 
-	
 	actualResponse, err := handlers.accountService.CreateAccount()
 
 	// Assert results
 	assert.NoError(t, err)
-	assert.Equal(t,expectedAccountResp.Ok,true)
-	assert.Equal(t,expectedAccountResp,actualResponse)
-	
-
+	assert.Equal(t, expectedAccountResp.Ok, true)
+	assert.Equal(t, expectedAccountResp, actualResponse)
 }
-
 
 func TestSavePin(t *testing.T) {
 	// Setup

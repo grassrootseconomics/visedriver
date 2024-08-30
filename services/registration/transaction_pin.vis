@@ -1,0 +1,15 @@
+MAP validate_amount
+RELOAD get_recipient
+MAP get_recipient
+RELOAD get_sender
+MAP get_sender
+MOUT back 0
+MOUT quit 9
+HALT
+LOAD authorize_account 1
+RELOAD authorize_account
+CATCH incorrect_pin 15 1
+INCMP _ 0
+INCMP quit 9
+MOVE transaction_initiated
+

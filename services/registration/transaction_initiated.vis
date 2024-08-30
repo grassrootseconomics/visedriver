@@ -1,0 +1,9 @@
+LOAD reset_incorrect 0
+LOAD get_amount 10
+MAP get_amount
+RELOAD get_recipient
+MAP get_recipient
+RELOAD get_sender
+MAP get_sender
+LOAD initiate_transaction 0
+HALT

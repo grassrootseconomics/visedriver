@@ -1,0 +1,8 @@
+LOAD save_location 0
+CATCH incorrect_pin 15 1
+CATCH update_success 16 1
+MOUT back 0
+HALT
+LOAD save_offerings 0
+INCMP _ 0
+INCMP pin_entry *

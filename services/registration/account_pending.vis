@@ -1,0 +1,3 @@
+RELOAD check_account_status
+CATCH main 11 1
+HALT

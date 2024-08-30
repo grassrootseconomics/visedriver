@@ -333,8 +333,6 @@ func TestSavePin(t *testing.T) {
 	}
 }
 
-
-
 func TestSaveLocation(t *testing.T) {
 	// Create a new instance of MockAccountFileHandler
 	mockFileHandler := new(mocks.MockAccountFileHandler)
@@ -374,7 +372,387 @@ func TestSaveLocation(t *testing.T) {
 				mockFileHandler.On("WriteAccountData", mock.MatchedBy(func(data map[string]string) bool {
 					return data["Location"] == string(tt.input)
 				})).Return(tt.writeError)
-			}else if len(tt.input) == 0 {
+			} else if len(tt.input) == 0 {
+				// For empty input, no WriteAccountData call should be made
+				mockFileHandler.On("WriteAccountData", mock.Anything).Maybe().Return(tt.writeError)
+				return
+			}
+
+			// Create the Handlers instance with the mock file handler
+			h := &Handlers{
+				accountFileHandler: mockFileHandler,
+			}
+
+			// Call Save Location
+			result, err := h.SaveLocation(context.Background(), "save_location", tt.input)
+
+			if err != nil {
+				t.Fatalf("Failed to save location with error: %v", err)
+			}
+
+			savedData, err := h.accountFileHandler.ReadAccountData()
+			if err == nil {
+				//Assert that the input provided is what was saved into the file
+				assert.Equal(t, string(tt.input), savedData["Location"])
+			}
+
+			// Assert the results
+			assert.Equal(t, tt.expectedResult, result)
+			assert.Equal(t, tt.expectedError, err)
+
+			// Assert all expectations were met
+			mockFileHandler.AssertExpectations(t)
+		})
+	}
+}
+
+func TestSaveFirstname(t *testing.T) {
+	// Create a new instance of MockAccountFileHandler
+	mockFileHandler := new(mocks.MockAccountFileHandler)
+
+	// Define test cases
+	tests := []struct {
+		name           string
+		input          []byte
+		existingData   map[string]string
+		writeError     error
+		expectedResult resource.Result
+		expectedError  error
+	}{
+		{
+			name:           "Successful Save",
+			input:          []byte("Joe"),
+			existingData:   map[string]string{"Name": "Joe"},
+			writeError:     nil,
+			expectedResult: resource.Result{},
+			expectedError:  nil,
+		},
+		{
+			name:          "Empty Input",
+			input:         []byte{},
+			existingData:  map[string]string{"OtherKey": "OtherValue"},
+			writeError:    nil,
+			expectedError: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Set up the mock expectations
+			mockFileHandler.On("ReadAccountData").Return(tt.existingData, tt.expectedError)
+			if tt.expectedError == nil && len(tt.input) > 0 {
+				mockFileHandler.On("WriteAccountData", mock.MatchedBy(func(data map[string]string) bool {
+					return data["FirstName"] == string(tt.input)
+				})).Return(tt.writeError)
+			} else if len(tt.input) == 0 {
+				// For empty input, no WriteAccountData call should be made
+				mockFileHandler.On("WriteAccountData", mock.Anything).Maybe().Return(tt.writeError)
+				return
+			}
+
+			// Create the Handlers instance with the mock file handler
+			h := &Handlers{
+				accountFileHandler: mockFileHandler,
+			}
+
+			// Call save location
+			result, err := h.SaveFirstname(context.Background(), "save_location", tt.input)
+
+			if err != nil {
+				t.Fatalf("Failed to save first name with error: %v", err)
+			}
+			savedData, err := h.accountFileHandler.ReadAccountData()
+			if err == nil {
+				//Assert that the input provided is what was saved into the file
+				assert.Equal(t, string(tt.input), savedData["FirstName"])
+			}
+
+			// Assert the results
+			assert.Equal(t, tt.expectedResult, result)
+			assert.Equal(t, tt.expectedError, err)
+
+			// Assert all expectations were met
+			mockFileHandler.AssertExpectations(t)
+		})
+	}
+}
+
+func TestSaveFamilyName(t *testing.T) {
+	// Create a new instance of MockAccountFileHandler
+	mockFileHandler := new(mocks.MockAccountFileHandler)
+
+	// Define test cases
+	tests := []struct {
+		name           string
+		input          []byte
+		existingData   map[string]string
+		writeError     error
+		expectedResult resource.Result
+		expectedError  error
+	}{
+		{
+			name:           "Successful Save",
+			input:          []byte("Doe"),
+			existingData:   map[string]string{"FamilyName": "Doe"},
+			writeError:     nil,
+			expectedResult: resource.Result{},
+			expectedError:  nil,
+		},
+		{
+			name:          "Empty Input",
+			input:         []byte{},
+			existingData:  map[string]string{"FamilyName": "Doe"},
+			writeError:    nil,
+			expectedError: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Set up the mock expectations
+			mockFileHandler.On("ReadAccountData").Return(tt.existingData, tt.expectedError)
+			if tt.expectedError == nil && len(tt.input) > 0 {
+				mockFileHandler.On("WriteAccountData", mock.MatchedBy(func(data map[string]string) bool {
+					return data["FamilyName"] == string(tt.input)
+				})).Return(tt.writeError)
+			} else if len(tt.input) == 0 {
+				// For empty input, no WriteAccountData call should be made
+				mockFileHandler.On("WriteAccountData", mock.Anything).Maybe().Return(tt.writeError)
+				return
+			}
+
+			// Create the Handlers instance with the mock file handler
+			h := &Handlers{
+				accountFileHandler: mockFileHandler,
+			}
+
+			// Call save familyname
+			result, err := h.SaveFamilyname(context.Background(), "save_familyname", tt.input)
+
+			if err != nil {
+				t.Fatalf("Failed to save family name with error: %v", err)
+			}
+			savedData, err := h.accountFileHandler.ReadAccountData()
+			if err == nil {
+				//Assert that the input provided is what was saved into the file
+				assert.Equal(t, string(tt.input), savedData["FamilyName"])
+			}
+
+			// Assert the results
+			assert.Equal(t, tt.expectedResult, result)
+			assert.Equal(t, tt.expectedError, err)
+
+			// Assert all expectations were met
+			mockFileHandler.AssertExpectations(t)
+		})
+	}
+}
+
+func TestSaveYOB(t *testing.T) {
+	// Create a new instance of MockAccountFileHandler
+	mockFileHandler := new(mocks.MockAccountFileHandler)
+
+	// Define test cases
+	tests := []struct {
+		name           string
+		input          []byte
+		existingData   map[string]string
+		writeError     error
+		expectedResult resource.Result
+		expectedError  error
+	}{
+		{
+			name:           "Successful Save",
+			input:          []byte("2006"),
+			existingData:   map[string]string{"": ""},
+			writeError:     nil,
+			expectedResult: resource.Result{},
+			expectedError:  nil,
+		},
+		{
+			name:          "YOB less than 4 digits(invalid date entry)",
+			input:         []byte{},
+			existingData:  map[string]string{"": ""},
+			writeError:    nil,
+			expectedError: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Set up the mock expectations
+			mockFileHandler.On("ReadAccountData").Return(tt.existingData, tt.expectedError)
+			if tt.expectedError == nil && len(tt.input) > 0 {
+				mockFileHandler.On("WriteAccountData", mock.MatchedBy(func(data map[string]string) bool {
+					return data["YOB"] == string(tt.input)
+				})).Return(tt.writeError)
+			} else if len(tt.input) != 4 {
+				// For input whose input is not a valid yob, no WriteAccountData call should be made
+				mockFileHandler.On("WriteAccountData", mock.Anything).Maybe().Return(tt.writeError)
+				return
+			}
+
+			// Create the Handlers instance with the mock file handler
+			h := &Handlers{
+				accountFileHandler: mockFileHandler,
+			}
+
+			// Call save yob
+			result, err := h.SaveYob(context.Background(), "save_yob", tt.input)
+
+			if err != nil {
+				t.Fatalf("Failed to save family name with error: %v", err)
+			}
+			savedData, err := h.accountFileHandler.ReadAccountData()
+			if err == nil {
+				//Assert that the input provided is what was saved into the file
+				assert.Equal(t, string(tt.input), savedData["YOB"])
+			}
+
+			// Assert the results
+			assert.Equal(t, tt.expectedResult, result)
+			assert.Equal(t, tt.expectedError, err)
+
+			// Assert all expectations were met
+			mockFileHandler.AssertExpectations(t)
+		})
+	}
+}
+
+func TestSaveOfferings(t *testing.T) {
+	// Create a new instance of MockAccountFileHandler
+	mockFileHandler := new(mocks.MockAccountFileHandler)
+
+	// Define test cases
+	tests := []struct {
+		name           string
+		input          []byte
+		existingData   map[string]string
+		writeError     error
+		expectedResult resource.Result
+		expectedError  error
+	}{
+		{
+			name:           "Successful Save",
+			input:          []byte("Bananas"),
+			existingData:   map[string]string{"": ""},
+			writeError:     nil,
+			expectedResult: resource.Result{},
+			expectedError:  nil,
+		},
+		{
+			name:          "Empty input",
+			input:         []byte{},
+			existingData:  map[string]string{"": ""},
+			writeError:    nil,
+			expectedError: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Set up the mock expectations
+			mockFileHandler.On("ReadAccountData").Return(tt.existingData, tt.expectedError)
+			if tt.expectedError == nil && len(tt.input) > 0 {
+				mockFileHandler.On("WriteAccountData", mock.MatchedBy(func(data map[string]string) bool {
+					return data["Offerings"] == string(tt.input)
+				})).Return(tt.writeError)
+			} else if len(tt.input) != 4 {
+				// For input whose input is not a valid yob, no WriteAccountData call should be made
+				mockFileHandler.On("WriteAccountData", mock.Anything).Maybe().Return(tt.writeError)
+				return
+			}
+
+			// Create the Handlers instance with the mock file handler
+			h := &Handlers{
+				accountFileHandler: mockFileHandler,
+			}
+
+			// Call save yob
+			result, err := h.SaveOfferings(context.Background(), "save_offerings", tt.input)
+
+			if err != nil {
+				t.Fatalf("Failed to save offerings with error: %v", err)
+			}
+			savedData, err := h.accountFileHandler.ReadAccountData()
+			if err == nil {
+				//Assert that the input provided is what was saved into the file
+				assert.Equal(t, string(tt.input), savedData["Offerings"])
+			}
+
+			// Assert the results
+			assert.Equal(t, tt.expectedResult, result)
+			assert.Equal(t, tt.expectedError, err)
+
+			// Assert all expectations were met
+			mockFileHandler.AssertExpectations(t)
+		})
+	}
+}
+
+
+func TestSaveGender(t *testing.T) {
+	// Create a new instance of MockAccountFileHandler
+	mockFileHandler := new(mocks.MockAccountFileHandler)
+
+	// Define test cases
+	tests := []struct {
+		name           string
+		input          []byte
+		existingData   map[string]string
+		writeError     error
+		expectedResult resource.Result
+		expectedError  error
+		expectedGender string
+	}{
+		{
+			name:           "Successful Save - Male",
+			input:          []byte("1"),
+			existingData:   map[string]string{"OtherKey": "OtherValue"},
+			writeError:     nil,
+			expectedResult: resource.Result{},
+			expectedError:  nil,
+			expectedGender: "Male",
+		},
+		{
+			name:           "Successful Save - Female",
+			input:          []byte("2"),
+			existingData:   map[string]string{"OtherKey": "OtherValue"},
+			writeError:     nil,
+			expectedResult: resource.Result{},
+			expectedError:  nil,
+			expectedGender: "Female",
+		},
+		{
+			name:           "Successful Save - Unspecified",
+			input:          []byte("3"),
+			existingData:   map[string]string{"OtherKey": "OtherValue"},
+			writeError:     nil,
+			expectedResult: resource.Result{},
+			expectedError:  nil,
+			expectedGender: "Unspecified",
+		},
+	
+		{
+			name:           "Empty Input",
+			input:          []byte{},
+			existingData:   map[string]string{"OtherKey": "OtherValue"},
+			writeError:     nil,
+			expectedResult: resource.Result{},
+			expectedError:  nil,
+			expectedGender: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Set up the mock expectations
+			mockFileHandler.On("ReadAccountData").Return(tt.existingData, tt.expectedError)
+			if tt.expectedError == nil && len(tt.input) > 0 {
+				mockFileHandler.On("WriteAccountData", mock.MatchedBy(func(data map[string]string) bool {
+					return data["Gender"] == tt.expectedGender
+				})).Return(tt.writeError)
+			} else if len(tt.input) == 0 {
 				// For empty input, no WriteAccountData call should be made
 				mockFileHandler.On("WriteAccountData", mock.Anything).Maybe().Return(tt.writeError)
 			}
@@ -385,11 +763,18 @@ func TestSaveLocation(t *testing.T) {
 			}
 
 			// Call the method
-			result, err := h.SaveLocation(context.Background(), "save_location", tt.input)
+			result, err := h.SaveGender(context.Background(), "save_gender", tt.input)
 
 			// Assert the results
 			assert.Equal(t, tt.expectedResult, result)
 			assert.Equal(t, tt.expectedError, err)
+
+			// Verify WriteAccountData was called with the expected data
+			if len(tt.input) > 0 && tt.expectedError == nil {
+				mockFileHandler.AssertCalled(t, "WriteAccountData", mock.MatchedBy(func(data map[string]string) bool {
+					return data["Gender"] == tt.expectedGender
+				}))
+			}
 
 			// Assert all expectations were met
 			mockFileHandler.AssertExpectations(t)

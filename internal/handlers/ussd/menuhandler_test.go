@@ -15,13 +15,174 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockAccountCreator implements AccountCreator for testing
-type MockAccountCreator struct {
-	mockResponse *models.AccountResponse
-	mockError    error
+// MockAccountService implements AccountServiceInterface for testing
+type MockAccountService struct {
+	mock.Mock
 }
 
+func (m *MockAccountService) CreateAccount() (*models.AccountResponse, error) {
+	args := m.Called()
+	return args.Get(0).(*models.AccountResponse), args.Error(1)
+}
 
+func (m *MockAccountService) CheckBalance(publicKey string) (string, error) {
+	args := m.Called(publicKey)
+	return args.String(0), args.Error(1)
+}
+
+func (m *MockAccountService) CheckAccountStatus(trackingId string) (string, error) {
+	args := m.Called(trackingId)
+	return args.String(0), args.Error(1)
+}
+
+func TestCreateAccount(t *testing.T) {
+	// Setup
+	tempDir, err := os.MkdirTemp("", "test_create_account")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tempDir) // Clean up after the test run
+
+	sessionID := "07xxxxxxxx"
+
+	// Set up the data file path using the session ID
+	accountFilePath := filepath.Join(tempDir, sessionID+"_data")
+
+	// Initialize account file handler
+	accountFileHandler := utils.NewAccountFileHandler(accountFilePath)
+
+	// Create a mock account service
+	mockAccountService := &MockAccountService{}
+	mockAccountResponse := &models.AccountResponse{
+		Ok: true,
+		Result: struct {
+			CustodialId json.Number `json:"custodialId"`
+			PublicKey   string      `json:"publicKey"`
+			TrackingId  string      `json:"trackingId"`
+		}{
+			CustodialId: "test-custodial-id",
+			PublicKey:   "test-public-key",
+			TrackingId:  "test-tracking-id",
+		},
+	}
+
+	// Set up expectations for the mock account service
+	mockAccountService.On("CreateAccount").Return(mockAccountResponse, nil)
+
+	// Initialize Handlers with mock account service
+	h := &Handlers{
+		fs:                 &FSData{Path: accountFilePath},
+		accountFileHandler: accountFileHandler,
+		accountService:     mockAccountService,
+	}
+
+	tests := []struct {
+		name           string
+		existingData   map[string]string
+		expectedResult resource.Result
+		expectedData   map[string]string
+	}{
+		{
+			name:         "New account creation",
+			existingData: nil,
+			expectedResult: resource.Result{
+				FlagSet: []uint32{models.USERFLAG_ACCOUNT_CREATED},
+			},
+			expectedData: map[string]string{
+				"TrackingId":  "test-tracking-id",
+				"PublicKey":   "test-public-key",
+				"CustodialId": "test-custodial-id",
+				"Status":      "PENDING",
+				"Gender":      "Not provided",
+				"YOB":         "Not provided",
+				"Location":    "Not provided",
+				"Offerings":   "Not provided",
+				"FirstName":   "Not provided",
+				"FamilyName":  "Not provided",
+			},
+		},
+		{
+			name: "Existing account",
+			existingData: map[string]string{
+				"TrackingId":  "test-tracking-id",
+				"PublicKey":   "test-public-key",
+				"CustodialId": "test-custodial-id",
+				"Status":      "PENDING",
+				"Gender":      "Not provided",
+				"YOB":         "Not provided",
+				"Location":    "Not provided",
+				"Offerings":   "Not provided",
+				"FirstName":   "Not provided",
+				"FamilyName":  "Not provided",
+			},
+			expectedResult: resource.Result{},
+			expectedData: map[string]string{
+				"TrackingId":  "test-tracking-id",
+				"PublicKey":   "test-public-key",
+				"CustodialId": "test-custodial-id",
+				"Status":      "PENDING",
+				"Gender":      "Not provided",
+				"YOB":         "Not provided",
+				"Location":    "Not provided",
+				"Offerings":   "Not provided",
+				"FirstName":   "Not provided",
+				"FamilyName":  "Not provided",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Set up the data file path using the session ID
+			accountFilePath := filepath.Join(tempDir, sessionID+"_data")
+
+			// Setup existing data if any
+			if tt.existingData != nil {
+				data, _ := json.Marshal(tt.existingData)
+				err := os.WriteFile(accountFilePath, data, 0644)
+				if err != nil {
+					t.Fatalf("Failed to write existing data: %v", err)
+				}
+			}
+
+			// Call the function
+			result, err := h.CreateAccount(context.Background(), "", nil)
+
+			// Check for errors
+			if err != nil {
+				t.Fatalf("CreateAccount returned an error: %v", err)
+			}
+
+			// Check the result
+			if len(result.FlagSet) != len(tt.expectedResult.FlagSet) {
+				t.Errorf("Expected %d flags, got %d", len(tt.expectedResult.FlagSet), len(result.FlagSet))
+			}
+			for i, flag := range tt.expectedResult.FlagSet {
+				if result.FlagSet[i] != flag {
+					t.Errorf("Expected flag %d, got %d", flag, result.FlagSet[i])
+				}
+			}
+
+			// Check the stored data
+			data, err := os.ReadFile(accountFilePath)
+			if err != nil {
+				t.Fatalf("Failed to read account data file: %v", err)
+			}
+
+			var storedData map[string]string
+			err = json.Unmarshal(data, &storedData)
+			if err != nil {
+				t.Fatalf("Failed to unmarshal stored data: %v", err)
+			}
+
+			for key, expectedValue := range tt.expectedData {
+				if storedValue, ok := storedData[key]; !ok || storedValue != expectedValue {
+					t.Errorf("Expected %s to be %s, got %s", key, expectedValue, storedValue)
+				}
+			}
+		})
+	}
+}
 
 func TestCreateAccount_Success(t *testing.T) {
 	mockAccountFileHandler := new(mocks.MockAccountFileHandler)
@@ -51,20 +212,16 @@ func TestCreateAccount_Success(t *testing.T) {
 	mockAccountFileHandler.On("WriteAccountData", mock.Anything).Return(nil)
 
 	handlers := &Handlers{
-		accountService:     mockCreateAccountService,
+		accountService: mockCreateAccountService,
 	}
 
-	
 	actualResponse, err := handlers.accountService.CreateAccount()
 
 	// Assert results
 	assert.NoError(t, err)
-	assert.Equal(t,expectedAccountResp.Ok,true)
-	assert.Equal(t,expectedAccountResp,actualResponse)
-	
-
+	assert.Equal(t, expectedAccountResp.Ok, true)
+	assert.Equal(t, expectedAccountResp, actualResponse)
 }
-
 
 func TestSavePin(t *testing.T) {
 	// Setup

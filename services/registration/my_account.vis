@@ -1,4 +1,4 @@
-LOAD reset_unlock_for_update 0
+LOAD reset_allow_update 0
 MOUT profile 1
 MOUT change_language 2
 MOUT check_balance 3

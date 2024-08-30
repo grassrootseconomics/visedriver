@@ -1,6 +1,6 @@
-LOAD reset_unlocked 16
-LOAD reset_unlock_for_update 0
-RELOAD reset_unlock_for_update
+LOAD reset_account_authorized 16
+LOAD reset_allow_update 0
+RELOAD reset_allow_update
 MOUT edit_name 1
 MOUT edit_gender 2
 MOUT edit_yob 3

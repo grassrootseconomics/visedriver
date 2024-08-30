@@ -690,7 +690,6 @@ func TestSaveOfferings(t *testing.T) {
 	}
 }
 
-
 func TestSaveGender(t *testing.T) {
 	// Create a new instance of MockAccountFileHandler
 	mockFileHandler := new(mocks.MockAccountFileHandler)
@@ -732,7 +731,7 @@ func TestSaveGender(t *testing.T) {
 			expectedError:  nil,
 			expectedGender: "Unspecified",
 		},
-	
+
 		{
 			name:           "Empty Input",
 			input:          []byte{},
@@ -752,7 +751,7 @@ func TestSaveGender(t *testing.T) {
 				mockFileHandler.On("WriteAccountData", mock.MatchedBy(func(data map[string]string) bool {
 					return data["Gender"] == tt.expectedGender
 				})).Return(tt.writeError)
-			}  else if len(tt.input) == 0 {
+			} else if len(tt.input) == 0 {
 				// For empty input, no WriteAccountData call should be made
 				mockFileHandler.On("WriteAccountData", mock.Anything).Maybe().Return(tt.writeError)
 			}
@@ -876,3 +875,55 @@ func TestGetAmount(t *testing.T) {
 	}
 }
 
+func TestGetProfileInfo(t *testing.T) {
+	// Create a new instance of MockAccountFileHandler
+	mockFileHandler := new(mocks.MockAccountFileHandler)
+
+	// Define test cases
+	tests := []struct {
+		name           string
+		accountData    map[string]string
+		readError      error
+		expectedResult resource.Result
+		expectedError  error
+	}{
+		{
+			name: "Complete Profile",
+			accountData: map[string]string{
+				"FirstName":  "John",
+				"FamilyName": "Doe",
+				"Gender":     "Male",
+				"YOB":        "1980",
+				"Location":   "Mombasa",
+				"Offerings":  "Bananas",
+			},
+			readError: nil,
+			expectedResult: resource.Result{
+				Content: "Name: John Doe\nGender: Male\nAge: 44\nLocation: Mombasa\nYou provide: Bananas\n",
+			},
+			expectedError: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			// Set up the mock expectations
+			mockFileHandler.On("ReadAccountData").Return(tt.accountData, tt.readError)
+
+			// Create the Handlers instance with the mock file handler
+			h := &Handlers{
+				accountFileHandler: mockFileHandler,
+			}
+
+			// Call the method
+			result, err := h.GetProfileInfo(context.Background(), "get_profile_info", nil)
+			// Assert the results
+			assert.Equal(t, tt.expectedResult, result)
+			assert.Equal(t, tt.expectedError, err)
+
+			// Assert all expectations were met
+			mockFileHandler.AssertExpectations(t)
+		})
+	}
+}

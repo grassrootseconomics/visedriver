@@ -1,5 +1,5 @@
 LOAD reset_incorrect 0
-CATCH incorrect_pin 15 1
-CATCH pin_entry 12 0
+CATCH incorrect_pin incorrect_pin_flag 1
+CATCH pin_entry account_authorized_flag 0
 LOAD quit_with_balance 0
 HALT

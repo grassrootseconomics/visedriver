@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"git.defalsify.org/vise.git/asm"
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/lang"
 	"git.defalsify.org/vise.git/resource"
@@ -29,25 +30,30 @@ type FSData struct {
 	St   *state.State
 }
 
-
 type Handlers struct {
 	fs                 *FSData
+	parser             *asm.FlagParser
 	accountFileHandler utils.AccountFileHandlerInterface
 	accountService     server.AccountServiceInterface
 }
 
-func NewHandlers(path string, st *state.State) *Handlers {
+func NewHandlers(dir string, st *state.State) (*Handlers, error) {
+	pfp := path.Join(dir, "pp.csv")
+	parser := asm.NewFlagParser()
+	_, err := parser.Load(pfp)
+	if err != nil {
+		return nil, err
+	}
 	return &Handlers{
 		fs: &FSData{
-			Path: path,
+			Path: dir,
 			St:   st,
 		},
-		accountFileHandler: utils.NewAccountFileHandler(path + "_data"),
+		parser:             parser,
+		accountFileHandler: utils.NewAccountFileHandler(dir + "_data"),
 		accountService:     &server.AccountService{},
-	}
+	}, nil
 }
-
-
 
 // Define the regex pattern as a constant
 const pinPattern = `^\d{4}$`
@@ -191,7 +197,7 @@ func (h *Handlers) VerifyPin(ctx context.Context, sym string, input []byte) (res
 	return res, nil
 }
 
-//codeFromCtx retrieves language codes from the context that can be used for handling translations
+// codeFromCtx retrieves language codes from the context that can be used for handling translations
 func codeFromCtx(ctx context.Context) string {
 	var code string
 	engine.Logg.DebugCtxf(ctx, "in msg", "ctx", ctx, "val", code)
@@ -446,7 +452,7 @@ func (h *Handlers) Quit(ctx context.Context, sym string, input []byte) (resource
 	code := codeFromCtx(ctx)
 	l := gotext.NewLocale(translationDir, code)
 	l.AddDomain("default")
-	
+
 	res.Content = l.Get("Thank you for using Sarafu. Goodbye!")
 	res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_AUTHORIZED)
 	return res, nil

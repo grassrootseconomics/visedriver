@@ -83,7 +83,11 @@ func main() {
 
 	fp := path.Join(dp, sessionId)
 
-	ussdHandlers := ussd.NewHandlers(fp, &st)
+	ussdHandlers,err := ussd.NewHandlers(fp, &st)
+
+	if(err != nil){
+		fmt.Fprintf(os.Stderr, "handler setup failed with error: %v\n", err)
+	}
 
 	rfs.AddLocalFunc("select_language", ussdHandlers.SetLanguage)
 	rfs.AddLocalFunc("create_account", ussdHandlers.CreateAccount)

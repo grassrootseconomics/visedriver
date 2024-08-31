@@ -64,6 +64,18 @@ func isValidPIN(pin string) bool {
 	return match
 }
 
+func (h *Handlers) PreloadFlags(flagKeys []string) (map[string]uint32, error) {
+	flags := make(map[string]uint32)
+	for _, key := range flagKeys {
+		flag, err := h.parser.GetFlag(key)
+		if err != nil {
+			return nil, err
+		}
+		flags[key] = flag
+	}
+	return flags, nil
+}
+
 // SetLanguage sets the language across the menu
 func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	inputStr := string(input)
@@ -385,19 +397,25 @@ func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (res
 		return res, err
 	}
 
+	// Preload the required flags
+	flagKeys := []string{"flag_incorrect_pin", "flag_account_authorized", "flag_allow_update"}
+	flags, err := h.PreloadFlags(flagKeys)
+	if err != nil {
+		return res, err
+	}
+
 	if len(input) == 4 {
 		if pin != accountData["AccountPIN"] {
-			res.FlagSet = append(res.FlagSet, models.USERFLAG_INCORRECTPIN)
-			res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_AUTHORIZED)
+			res.FlagSet = append(res.FlagSet, flags["flag_incorrect_pin"])
+			res.FlagReset = append(res.FlagReset, flags["flag_account_authorized"])
 			return res, nil
 		}
-		if h.fs.St.MatchFlag(models.USERFLAG_ACCOUNT_AUTHORIZED, false) {
-			res.FlagReset = append(res.FlagReset, models.USERFLAG_INCORRECTPIN)
-			res.FlagSet = append(res.FlagSet, models.USERFLAG_ALLOW_UPDATE)
-			res.FlagSet = append(res.FlagSet, models.USERFLAG_ACCOUNT_AUTHORIZED)
+		if h.fs.St.MatchFlag(flags["flag_account_authorized"], false) {
+			res.FlagReset = append(res.FlagReset, flags["flag_incorrect_pin"])
+			res.FlagSet = append(res.FlagSet, flags["flag_allow_update"], flags["flag_account_authorized"])
 		} else {
-			res.FlagSet = append(res.FlagSet, models.USERFLAG_ALLOW_UPDATE)
-			res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_AUTHORIZED)
+			res.FlagSet = append(res.FlagSet, flags["flag_allow_update"])
+			res.FlagReset = append(res.FlagReset, flags["flag_account_authorized"])
 		}
 	}
 	return res, nil
@@ -780,6 +798,11 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 		return res, err
 	}
 
-	res.FlagReset = append(res.FlagReset, models.USERFLAG_ACCOUNT_AUTHORIZED)
+	account_authorized_flag, err := h.parser.GetFlag("flag_account_authorized")
+
+	if err != nil {
+		res.FlagReset = append(res.FlagReset, account_authorized_flag)
+	}
+
 	return res, nil
 }

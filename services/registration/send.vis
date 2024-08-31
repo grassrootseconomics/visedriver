@@ -3,6 +3,6 @@ MOUT back 0
 HALT
 LOAD validate_recipient 20
 RELOAD validate_recipient
-CATCH invalid_recipient 13 1
+CATCH invalid_recipient invalid_recipient_flag 1
 INCMP _ 0
 INCMP amount *

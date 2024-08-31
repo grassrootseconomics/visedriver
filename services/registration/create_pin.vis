@@ -1,9 +1,9 @@
 LOAD create_account 0
-CATCH account_creation_failed 22 1
+CATCH account_creation_failed account_creation_failed_flag 1
 MOUT exit 0
 HALT
 LOAD save_pin 0
 RELOAD save_pin
-CATCH . 15 1
+CATCH . incorrect_pin_flag 1
 INCMP quit 0
 INCMP confirm_create_pin *

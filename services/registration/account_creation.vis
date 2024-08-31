@@ -1,4 +1,4 @@
 RELOAD verify_pin
-CATCH create_pin_mismatch pin_mismatch_flag 1
+CATCH create_pin_mismatch flag_pin_mismatch 1
 LOAD quit 0
 HALT

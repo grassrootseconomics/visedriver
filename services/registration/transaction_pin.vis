@@ -8,7 +8,7 @@ MOUT quit 9
 HALT
 LOAD authorize_account 1
 RELOAD authorize_account
-CATCH incorrect_pin incorrect_pin_flag 1
+CATCH incorrect_pin flag_incorrect_pin 1
 INCMP _ 0
 INCMP quit 9
 INCMP transaction_initiated *

@@ -5,7 +5,7 @@ MOUT back 0
 HALT
 LOAD validate_amount 64
 RELOAD validate_amount
-CATCH invalid_amount invalid_amount_flag 1
+CATCH invalid_amount flag_invalid_amount 1
 INCMP _ 0
 LOAD get_recipient 12
 LOAD get_sender 64

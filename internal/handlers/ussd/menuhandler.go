@@ -38,7 +38,7 @@ type Handlers struct {
 }
 
 func NewHandlers(dir string, st *state.State) (*Handlers, error) {
-	pfp := path.Join(dir, "pp.csv")
+	pfp := path.Join(scriptDir, "pp.csv")
 	parser := asm.NewFlagParser()
 	_, err := parser.Load(pfp)
 	if err != nil {

@@ -48,7 +48,7 @@ func main() {
 	state.FlagDebugger.Register(models.USERFLAG_INVALID_AMOUNT, "INVALIDAMOUNT")
 	state.FlagDebugger.Register(models.USERFLAG_ALLOW_UPDATE, "UNLOCKFORUPDATE")
 	state.FlagDebugger.Register(models.USERFLAG_VALIDPIN, "VALIDPIN")
-	state.FlagDebugger.Register(models.USERFLAG_VALIDPIN, "ACCOUNTUNLOCKED")
+	state.FlagDebugger.Register(models.USERFLAG_ACCOUNT_AUTHORIZED, "ACCOUNT_AUTHORIZED")
 	state.FlagDebugger.Register(models.USERFLAG_ACCOUNT_CREATION_FAILED, "ACCOUNT_CREATION_FAILED")
 	state.FlagDebugger.Register(models.USERFLAG_SINGLE_EDIT, "SINGLEEDIT")
 

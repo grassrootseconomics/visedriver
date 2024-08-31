@@ -11,5 +11,4 @@ RELOAD authorize_account
 CATCH incorrect_pin incorrect_pin_flag 1
 INCMP _ 0
 INCMP quit 9
-MOVE transaction_initiated
-
+INCMP transaction_initiated *

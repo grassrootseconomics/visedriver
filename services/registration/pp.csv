@@ -1,16 +1,16 @@
-flag,language_set,8,checks whether the user has set their prefered language
-flag,account_created,9,this is set when an account has been created on the API
-flag,account_pending,10,this is set when an account does not have a status of SUCCESS
-flag,account_success,11,this is set when an account has a status of SUCCESS
-flag,account_authorized,12,this is set to allow a user access guarded nodes after providing a correct PIN
-flag,invalid_recipient,13,this is set when the transaction recipient is invalid
-flag,invalid_recipient_with_invite,14,this is set when the transaction recipient is valid but not on the platform
-flag,incorrect_pin,15,this is set when the provided PIN is invalid or does not match the current account's PIN
-flag,allow_update,16,this is set to allow a user to update their profile data
-flag,invalid_amount,17,this is set when the given transaction amount is invalid
-flag,pin_set,18,this is set when a newly registered user sets a PIN. This must be present for an account to access the main menu
-flag,valid_pin,19,this is set when the given PIN is valid
-flag,pin_mismatch,20,this is set when the confirmation PIN matches the initial PIN during registration
-flag,incorrect_date_format,21,this is set when the given year of birth is invalid
-flag,account_creation_failed,22,this is set when there's an error from the API during account creation
-flag,single_edit,23,this is set to allow a user to edit a single profile item such as familyName
+flag,language_set_flag,8,checks whether the user has set their prefered language
+flag,account_created_flag,9,this is set when an account has been created on the API
+flag,account_pending_flag,10,this is set when an account does not have a status of SUCCESS
+flag,account_success_flag,11,this is set when an account has a status of SUCCESS
+flag,account_authorized_flag,12,this is set to allow a user access guarded nodes after providing a correct PIN
+flag,invalid_recipient_flag,13,this is set when the transaction recipient is invalid
+flag,invalid_recipient_with_invite_flag,14,this is set when the transaction recipient is valid but not on the platform
+flag,incorrect_pin_flag,15,this is set when the provided PIN is invalid or does not match the current account's PIN
+flag,allow_update_flag,16,this is set to allow a user to update their profile data
+flag,invalid_amount_flag,17,this is set when the given transaction amount is invalid
+flag,pin_set_flag,18,this is set when a newly registered user sets a PIN. This must be present for an account to access the main menu
+flag,valid_pin_flag,19,this is set when the given PIN is valid
+flag,pin_mismatch_flag,20,this is set when the confirmation PIN matches the initial PIN during registration
+flag,incorrect_date_format_flag,21,this is set when the given year of birth is invalid
+flag,account_creation_failed_flag,22,this is set when there's an error from the API during account creation
+flag,single_edit_flag,23,this is set to allow a user to edit a single profile item such as familyName

@@ -148,16 +148,16 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 		return res, err
 	}
 
-	err = h.accountFileHandler.EnsureFileExists()
-	if err != nil {
-		return res, err
-	}
+	// err = h.accountFileHandler.EnsureFileExists()
+	// if err != nil {
+	// 	return res, err
+	// }
 
 	// if an account exists, return to prevent duplicate account creation
-	existingAccountData, err := h.accountFileHandler.ReadAccountData()
-	if existingAccountData != nil {
-		return res, err
-	}
+	// existingAccountData, err := h.accountFileHandler.ReadAccountData()
+	// if existingAccountData != nil {
+	// 	return res, err
+	// }
 
 	accountResp, err := h.accountService.CreateAccount()
 	if err != nil {
@@ -190,14 +190,7 @@ func (h *Handlers) SavePin(ctx context.Context, sym string, input []byte) (resou
 	if err != nil {
 		return res, err
 	}
-
 	accountPIN := string(input)
-
-	// accountData, err := h.accountFileHandler.ReadAccountData()
-	// if err != nil {
-	// 	return res, err
-	// }
-
 	// Validate that the PIN is a 4-digit number
 	if !isValidPIN(accountPIN) {
 		res.FlagSet = append(res.FlagSet, flags["flag_incorrect_pin"])
@@ -205,18 +198,11 @@ func (h *Handlers) SavePin(ctx context.Context, sym string, input []byte) (resou
 	}
 
 	res.FlagReset = append(res.FlagReset, flags["flag_incorrect_pin"])
-	//accountData["AccountPIN"] = accountPIN
 
 	key := []byte(AccountPin)
 	value := []byte(accountPIN)
 
 	h.db.Store(key, value, true)
-
-	// err = h.accountFileHandler.WriteAccountData(accountData)
-	// if err != nil {
-	// 	return res, err
-	// }
-
 	return res, nil
 }
 
@@ -261,13 +247,12 @@ func (h *Handlers) VerifyPin(ctx context.Context, sym string, input []byte) (res
 	if err != nil {
 		return res, err
 	}
-
-	accountData, err := h.accountFileHandler.ReadAccountData()
+	storedpin, err := h.db.Fetch([]byte(AccountPin))
 	if err != nil {
 		return res, err
 	}
 
-	if bytes.Equal(input, []byte(accountData["AccountPIN"])) {
+	if bytes.Equal(input, storedpin) {
 		res.FlagSet = []uint32{flags["flag_valid_pin"]}
 		res.FlagReset = []uint32{flags["flag_pin_mismatch"]}
 		res.FlagSet = append(res.FlagSet, flags["flag_pin_set"])

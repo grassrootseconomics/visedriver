@@ -496,7 +496,7 @@ func (h *Handlers) VerifyYob(ctx context.Context, sym string, input []byte) (res
 	return res, nil
 }
 
-// ResetIncorrectYob resets the incorrect date format after a new attempt
+// ResetIncorrectYob resets the incorrect date format flag after a new attempt
 func (h *Handlers) ResetIncorrectYob(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	res.FlagReset = append(res.FlagReset, models.USERFLAG_INCORRECTDATEFORMAT)

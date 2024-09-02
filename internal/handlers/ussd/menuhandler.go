@@ -277,24 +277,11 @@ func codeFromCtx(ctx context.Context) string {
 // SaveFirstname updates the first name in a JSON data file with the provided input.
 func (h *Handlers) SaveFirstname(cxt context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-
-	// accountData, err := h.accountFileHandler.ReadAccountData()
-	// if err != nil {
-	// 	return res, err
-	// }
 	if len(input) > 0 {
 		name := string(input)
-		//accountData["FirstName"] = name
-
 		key := []byte(FirstName)
 		value := []byte(name)
-
 		h.db.Store(key, value, true)
-
-		// err = h.accountFileHandler.WriteAccountData(accountData)
-		// if err != nil {
-		// 	return res, err
-		// }
 	}
 
 	return res, nil
@@ -307,7 +294,6 @@ func (h *Handlers) SaveFamilyname(cxt context.Context, sym string, input []byte)
 		secondname := string(input)
 		key := []byte(FamilyName)
 		value := []byte(secondname)
-
 		h.db.Store(key, value, true)
 	}
 
@@ -317,19 +303,12 @@ func (h *Handlers) SaveFamilyname(cxt context.Context, sym string, input []byte)
 // SaveYOB updates the Year of Birth(YOB) in a JSON data file with the provided input.
 func (h *Handlers) SaveYob(cxt context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-
 	yob := string(input)
 	if len(yob) == 4 {
 		yob := string(input)
-		//accountData["YOB"] = yob
 		key := []byte(YearOfBirth)
 		value := []byte(yob)
-
 		h.db.Store(key, value, true)
-		// err = h.accountFileHandler.WriteAccountData(accountData)
-		// if err != nil {
-		// 	return res, err
-		// }
 	}
 
 	return res, nil
@@ -338,12 +317,6 @@ func (h *Handlers) SaveYob(cxt context.Context, sym string, input []byte) (resou
 // SaveLocation updates the location in a JSON data file with the provided input.
 func (h *Handlers) SaveLocation(cxt context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-
-	// accountData, err := h.accountFileHandler.ReadAccountData()
-	// if err != nil {
-	// 	return res, err
-	// }
-
 	if len(input) > 0 {
 		location := string(input)
 		key := []byte(Location)
@@ -360,7 +333,6 @@ func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (re
 	res := resource.Result{}
 	if len(input) > 0 {
 		gender := string(input)
-
 		switch gender {
 		case "1":
 			gender = "Male"
@@ -369,16 +341,9 @@ func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (re
 		case "3":
 			gender = "Unspecified"
 		}
-		//accountData["Gender"] = gender
 		key := []byte(Gender)
 		value := []byte(gender)
-
 		h.db.Store(key, value, true)
-
-		// err = h.accountFileHandler.WriteAccountData(accountData)
-		// if err != nil {
-		// 	return res, err
-		// }
 	}
 	return res, nil
 }
@@ -386,24 +351,11 @@ func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (re
 // SaveOfferings updates the offerings(goods and services provided by the user) in a JSON data file with the provided input.
 func (h *Handlers) SaveOfferings(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-
-	// accountData, err := h.accountFileHandler.ReadAccountData()
-	// if err != nil {
-	// 	return res, err
-	// }
-
 	if len(input) > 0 {
 		offerings := string(input)
-		//accountData["Offerings"] = offerings
 		key := []byte(Offerings)
 		value := []byte(offerings)
-
 		h.db.Store(key, value, true)
-
-		// err = h.accountFileHandler.WriteAccountData(accountData)
-		// if err != nil {
-		// 	return res, err
-		// }
 	}
 	return res, nil
 }
@@ -441,18 +393,11 @@ func (h *Handlers) ResetAccountAuthorized(ctx context.Context, sym string, input
 // CheckIdentifier retrieves the PublicKey from the JSON data file.
 func (h *Handlers) CheckIdentifier(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-
-	// accountData, err := h.accountFileHandler.ReadAccountData()
-	// if err != nil {
-	// 	return res, err
-	// }
 	publicKey, err := h.db.Fetch([]byte(PublicKeyKey))
 	if err != nil {
 		return res, err
 	}
-
 	res.Content = string(publicKey)
-
 	return res, nil
 }
 
@@ -460,21 +405,12 @@ func (h *Handlers) CheckIdentifier(ctx context.Context, sym string, input []byte
 // It sets the required flags that control the flow.
 func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-
 	// Preload the required flags
 	flagKeys := []string{"flag_incorrect_pin", "flag_account_authorized", "flag_allow_update"}
 	flags, err := h.PreloadFlags(flagKeys)
 	if err != nil {
 		return res, err
 	}
-
-	// pin := string(input)
-
-	// accountData, err := h.accountFileHandler.ReadAccountData()
-	// if err != nil {
-	// 	return res, err
-	// }
-
 	storedpin, err := h.db.Fetch([]byte(AccountPin))
 	if err == nil {
 		if len(input) == 4 {
@@ -526,11 +462,6 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 	if err != nil {
 		return res, err
 	}
-
-	// accountData, err := h.accountFileHandler.ReadAccountData()
-	// if err != nil {
-	// 	return res, err
-	// }
 	trackingId, err := h.db.Fetch([]byte(TrackingIdKey))
 
 	if err != nil {
@@ -545,9 +476,12 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 
 	}
 
-	//accountData["Status"] = status
-	err = h.db.Store(toBytes(TrackingIdKey), toBytes(status), true)
+	err = h.db.Store(toBytes(AccountStatus), toBytes(status), true)
+	if err != nil {
+		return res, nil
+	}
 
+	err = h.db.Store(toBytes(TrackingIdKey), toBytes(status), true)
 	if err != nil {
 		return res, nil
 	}
@@ -828,39 +762,6 @@ func (h *Handlers) GetRecipient(ctx context.Context, sym string, input []byte) (
 	return res, nil
 }
 
-// GetProfileInfo retrieves and formats the profile information of a user from a JSON data file.
-func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res := resource.Result{}
-	var age string
-	accountData, err := h.accountFileHandler.ReadAccountData()
-	if err != nil {
-		return res, err
-	}
-	var name string
-	if accountData["FirstName"] == "Not provided" || accountData["FamilyName"] == "Not provided" {
-		name = "Not provided"
-	} else {
-		name = accountData["FirstName"] + " " + accountData["FamilyName"]
-	}
-
-	gender := accountData["Gender"]
-	yob := accountData["YOB"]
-	location := accountData["Location"]
-	offerings := accountData["Offerings"]
-	if yob == "Not provided" {
-		age = "Not provided"
-	} else {
-		ageInt, err := strconv.Atoi(yob)
-		if err != nil {
-			return res, nil
-		}
-		age = strconv.Itoa(utils.CalculateAgeWithYOB(ageInt))
-	}
-	formattedData := fmt.Sprintf("Name: %s\nGender: %s\nAge: %s\nLocation: %s\nYou provide: %s\n", name, gender, age, location, offerings)
-	res.Content = formattedData
-	return res, nil
-}
-
 // GetSender retrieves the public key from a JSON data file.
 func (h *Handlers) GetSender(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
@@ -879,13 +780,10 @@ func (h *Handlers) GetSender(ctx context.Context, sym string, input []byte) (res
 // GetAmount retrieves the amount from a JSON data file.
 func (h *Handlers) GetAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-
-	//accountData, err := h.accountFileHandler.ReadAccountData()
 	amount, err := h.db.Fetch([]byte(Amount))
 	if err != nil {
 		return res, err
 	}
-
 	res.Content = string(amount)
 
 	return res, nil
@@ -906,10 +804,6 @@ func (h *Handlers) QuitWithBalance(ctx context.Context, sym string, input []byte
 	code := codeFromCtx(ctx)
 	l := gotext.NewLocale(translationDir, code)
 	l.AddDomain("default")
-	// accountData, err := h.accountFileHandler.ReadAccountData()
-	// if err != nil {
-	// 	return res, err
-	// }
 	publicKey, err := h.db.Fetch([]byte(PublicKeyKey))
 	if err != nil {
 		return res, err
@@ -930,12 +824,6 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 	code := codeFromCtx(ctx)
 	l := gotext.NewLocale(translationDir, code)
 	l.AddDomain("default")
-	// Preload the required flags
-	// flagKeys := []string{"flag_invalid_recipient"}
-	// flags, err := h.PreloadFlags(flagKeys)
-	// if err != nil {
-	// 	return res, err
-	// }
 	// TODO
 	// Use the amount, recipient and sender to call the API and initialize the transaction
 
@@ -960,5 +848,68 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 		res.FlagReset = append(res.FlagReset, account_authorized_flag)
 	}
 
+	return res, nil
+}
+
+// GetProfileInfo retrieves and formats the profile information of a user from a JSON data file.
+func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	res := resource.Result{}
+
+	// Define default values
+	defaultValue := "Not provided"
+	name := defaultValue
+	familyName := defaultValue
+	yob := defaultValue
+	gender := defaultValue
+	location := defaultValue
+	offerings := defaultValue
+
+	// Fetch data using a map for better organization
+	dataKeys := map[string]*string{
+		FirstName:   &name,
+		FamilyName:  &familyName,
+		YearOfBirth: &yob,
+		Location:    &location,
+		Gender:      &gender,
+		Offerings:   &offerings,
+	}
+
+	// Iterate over keys and fetch values
+	//iter := h.db.Iterator()
+	next := h.db.Iterator()
+	//defer iter.Close() // Ensure the iterator is closed
+	for key, err := next(); err == nil; key, err = next() {
+		if valuePointer, ok := dataKeys[string(key)]; ok {
+			value, fetchErr := h.db.Fetch(key)
+			if fetchErr == nil {
+				*valuePointer = string(value)
+			}
+		}
+	}
+
+	// Construct the full name
+	if familyName != defaultValue {
+		if name == defaultValue {
+			name = familyName
+		} else {
+			name = name + " " + familyName
+		}
+	}
+
+	// Calculate age from year of birth
+	var age string
+	if yob != defaultValue {
+		yobInt, err := strconv.Atoi(yob)
+		if err != nil {
+			return res, fmt.Errorf("invalid year of birth: %v", err)
+		}
+		age = strconv.Itoa(utils.CalculateAgeWithYOB(yobInt))
+	} else {
+		age = defaultValue
+	}
+
+	// Format the result
+	formattedData := fmt.Sprintf("Name: %s\nGender: %s\nAge: %s\nLocation: %s\nYou provide: %s\n", name, gender, age, location, offerings)
+	res.Content = formattedData
 	return res, nil
 }

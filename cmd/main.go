@@ -7,13 +7,13 @@ import (
 	"os"
 	"path"
 
+	"git.defalsify.org/vise.git/asm"
 	"git.defalsify.org/vise.git/cache"
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/state"
 	"git.grassecon.net/urdt/ussd/internal/handlers/ussd"
-	"git.grassecon.net/urdt/ussd/internal/models"
 )
 
 var (
@@ -35,22 +35,46 @@ func main() {
 	ctx := context.Background()
 	st := state.NewState(16)
 	st.UseDebug()
-	state.FlagDebugger.Register(models.USERFLAG_LANGUAGE_SET, "LANGUAGE_CHANGE")
-	state.FlagDebugger.Register(models.USERFLAG_ACCOUNT_CREATED, "ACCOUNT_CREATED")
-	state.FlagDebugger.Register(models.USERFLAG_ACCOUNT_SUCCESS, "ACCOUNT_SUCCESS")
-	state.FlagDebugger.Register(models.USERFLAG_ACCOUNT_PENDING, "ACCOUNT_PENDING")
-	state.FlagDebugger.Register(models.USERFLAG_INCORRECTPIN, "INCORRECTPIN")
-	state.FlagDebugger.Register(models.USERFLAG_INCORRECTDATEFORMAT, "INVALIDDATEFORMAT")
-	state.FlagDebugger.Register(models.USERFLAG_INVALID_RECIPIENT, "INVALIDRECIPIENT")
-	state.FlagDebugger.Register(models.USERFLAG_PINMISMATCH, "PINMISMATCH")
-	state.FlagDebugger.Register(models.USERFLAG_PIN_SET, "PIN_SET")
-	state.FlagDebugger.Register(models.USERFLAG_INVALID_RECIPIENT_WITH_INVITE, "INVALIDRECIPIENT_WITH_INVITE")
-	state.FlagDebugger.Register(models.USERFLAG_INVALID_AMOUNT, "INVALIDAMOUNT")
-	state.FlagDebugger.Register(models.USERFLAG_ALLOW_UPDATE, "UNLOCKFORUPDATE")
-	state.FlagDebugger.Register(models.USERFLAG_VALIDPIN, "VALIDPIN")
-	state.FlagDebugger.Register(models.USERFLAG_ACCOUNT_AUTHORIZED, "ACCOUNT_AUTHORIZED")
-	state.FlagDebugger.Register(models.USERFLAG_ACCOUNT_CREATION_FAILED, "ACCOUNT_CREATION_FAILED")
-	state.FlagDebugger.Register(models.USERFLAG_SINGLE_EDIT, "SINGLEEDIT")
+
+	// Initialize the FlagParser
+	pfp := path.Join(scriptDir, "pp.csv")
+	parser := asm.NewFlagParser()
+
+	// Load flags from the pp.csv file
+	_, err := parser.Load(pfp)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to load flags: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Register all flags loaded from pp.csv
+	flagKeys := []string{
+		"flag_language_set",
+		"flag_account_created",
+		"flag_account_creation_failed",
+		"flag_account_pending",
+		"flag_account_success",
+		"flag_pin_mismatch",
+		"flag_pin_set",
+		"flag_account_authorized",
+		"flag_invalid_recipient",
+		"flag_invalid_recipient_with_invite",
+		"flag_invalid_amount",
+		"flag_incorrect_pin",
+		"flag_valid_pin",
+		"flag_allow_update",
+		"flag_single_edit",
+		"flag_incorrect_date_format",
+	}
+
+	for _, key := range flagKeys {
+		id, err := parser.GetFlag(key)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to get flag %s: %v\n", key, err)
+			continue
+		}
+		state.FlagDebugger.Register(id, key)
+	}
 
 	rfs := resource.NewFsResource(scriptDir)
 	ca := cache.NewCache()
@@ -60,7 +84,7 @@ func main() {
 	}
 
 	dp := path.Join(scriptDir, ".state")
-	err := os.MkdirAll(dp, 0700)
+	err = os.MkdirAll(dp, 0700)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "state dir create exited with error: %v\n", err)
 		os.Exit(1)

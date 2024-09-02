@@ -140,25 +140,12 @@ func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (r
 // sets the default values and flags
 func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-
 	// Preload the required flags
 	flagKeys := []string{"flag_account_created", "flag_account_creation_failed"}
 	flags, err := h.PreloadFlags(flagKeys)
 	if err != nil {
 		return res, err
 	}
-
-	// err = h.accountFileHandler.EnsureFileExists()
-	// if err != nil {
-	// 	return res, err
-	// }
-
-	// if an account exists, return to prevent duplicate account creation
-	// existingAccountData, err := h.accountFileHandler.ReadAccountData()
-	// if existingAccountData != nil {
-	// 	return res, err
-	// }
-
 	accountResp, err := h.accountService.CreateAccount()
 	if err != nil {
 		res.FlagSet = append(res.FlagSet, flags["flag_account_creation_failed"])
@@ -493,12 +480,6 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 		res.FlagReset = append(res.FlagSet, flags["flag_account_success"])
 		res.FlagSet = append(res.FlagReset, flags["flag_account_pending"])
 	}
-
-	// err = h.accountFileHandler.WriteAccountData(accountData)
-	// if err != nil {
-	// 	return res, err
-	// }
-
 	return res, nil
 }
 
@@ -851,7 +832,7 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 	return res, nil
 }
 
-// GetProfileInfo retrieves and formats the profile information of a user from a JSON data file.
+// GetProfileInfo retrieves and formats the profile information of a user from a Gdbm backed storage.
 func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 

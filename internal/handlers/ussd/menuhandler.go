@@ -3,6 +3,7 @@ package ussd
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"path"
 	"regexp"
@@ -17,13 +18,35 @@ import (
 	"git.grassecon.net/urdt/ussd/internal/handlers/server"
 	"git.grassecon.net/urdt/ussd/internal/models"
 	"git.grassecon.net/urdt/ussd/internal/utils"
+	"github.com/graygnuorg/go-gdbm"
 	"gopkg.in/leonelquinteros/gotext.v1"
 )
 
 var (
 	scriptDir      = path.Join("services", "registration")
 	translationDir = path.Join(scriptDir, "locale")
+	dbFile         = path.Join(scriptDir, "vise.gdbm")
 )
+
+const (
+	TrackingIdKey  = "TRACKINGID"
+	PublicKeyKey   = "PUBLICKEY"
+	CustodialIdKey = "CUSTODIALID"
+	AccountPin     = "ACCOUNTPIN"
+	AccountStatus  = "ACCOUNTSTATUS"
+	FirstName      = "FIRSTNAME"
+	FamilyName     = "FAMILYNAME"
+	YearOfBirth    = "YOB"
+	Location       = "LOCATION"
+	Gender         = "GENDER"
+	Offerings      = "OFFERINGS"
+	Recipient      = "RECIPIENT"
+	Amount         = "AMOUNT"
+)
+
+func toBytes(s string) []byte {
+	return []byte(s)
+}
 
 type FSData struct {
 	Path string
@@ -32,19 +55,25 @@ type FSData struct {
 
 type Handlers struct {
 	fs                 *FSData
+	db                 *gdbm.Database
 	parser             *asm.FlagParser
 	accountFileHandler utils.AccountFileHandlerInterface
 	accountService     server.AccountServiceInterface
 }
 
 func NewHandlers(dir string, st *state.State) (*Handlers, error) {
+	db, err := gdbm.Open(dbFile, gdbm.ModeWrcreat)
+	if err != nil {
+		panic(err)
+	}
 	pfp := path.Join(scriptDir, "pp.csv")
 	parser := asm.NewFlagParser()
-	_, err := parser.Load(pfp)
+	_, err = parser.Load(pfp)
 	if err != nil {
 		return nil, err
 	}
 	return &Handlers{
+		db: db,
 		fs: &FSData{
 			Path: dir,
 			St:   st,
@@ -117,22 +146,18 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 		res.FlagSet = append(res.FlagSet, models.USERFLAG_ACCOUNT_CREATION_FAILED)
 		return res, err
 	}
-
-	accountData := map[string]string{
-		"TrackingId":  accountResp.Result.TrackingId,
-		"PublicKey":   accountResp.Result.PublicKey,
-		"CustodialId": accountResp.Result.CustodialId.String(),
-		"Status":      "PENDING",
-		"Gender":      "Not provided",
-		"YOB":         "Not provided",
-		"Location":    "Not provided",
-		"Offerings":   "Not provided",
-		"FirstName":   "Not provided",
-		"FamilyName":  "Not provided",
+	data := map[string]string{
+		TrackingIdKey:  accountResp.Result.TrackingId,
+		PublicKeyKey:   accountResp.Result.PublicKey,
+		CustodialIdKey: accountResp.Result.CustodialId.String(),
 	}
-	err = h.accountFileHandler.WriteAccountData(accountData)
-	if err != nil {
-		return res, err
+
+	for key, value := range data {
+		err := h.db.Store(toBytes(key), toBytes(value), true)
+		if err != nil {
+			return res, err
+
+		}
 	}
 
 	res.FlagSet = append(res.FlagSet, models.USERFLAG_ACCOUNT_CREATED)
@@ -144,10 +169,10 @@ func (h *Handlers) SavePin(ctx context.Context, sym string, input []byte) (resou
 	res := resource.Result{}
 	accountPIN := string(input)
 
-	accountData, err := h.accountFileHandler.ReadAccountData()
-	if err != nil {
-		return res, err
-	}
+	// accountData, err := h.accountFileHandler.ReadAccountData()
+	// if err != nil {
+	// 	return res, err
+	// }
 
 	// Validate that the PIN is a 4-digit number
 	if !isValidPIN(accountPIN) {
@@ -156,12 +181,17 @@ func (h *Handlers) SavePin(ctx context.Context, sym string, input []byte) (resou
 	}
 
 	res.FlagReset = append(res.FlagReset, models.USERFLAG_INCORRECTPIN)
-	accountData["AccountPIN"] = accountPIN
+	//accountData["AccountPIN"] = accountPIN
 
-	err = h.accountFileHandler.WriteAccountData(accountData)
-	if err != nil {
-		return res, err
-	}
+	key := []byte(AccountPin)
+	value := []byte(accountPIN)
+
+	h.db.Store(key, value, true)
+
+	// err = h.accountFileHandler.WriteAccountData(accountData)
+	// if err != nil {
+	// 	return res, err
+	// }
 
 	return res, nil
 }
@@ -192,20 +222,20 @@ func (h *Handlers) SetResetSingleEdit(ctx context.Context, sym string, input []b
 // to access the main menu
 func (h *Handlers) VerifyPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-
-	accountData, err := h.accountFileHandler.ReadAccountData()
-	if err != nil {
+	pin, err := h.db.Fetch([]byte(AccountPin))
+	if err == nil {
+		if bytes.Equal(input, pin) {
+			res.FlagSet = []uint32{models.USERFLAG_VALIDPIN}
+			res.FlagReset = []uint32{models.USERFLAG_PINMISMATCH}
+			res.FlagSet = append(res.FlagSet, models.USERFLAG_PIN_SET)
+		} else {
+			res.FlagSet = []uint32{models.USERFLAG_PINMISMATCH}
+		}
+	} else if errors.Is(err, gdbm.ErrItemNotFound) {
+		//PIN not set yet
+	} else {
 		return res, err
 	}
-
-	if bytes.Equal(input, []byte(accountData["AccountPIN"])) {
-		res.FlagSet = []uint32{models.USERFLAG_VALIDPIN}
-		res.FlagReset = []uint32{models.USERFLAG_PINMISMATCH}
-		res.FlagSet = append(res.FlagSet, models.USERFLAG_PIN_SET)
-	} else {
-		res.FlagSet = []uint32{models.USERFLAG_PINMISMATCH}
-	}
-
 	return res, nil
 }
 
@@ -224,18 +254,23 @@ func codeFromCtx(ctx context.Context) string {
 func (h *Handlers) SaveFirstname(cxt context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
-	accountData, err := h.accountFileHandler.ReadAccountData()
-	if err != nil {
-		return res, err
-	}
+	// accountData, err := h.accountFileHandler.ReadAccountData()
+	// if err != nil {
+	// 	return res, err
+	// }
 	if len(input) > 0 {
 		name := string(input)
-		accountData["FirstName"] = name
+		//accountData["FirstName"] = name
 
-		err = h.accountFileHandler.WriteAccountData(accountData)
-		if err != nil {
-			return res, err
-		}
+		key := []byte(FirstName)
+		value := []byte(name)
+
+		h.db.Store(key, value, true)
+
+		// err = h.accountFileHandler.WriteAccountData(accountData)
+		// if err != nil {
+		// 	return res, err
+		// }
 	}
 
 	return res, nil
@@ -244,19 +279,12 @@ func (h *Handlers) SaveFirstname(cxt context.Context, sym string, input []byte) 
 // SaveFamilyname updates the family name in a JSON data file with the provided input.
 func (h *Handlers) SaveFamilyname(cxt context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-
-	accountData, err := h.accountFileHandler.ReadAccountData()
-	if err != nil {
-		return res, err
-	}
 	if len(input) > 0 {
 		secondname := string(input)
-		accountData["FamilyName"] = secondname
+		key := []byte(FamilyName)
+		value := []byte(secondname)
 
-		err = h.accountFileHandler.WriteAccountData(accountData)
-		if err != nil {
-			return res, err
-		}
+		h.db.Store(key, value, true)
 	}
 
 	return res, nil
@@ -266,20 +294,18 @@ func (h *Handlers) SaveFamilyname(cxt context.Context, sym string, input []byte)
 func (h *Handlers) SaveYob(cxt context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
-	accountData, err := h.accountFileHandler.ReadAccountData()
-	if err != nil {
-		return res, err
-	}
-
 	yob := string(input)
 	if len(yob) == 4 {
 		yob := string(input)
-		accountData["YOB"] = yob
+		//accountData["YOB"] = yob
+		key := []byte(YearOfBirth)
+		value := []byte(yob)
 
-		err = h.accountFileHandler.WriteAccountData(accountData)
-		if err != nil {
-			return res, err
-		}
+		h.db.Store(key, value, true)
+		// err = h.accountFileHandler.WriteAccountData(accountData)
+		// if err != nil {
+		// 	return res, err
+		// }
 	}
 
 	return res, nil
@@ -289,19 +315,17 @@ func (h *Handlers) SaveYob(cxt context.Context, sym string, input []byte) (resou
 func (h *Handlers) SaveLocation(cxt context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
-	accountData, err := h.accountFileHandler.ReadAccountData()
-	if err != nil {
-		return res, err
-	}
+	// accountData, err := h.accountFileHandler.ReadAccountData()
+	// if err != nil {
+	// 	return res, err
+	// }
 
 	if len(input) > 0 {
 		location := string(input)
-		accountData["Location"] = location
+		key := []byte(Location)
+		value := []byte(location)
 
-		err = h.accountFileHandler.WriteAccountData(accountData)
-		if err != nil {
-			return res, err
-		}
+		h.db.Store(key, value, true)
 	}
 
 	return res, nil
@@ -310,12 +334,6 @@ func (h *Handlers) SaveLocation(cxt context.Context, sym string, input []byte) (
 // SaveGender updates the gender in a JSON data file with the provided input.
 func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-
-	accountData, err := h.accountFileHandler.ReadAccountData()
-	if err != nil {
-		return res, err
-	}
-
 	if len(input) > 0 {
 		gender := string(input)
 
@@ -327,12 +345,16 @@ func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (re
 		case "3":
 			gender = "Unspecified"
 		}
-		accountData["Gender"] = gender
+		//accountData["Gender"] = gender
+		key := []byte(Gender)
+		value := []byte(gender)
 
-		err = h.accountFileHandler.WriteAccountData(accountData)
-		if err != nil {
-			return res, err
-		}
+		h.db.Store(key, value, true)
+
+		// err = h.accountFileHandler.WriteAccountData(accountData)
+		// if err != nil {
+		// 	return res, err
+		// }
 	}
 	return res, nil
 }
@@ -341,19 +363,23 @@ func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (re
 func (h *Handlers) SaveOfferings(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
-	accountData, err := h.accountFileHandler.ReadAccountData()
-	if err != nil {
-		return res, err
-	}
+	// accountData, err := h.accountFileHandler.ReadAccountData()
+	// if err != nil {
+	// 	return res, err
+	// }
 
 	if len(input) > 0 {
 		offerings := string(input)
-		accountData["Offerings"] = offerings
+		//accountData["Offerings"] = offerings
+		key := []byte(Offerings)
+		value := []byte(offerings)
 
-		err = h.accountFileHandler.WriteAccountData(accountData)
-		if err != nil {
-			return res, err
-		}
+		h.db.Store(key, value, true)
+
+		// err = h.accountFileHandler.WriteAccountData(accountData)
+		// if err != nil {
+		// 	return res, err
+		// }
 	}
 	return res, nil
 }
@@ -376,12 +402,16 @@ func (h *Handlers) ResetAccountAuthorized(ctx context.Context, sym string, input
 func (h *Handlers) CheckIdentifier(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
-	accountData, err := h.accountFileHandler.ReadAccountData()
+	// accountData, err := h.accountFileHandler.ReadAccountData()
+	// if err != nil {
+	// 	return res, err
+	// }
+	publicKey, err := h.db.Fetch([]byte(PublicKeyKey))
 	if err != nil {
 		return res, err
 	}
 
-	res.Content = accountData["PublicKey"]
+	res.Content = string(publicKey)
 
 	return res, nil
 }
@@ -390,12 +420,12 @@ func (h *Handlers) CheckIdentifier(ctx context.Context, sym string, input []byte
 // It sets the required flags that control the flow.
 func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	pin := string(input)
+	//pin := string(input)
 
-	accountData, err := h.accountFileHandler.ReadAccountData()
-	if err != nil {
-		return res, err
-	}
+	// accountData, err := h.accountFileHandler.ReadAccountData()
+	// if err != nil {
+	// 	return res, err
+	// }
 
 	// Preload the required flags
 	flagKeys := []string{"flag_incorrect_pin", "flag_account_authorized", "flag_allow_update"}
@@ -404,20 +434,43 @@ func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (res
 		return res, err
 	}
 
-	if len(input) == 4 {
-		if pin != accountData["AccountPIN"] {
-			res.FlagSet = append(res.FlagSet, flags["flag_incorrect_pin"])
-			res.FlagReset = append(res.FlagReset, flags["flag_account_authorized"])
-			return res, nil
+	storedpin, err := h.db.Fetch([]byte(AccountPin))
+	if err == nil {
+		if len(input) == 4 {
+			if bytes.Equal(input, storedpin) {
+				if h.fs.St.MatchFlag(flags["flag_account_authorized"], false) {
+					res.FlagReset = append(res.FlagReset, flags["flag_incorrect_pin"])
+					res.FlagSet = append(res.FlagSet, flags["flag_allow_update"], flags["flag_account_authorized"])
+				} else {
+					res.FlagSet = append(res.FlagSet, flags["flag_allow_update"])
+					res.FlagReset = append(res.FlagReset, flags["flag_account_authorized"])
+				}
+			} else {
+				res.FlagSet = append(res.FlagSet, flags["flag_incorrect_pin"])
+				res.FlagReset = append(res.FlagReset, flags["flag_account_authorized"])
+				return res, nil
+			}
 		}
-		if h.fs.St.MatchFlag(flags["flag_account_authorized"], false) {
-			res.FlagReset = append(res.FlagReset, flags["flag_incorrect_pin"])
-			res.FlagSet = append(res.FlagSet, flags["flag_allow_update"], flags["flag_account_authorized"])
-		} else {
-			res.FlagSet = append(res.FlagSet, flags["flag_allow_update"])
-			res.FlagReset = append(res.FlagReset, flags["flag_account_authorized"])
-		}
+	} else if errors.Is(err, gdbm.ErrItemNotFound) {
+		//PIN not set yet
+	} else {
+		return res, err
 	}
+
+	// if len(input) == 4 {
+	// 	if pin != accountData["AccountPIN"] {
+	// 		res.FlagSet = append(res.FlagSet, flags["flag_incorrect_pin"])
+	// 		res.FlagReset = append(res.FlagReset, flags["flag_account_authorized"])
+	// 		return res, nil
+	// 	}
+	// 	if h.fs.St.MatchFlag(flags["flag_account_authorized"], false) {
+	// 		res.FlagReset = append(res.FlagReset, flags["flag_incorrect_pin"])
+	// 		res.FlagSet = append(res.FlagSet, flags["flag_allow_update"], flags["flag_account_authorized"])
+	// 	} else {
+	// 		res.FlagSet = append(res.FlagSet, flags["flag_allow_update"])
+	// 		res.FlagReset = append(res.FlagReset, flags["flag_account_authorized"])
+	// 	}
+	// }
 	return res, nil
 }
 
@@ -433,19 +486,29 @@ func (h *Handlers) ResetIncorrectPin(ctx context.Context, sym string, input []by
 func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
-	accountData, err := h.accountFileHandler.ReadAccountData()
+	// accountData, err := h.accountFileHandler.ReadAccountData()
+	// if err != nil {
+	// 	return res, err
+	// }
+	trackingId, err := h.db.Fetch([]byte(TrackingIdKey))
+
 	if err != nil {
 		return res, err
 	}
 
-	status, err := h.accountService.CheckAccountStatus(accountData["TrackingId"])
+	status, err := h.accountService.CheckAccountStatus(string(trackingId))
 
 	if err != nil {
 		fmt.Println("Error checking account status:", err)
-		return res, nil
+		return res, err
 	}
 
-	accountData["Status"] = status
+	//accountData["Status"] = status
+	err = h.db.Store(toBytes(TrackingIdKey), toBytes(status), true)
+
+	if err != nil {
+		return res, nil
+	}
 
 	if status == "SUCCESS" {
 		res.FlagSet = append(res.FlagSet, models.USERFLAG_ACCOUNT_SUCCESS)
@@ -455,10 +518,10 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 		res.FlagSet = append(res.FlagReset, models.USERFLAG_ACCOUNT_PENDING)
 	}
 
-	err = h.accountFileHandler.WriteAccountData(accountData)
-	if err != nil {
-		return res, err
-	}
+	// err = h.accountFileHandler.WriteAccountData(accountData)
+	// if err != nil {
+	// 	return res, err
+	// }
 
 	return res, nil
 }
@@ -507,13 +570,13 @@ func (h *Handlers) ResetIncorrectYob(ctx context.Context, sym string, input []by
 // the balance as the result content
 func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
+	publicKey, err := h.db.Fetch([]byte(PublicKeyKey))
 
-	accountData, err := h.accountFileHandler.ReadAccountData()
 	if err != nil {
 		return res, err
 	}
 
-	balance, err := h.accountService.CheckBalance(accountData["PublicKey"])
+	balance, err := h.accountService.CheckBalance(string(publicKey))
 	if err != nil {
 		return res, nil
 	}
@@ -526,12 +589,6 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	recipient := string(input)
-
-	accountData, err := h.accountFileHandler.ReadAccountData()
-	if err != nil {
-		return res, err
-	}
-
 	if recipient != "0" {
 		// mimic invalid number check
 		if recipient == "000" {
@@ -541,12 +598,11 @@ func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []by
 			return res, nil
 		}
 
-		accountData["Recipient"] = recipient
+		// accountData["Recipient"] = recipient
+		key := []byte(Recipient)
+		value := []byte(recipient)
 
-		err = h.accountFileHandler.WriteAccountData(accountData)
-		if err != nil {
-			return res, err
-		}
+		h.db.Store(key, value, true)
 	}
 
 	return res, nil
@@ -556,20 +612,14 @@ func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []by
 // as well as the invalid flags
 func (h *Handlers) TransactionReset(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	accountData, err := h.accountFileHandler.ReadAccountData()
-	if err != nil {
-		return res, err
+	err := h.db.Delete([]byte(Amount))
+	if err != nil && !errors.Is(err, gdbm.ErrItemNotFound) {
+		panic(err)
 	}
-
-	// reset the transaction
-	accountData["Recipient"] = ""
-	accountData["Amount"] = ""
-
-	err = h.accountFileHandler.WriteAccountData(accountData)
-	if err != nil {
-		return res, err
+	err = h.db.Delete([]byte(Recipient))
+	if err != nil && !errors.Is(err, gdbm.ErrItemNotFound) {
+		panic(err)
 	}
-
 	res.FlagReset = append(res.FlagReset, models.USERFLAG_INVALID_RECIPIENT, models.USERFLAG_INVALID_RECIPIENT_WITH_INVITE)
 
 	return res, nil
@@ -578,21 +628,11 @@ func (h *Handlers) TransactionReset(ctx context.Context, sym string, input []byt
 // ResetTransactionAmount resets the transaction amount and invalid flag
 func (h *Handlers) ResetTransactionAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	accountData, err := h.accountFileHandler.ReadAccountData()
-	if err != nil {
-		return res, err
+	err := h.db.Delete([]byte(Amount))
+	if err != nil && !errors.Is(err, gdbm.ErrItemNotFound) {
+		panic(err)
 	}
-
-	// reset the amount
-	accountData["Amount"] = ""
-
-	err = h.accountFileHandler.WriteAccountData(accountData)
-	if err != nil {
-		return res, err
-	}
-
 	res.FlagReset = append(res.FlagReset, models.USERFLAG_INVALID_AMOUNT)
-
 	return res, nil
 }
 
@@ -600,13 +640,12 @@ func (h *Handlers) ResetTransactionAmount(ctx context.Context, sym string, input
 // the result content.
 func (h *Handlers) MaxAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-
-	accountData, err := h.accountFileHandler.ReadAccountData()
+	publicKey, err := h.db.Fetch([]byte(PublicKeyKey))
 	if err != nil {
 		return res, err
 	}
 
-	balance, err := h.accountService.CheckBalance(accountData["PublicKey"])
+	balance, err := h.accountService.CheckBalance(string(publicKey))
 	if err != nil {
 		return res, nil
 	}
@@ -621,13 +660,12 @@ func (h *Handlers) MaxAmount(ctx context.Context, sym string, input []byte) (res
 func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	amountStr := string(input)
-
-	accountData, err := h.accountFileHandler.ReadAccountData()
+	publicKey, err := h.db.Fetch([]byte(PublicKeyKey))
 	if err != nil {
 		return res, err
 	}
 
-	balanceStr, err := h.accountService.CheckBalance(accountData["PublicKey"])
+	balanceStr, err := h.accountService.CheckBalance(string(publicKey))
 	if err != nil {
 		return res, err
 	}
@@ -666,9 +704,10 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 	}
 
 	res.Content = fmt.Sprintf("%.3f", inputAmount) // Format to 3 decimal places
-	accountData["Amount"] = res.Content
+	key := []byte(Amount)
+	value := []byte(res.Content)
+	h.db.Store(key, value, true)
 
-	err = h.accountFileHandler.WriteAccountData(accountData)
 	if err != nil {
 		return res, err
 	}
@@ -679,13 +718,12 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 // GetRecipient returns the transaction recipient from a JSON data file.
 func (h *Handlers) GetRecipient(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-
-	accountData, err := h.accountFileHandler.ReadAccountData()
+	recipient, err := h.db.Fetch([]byte(Recipient))
 	if err != nil {
 		return res, err
 	}
 
-	res.Content = accountData["Recipient"]
+	res.Content = string(recipient)
 
 	return res, nil
 }
@@ -727,12 +765,13 @@ func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte)
 func (h *Handlers) GetSender(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
-	accountData, err := h.accountFileHandler.ReadAccountData()
+	//accountData, err := h.accountFileHandler.ReadAccountData()
+	publicKey, err := h.db.Fetch([]byte(PublicKeyKey))
 	if err != nil {
 		return res, err
 	}
 
-	res.Content = accountData["PublicKey"]
+	res.Content = string(publicKey)
 
 	return res, nil
 }
@@ -741,12 +780,13 @@ func (h *Handlers) GetSender(ctx context.Context, sym string, input []byte) (res
 func (h *Handlers) GetAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
-	accountData, err := h.accountFileHandler.ReadAccountData()
+	//accountData, err := h.accountFileHandler.ReadAccountData()
+	amount, err := h.db.Fetch([]byte(Amount))
 	if err != nil {
 		return res, err
 	}
 
-	res.Content = accountData["Amount"]
+	res.Content = string(amount)
 
 	return res, nil
 }
@@ -758,11 +798,15 @@ func (h *Handlers) QuitWithBalance(ctx context.Context, sym string, input []byte
 	code := codeFromCtx(ctx)
 	l := gotext.NewLocale(translationDir, code)
 	l.AddDomain("default")
-	accountData, err := h.accountFileHandler.ReadAccountData()
+	// accountData, err := h.accountFileHandler.ReadAccountData()
+	// if err != nil {
+	// 	return res, err
+	// }
+	publicKey, err := h.db.Fetch([]byte(PublicKeyKey))
 	if err != nil {
 		return res, err
 	}
-	balance, err := h.accountService.CheckBalance(accountData["PublicKey"])
+	balance, err := h.accountService.CheckBalance(string(publicKey))
 	if err != nil {
 		return res, nil
 	}
@@ -779,24 +823,23 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 	l := gotext.NewLocale(translationDir, code)
 	l.AddDomain("default")
 
-	accountData, err := h.accountFileHandler.ReadAccountData()
-	if err != nil {
-		return res, err
-	}
-
 	// TODO
 	// Use the amount, recipient and sender to call the API and initialize the transaction
 
-	res.Content = l.Get("Your request has been sent. %s will receive %s from %s.", accountData["Recipient"], accountData["Amount"], accountData["PublicKey"])
-
-	// reset the transaction
-	accountData["Recipient"] = ""
-	accountData["Amount"] = ""
-
-	err = h.accountFileHandler.WriteAccountData(accountData)
+	publicKey, err := h.db.Fetch([]byte(PublicKeyKey))
 	if err != nil {
 		return res, err
 	}
+	amount, err := h.db.Fetch([]byte(Amount))
+	if err != nil {
+		return res, err
+	}
+	recipient, err := h.db.Fetch([]byte(Recipient))
+	if err != nil {
+		return res, err
+	}
+
+	res.Content = l.Get("Your request has been sent. %s will receive %s from %s.", string(recipient), string(amount), string(publicKey))
 
 	account_authorized_flag, err := h.parser.GetFlag("flag_account_authorized")
 

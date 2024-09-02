@@ -262,12 +262,11 @@ func (h *Handlers) VerifyPin(ctx context.Context, sym string, input []byte) (res
 		return res, err
 	}
 
-	accountData, err := h.accountFileHandler.ReadAccountData()
+	AccountPin, err := h.db.Fetch([]byte(AccountPin))
 	if err != nil {
 		return res, err
 	}
-
-	if bytes.Equal(input, []byte(accountData["AccountPIN"])) {
+	if bytes.Equal(input, AccountPin) {
 		res.FlagSet = []uint32{flags["flag_valid_pin"]}
 		res.FlagReset = []uint32{flags["flag_pin_mismatch"]}
 		res.FlagSet = append(res.FlagSet, flags["flag_pin_set"])

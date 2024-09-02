@@ -483,12 +483,12 @@ func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (res
 		return res, err
 	}
 
-	pin := string(input)
+	// pin := string(input)
 
-	accountData, err := h.accountFileHandler.ReadAccountData()
-	if err != nil {
-		return res, err
-	}
+	// accountData, err := h.accountFileHandler.ReadAccountData()
+	// if err != nil {
+	// 	return res, err
+	// }
 
 	storedpin, err := h.db.Fetch([]byte(AccountPin))
 	if err == nil {
@@ -512,21 +512,6 @@ func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (res
 	} else {
 		return res, err
 	}
-
-	// if len(input) == 4 {
-	// 	if pin != accountData["AccountPIN"] {
-	// 		res.FlagSet = append(res.FlagSet, flags["flag_incorrect_pin"])
-	// 		res.FlagReset = append(res.FlagReset, flags["flag_account_authorized"])
-	// 		return res, nil
-	// 	}
-	// 	if h.fs.St.MatchFlag(flags["flag_account_authorized"], false) {
-	// 		res.FlagReset = append(res.FlagReset, flags["flag_incorrect_pin"])
-	// 		res.FlagSet = append(res.FlagSet, flags["flag_allow_update"], flags["flag_account_authorized"])
-	// 	} else {
-	// 		res.FlagSet = append(res.FlagSet, flags["flag_allow_update"])
-	// 		res.FlagReset = append(res.FlagReset, flags["flag_account_authorized"])
-	// 	}
-	// }
 	return res, nil
 }
 
@@ -549,14 +534,6 @@ func (h *Handlers) ResetIncorrectPin(ctx context.Context, sym string, input []by
 // based on the account status
 func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-
-	// Preload the required flags
-
-	flagKeys := []string{"flag_account_success", "flag_account_pending"}
-	flags, err := h.PreloadFlags(flagKeys)
-	if err != nil {
-		return res, err
-	}
 
 	// Preload the required flags
 	flagKeys := []string{"flag_account_success", "flag_account_pending"}
@@ -693,13 +670,12 @@ func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []by
 	res := resource.Result{}
 	recipient := string(input)
 
-	accountData, err := h.accountFileHandler.ReadAccountData()
+	flagKeys := []string{"flag_invalid_recipient"}
+	flags, err := h.PreloadFlags(flagKeys)
 	if err != nil {
 		return res, err
 	}
 
-	
-	recipient := string(input)
 	if recipient != "0" {
 		// mimic invalid number check
 		if recipient == "000" {
@@ -731,7 +707,7 @@ func (h *Handlers) TransactionReset(ctx context.Context, sym string, input []byt
 		return res, err
 	}
 
-	err := h.db.Delete([]byte(Amount))
+	err = h.db.Delete([]byte(Amount))
 	if err != nil && !errors.Is(err, gdbm.ErrItemNotFound) {
 		panic(err)
 	}
@@ -756,7 +732,7 @@ func (h *Handlers) ResetTransactionAmount(ctx context.Context, sym string, input
 		return res, err
 	}
 
-	err := h.db.Delete([]byte(Amount))
+	err = h.db.Delete([]byte(Amount))
 	if err != nil && !errors.Is(err, gdbm.ErrItemNotFound) {
 		panic(err)
 	}
@@ -789,7 +765,7 @@ func (h *Handlers) MaxAmount(ctx context.Context, sym string, input []byte) (res
 // it is not more than the current balance.
 func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-// Preload the required flag
+	// Preload the required flag
 	flagKeys := []string{"flag_invalid_amount"}
 	flags, err := h.PreloadFlags(flagKeys)
 	if err != nil {
@@ -970,11 +946,11 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 	l := gotext.NewLocale(translationDir, code)
 	l.AddDomain("default")
 	// Preload the required flags
-	flagKeys := []string{"flag_invalid_recipient"}
-	flags, err := h.PreloadFlags(flagKeys)
-	if err != nil {
-		return res, err
-	}
+	// flagKeys := []string{"flag_invalid_recipient"}
+	// flags, err := h.PreloadFlags(flagKeys)
+	// if err != nil {
+	// 	return res, err
+	// }
 	// TODO
 	// Use the amount, recipient and sender to call the API and initialize the transaction
 

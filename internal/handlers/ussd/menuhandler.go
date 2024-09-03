@@ -837,9 +837,10 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 	account_authorized_flag, err := h.parser.GetFlag("flag_account_authorized")
 
 	if err != nil {
-		res.FlagReset = append(res.FlagReset, account_authorized_flag)
+		return res, nil
 	}
 
+	res.FlagReset = append(res.FlagReset, account_authorized_flag)
 	return res, nil
 }
 

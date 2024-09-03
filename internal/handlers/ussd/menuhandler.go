@@ -488,8 +488,8 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 		res.FlagSet = append(res.FlagSet, flags["flag_account_success"])
 		res.FlagReset = append(res.FlagReset, flags["flag_account_pending"])
 	} else {
-		res.FlagReset = append(res.FlagSet, flags["flag_account_success"])
-		res.FlagSet = append(res.FlagReset, flags["flag_account_pending"])
+		res.FlagReset = append(res.FlagReset, flags["flag_account_success"])
+		res.FlagSet = append(res.FlagSet, flags["flag_account_pending"])
 	}
 	return res, nil
 }

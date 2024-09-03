@@ -24,7 +24,7 @@ import (
 var (
 	scriptDir      = path.Join("services", "registration")
 	translationDir = path.Join(scriptDir, "locale")
-	dbFile         = path.Join(scriptDir, "vise.gdbm")
+	//dbFile         = path.Join(scriptDir, "userdata.gdbm")
 )
 
 const (
@@ -65,8 +65,9 @@ type Handlers struct {
 	accountService     server.AccountServiceInterface
 }
 
-func NewHandlers(dir string, st *state.State) (*Handlers, error) {
-	db, err := gdbm.Open(dbFile, gdbm.ModeWrcreat)
+func NewHandlers(dir string, st *state.State, sessionId string) (*Handlers, error) {
+	filename := path.Join(scriptDir, sessionId+"_userdata.gdbm")
+	db, err := gdbm.Open(filename, gdbm.ModeWrcreat)
 	if err != nil {
 		panic(err)
 	}
@@ -425,9 +426,12 @@ func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (res
 				res.FlagReset = append(res.FlagReset, flags["flag_account_authorized"])
 				return res, nil
 			}
+		} else {
+			res.FlagSet = append(res.FlagSet, flags["flag_incorrect_pin"])
+			res.FlagReset = append(res.FlagReset, flags["flag_account_authorized"])
 		}
 	} else if errors.Is(err, gdbm.ErrItemNotFound) {
-		//PIN not set yet
+		return res, err
 	} else {
 		return res, err
 	}
@@ -620,11 +624,11 @@ func (h *Handlers) TransactionReset(ctx context.Context, sym string, input []byt
 
 	err = h.db.Delete([]byte(Amount))
 	if err != nil && !errors.Is(err, gdbm.ErrItemNotFound) {
-		return res,err
+		return res, err
 	}
 	err = h.db.Delete([]byte(Recipient))
 	if err != nil && !errors.Is(err, gdbm.ErrItemNotFound) {
-		return res,err
+		return res, err
 	}
 
 	res.FlagReset = append(res.FlagReset, flags["flag_invalid_recipient"], flags["flag_invalid_recipient_with_invite"])
@@ -645,7 +649,7 @@ func (h *Handlers) ResetTransactionAmount(ctx context.Context, sym string, input
 
 	err = h.db.Delete([]byte(Amount))
 	if err != nil && !errors.Is(err, gdbm.ErrItemNotFound) {
-		return res,err
+		return res, err
 	}
 
 	res.FlagReset = append(res.FlagReset, flags["flag_invalid_amount"])

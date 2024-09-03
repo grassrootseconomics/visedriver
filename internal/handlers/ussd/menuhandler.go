@@ -41,6 +41,7 @@ const (
 	Offerings      = "OFFERINGS"
 	Recipient      = "RECIPIENT"
 	Amount         = "AMOUNT"
+	AccountCreated = "ACCOUNTCREATED"
 )
 
 func toBytes(s string) []byte {
@@ -146,27 +147,37 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 	if err != nil {
 		return res, err
 	}
-	accountResp, err := h.accountService.CreateAccount()
+	_, err = h.db.Fetch([]byte(AccountCreated))
 	if err != nil {
-		res.FlagSet = append(res.FlagSet, flags["flag_account_creation_failed"])
-		return res, err
-	}
-	data := map[string]string{
-		TrackingIdKey:  accountResp.Result.TrackingId,
-		PublicKeyKey:   accountResp.Result.PublicKey,
-		CustodialIdKey: accountResp.Result.CustodialId.String(),
-	}
+		if errors.Is(err, gdbm.ErrItemNotFound) {
+			accountResp, err := h.accountService.CreateAccount()
+			if err != nil {
+				res.FlagSet = append(res.FlagSet, flags["flag_account_creation_failed"])
+				return res, err
+			}
+			data := map[string]string{
+				TrackingIdKey:  accountResp.Result.TrackingId,
+				PublicKeyKey:   accountResp.Result.PublicKey,
+				CustodialIdKey: accountResp.Result.CustodialId.String(),
+			}
 
-	for key, value := range data {
-		err := h.db.Store(toBytes(key), toBytes(value), true)
-		if err != nil {
+			for key, value := range data {
+				err := h.db.Store(toBytes(key), toBytes(value), true)
+				if err != nil {
+					return res, err
+				}
+			}
+			key := []byte(AccountCreated)
+			value := []byte("1")
+			h.db.Store(key, value, true)
+			res.FlagSet = append(res.FlagSet, flags["flag_account_created"])
 			return res, err
-
+		} else {
+			return res, err
 		}
+	} else {
+		return res, nil
 	}
-
-	res.FlagSet = append(res.FlagSet, flags["flag_account_created"])
-	return res, err
 }
 
 // SavePin persists the user's PIN choice into the filesystem
@@ -609,11 +620,11 @@ func (h *Handlers) TransactionReset(ctx context.Context, sym string, input []byt
 
 	err = h.db.Delete([]byte(Amount))
 	if err != nil && !errors.Is(err, gdbm.ErrItemNotFound) {
-		panic(err)
+		return res,err
 	}
 	err = h.db.Delete([]byte(Recipient))
 	if err != nil && !errors.Is(err, gdbm.ErrItemNotFound) {
-		panic(err)
+		return res,err
 	}
 
 	res.FlagReset = append(res.FlagReset, flags["flag_invalid_recipient"], flags["flag_invalid_recipient_with_invite"])
@@ -634,7 +645,7 @@ func (h *Handlers) ResetTransactionAmount(ctx context.Context, sym string, input
 
 	err = h.db.Delete([]byte(Amount))
 	if err != nil && !errors.Is(err, gdbm.ErrItemNotFound) {
-		panic(err)
+		return res,err
 	}
 
 	res.FlagReset = append(res.FlagReset, flags["flag_invalid_amount"])

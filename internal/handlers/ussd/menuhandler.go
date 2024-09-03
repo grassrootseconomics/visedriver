@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	"git.defalsify.org/vise.git/asm"
 	"git.defalsify.org/vise.git/engine"
@@ -52,6 +53,33 @@ type FSData struct {
 	St   *state.State
 }
 
+// FlagManager handles centralized flag management
+type FlagManager struct {
+	parser *asm.FlagParser
+	mu     sync.RWMutex
+}
+
+// NewFlagManager creates a new FlagManager instance
+func NewFlagManager(csvPath string) (*FlagManager, error) {
+	parser := asm.NewFlagParser()
+	_, err := parser.Load(csvPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load flag parser: %v", err)
+	}
+
+	return &FlagManager{
+		parser: parser,
+	}, nil
+}
+
+// GetFlag retrieves a flag value by its label
+func (fm *FlagManager) GetFlag(label string) (uint32, error) {
+	fm.mu.RLock()
+	defer fm.mu.RUnlock()
+
+	return fm.parser.GetFlag(label)
+}
+
 type FlagParserInterface interface {
 	GetFlag(key string) (uint32, error)
 }
@@ -59,7 +87,7 @@ type FlagParserInterface interface {
 type Handlers struct {
 	fs                 *FSData
 	db                 *gdbm.Database
-	parser             FlagParserInterface
+	flagManager        *FlagManager
 	accountFileHandler utils.AccountFileHandlerInterface
 	accountService     server.AccountServiceInterface
 }
@@ -71,10 +99,9 @@ func NewHandlers(dir string, st *state.State, sessionId string) (*Handlers, erro
 		panic(err)
 	}
 	pfp := path.Join(scriptDir, "pp.csv")
-	parser := asm.NewFlagParser()
-	_, err = parser.Load(pfp)
+	flagManager, err := NewFlagManager(pfp)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create flag manager: %v", err)
 	}
 	return &Handlers{
 		db: db,
@@ -82,7 +109,7 @@ func NewHandlers(dir string, st *state.State, sessionId string) (*Handlers, erro
 			Path: dir,
 			St:   st,
 		},
-		parser:             parser,
+		flagManager:        flagManager,
 		accountFileHandler: utils.NewAccountFileHandler(dir + "_data"),
 		accountService:     &server.AccountService{},
 	}, nil
@@ -100,7 +127,7 @@ func isValidPIN(pin string) bool {
 func (h *Handlers) PreloadFlags(flagKeys []string) (map[string]uint32, error) {
 	flags := make(map[string]uint32)
 	for _, key := range flagKeys {
-		flag, err := h.parser.GetFlag(key)
+		flag, err := h.flagManager.GetFlag(key)
 		if err != nil {
 			return nil, err
 		}
@@ -113,13 +140,6 @@ func (h *Handlers) PreloadFlags(flagKeys []string) (map[string]uint32, error) {
 func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
-	// Preload the required flag
-	flagKeys := []string{"flag_language_set"}
-	flags, err := h.PreloadFlags(flagKeys)
-	if err != nil {
-		return res, err
-	}
-
 	inputStr := string(input)
 	switch inputStr {
 	case "0":
@@ -131,7 +151,11 @@ func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (r
 	default:
 	}
 
-	res.FlagSet = append(res.FlagSet, flags["flag_language_set"])
+	languageSetFlag, err := h.flagManager.GetFlag("flag_language_set")
+	if err != nil {
+		return res, err
+	}
+	res.FlagSet = append(res.FlagSet, languageSetFlag)
 
 	return res, nil
 }
@@ -141,18 +165,14 @@ func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (r
 // sets the default values and flags
 func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	// Preload the required flags
-	flagKeys := []string{"flag_account_created", "flag_account_creation_failed"}
-	flags, err := h.PreloadFlags(flagKeys)
-	if err != nil {
-		return res, err
-	}
-	_, err = h.db.Fetch([]byte(AccountCreated))
+
+	_, err := h.db.Fetch([]byte(AccountCreated))
 	if err != nil {
 		if errors.Is(err, gdbm.ErrItemNotFound) {
 			accountResp, err := h.accountService.CreateAccount()
 			if err != nil {
-				res.FlagSet = append(res.FlagSet, flags["flag_account_creation_failed"])
+				flag_account_creation_failed, _ := h.flagManager.GetFlag("flag_account_creation_failed")
+				res.FlagSet = append(res.FlagSet, flag_account_creation_failed)
 				return res, err
 			}
 			data := map[string]string{
@@ -170,7 +190,8 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 			key := []byte(AccountCreated)
 			value := []byte("1")
 			h.db.Store(key, value, true)
-			res.FlagSet = append(res.FlagSet, flags["flag_account_created"])
+			flag_account_created, _ := h.flagManager.GetFlag("flag_account_created")
+			res.FlagSet = append(res.FlagSet, flag_account_created)
 			return res, err
 		} else {
 			return res, err
@@ -183,19 +204,17 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 // SavePin persists the user's PIN choice into the filesystem
 func (h *Handlers) SavePin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	flagKeys := []string{"flag_incorrect_pin"}
-	flags, err := h.PreloadFlags(flagKeys)
-	if err != nil {
-		return res, err
-	}
+
+	flag_incorrect_pin, _ := h.flagManager.GetFlag("flag_incorrect_pin")
+
 	accountPIN := string(input)
 	// Validate that the PIN is a 4-digit number
 	if !isValidPIN(accountPIN) {
-		res.FlagSet = append(res.FlagSet, flags["flag_incorrect_pin"])
+		res.FlagSet = append(res.FlagSet, flag_incorrect_pin)
 		return res, nil
 	}
 
-	res.FlagReset = append(res.FlagReset, flags["flag_incorrect_pin"])
+	res.FlagReset = append(res.FlagReset, flag_incorrect_pin)
 
 	key := []byte(AccountPin)
 	value := []byte(accountPIN)
@@ -209,25 +228,21 @@ func (h *Handlers) SetResetSingleEdit(ctx context.Context, sym string, input []b
 	res := resource.Result{}
 	menuOption := string(input)
 
-	// Preload the required flags
-	flagKeys := []string{"flag_allow_update", "flag_single_edit"}
-	flags, err := h.PreloadFlags(flagKeys)
-	if err != nil {
-		return res, err
-	}
+	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+	flag_single_edit, _ := h.flagManager.GetFlag("flag_single_edit")
 
 	switch menuOption {
 	case "2":
-		res.FlagReset = append(res.FlagReset, flags["flag_allow_update"])
-		res.FlagSet = append(res.FlagSet, flags["flag_single_edit"])
+		res.FlagReset = append(res.FlagReset, flag_allow_update)
+		res.FlagSet = append(res.FlagSet, flag_single_edit)
 	case "3":
-		res.FlagReset = append(res.FlagReset, flags["flag_allow_update"])
-		res.FlagSet = append(res.FlagSet, flags["flag_single_edit"])
+		res.FlagReset = append(res.FlagReset, flag_allow_update)
+		res.FlagSet = append(res.FlagSet, flag_single_edit)
 	case "4":
-		res.FlagReset = append(res.FlagReset, flags["flag_allow_update"])
-		res.FlagSet = append(res.FlagSet, flags["flag_single_edit"])
+		res.FlagReset = append(res.FlagReset, flag_allow_update)
+		res.FlagSet = append(res.FlagSet, flag_single_edit)
 	default:
-		res.FlagReset = append(res.FlagReset, flags["flag_single_edit"])
+		res.FlagReset = append(res.FlagReset, flag_single_edit)
 	}
 
 	return res, nil
@@ -239,23 +254,20 @@ func (h *Handlers) SetResetSingleEdit(ctx context.Context, sym string, input []b
 func (h *Handlers) VerifyPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
-	// Preload the required flags
-	flagKeys := []string{"flag_valid_pin", "flag_pin_mismatch", "flag_pin_set"}
-	flags, err := h.PreloadFlags(flagKeys)
-	if err != nil {
-		return res, err
-	}
+	flag_valid_pin, _ := h.flagManager.GetFlag("flag_valid_pin")
+	flag_pin_mismatch, _ := h.flagManager.GetFlag("flag_pin_mismatch")
+	flag_pin_set, _ := h.flagManager.GetFlag("flag_pin_set")
 
 	AccountPin, err := h.db.Fetch([]byte(AccountPin))
 	if err != nil {
 		return res, err
 	}
 	if bytes.Equal(input, AccountPin) {
-		res.FlagSet = []uint32{flags["flag_valid_pin"]}
-		res.FlagReset = []uint32{flags["flag_pin_mismatch"]}
-		res.FlagSet = append(res.FlagSet, flags["flag_pin_set"])
+		res.FlagSet = []uint32{flag_valid_pin}
+		res.FlagReset = []uint32{flag_pin_mismatch}
+		res.FlagSet = append(res.FlagSet, flag_pin_set)
 	} else {
-		res.FlagSet = []uint32{flags["flag_pin_mismatch"]}
+		res.FlagSet = []uint32{flag_pin_mismatch}
 	}
 
 	return res, nil
@@ -362,14 +374,9 @@ func (h *Handlers) SaveOfferings(ctx context.Context, sym string, input []byte) 
 func (h *Handlers) ResetAllowUpdate(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
-	// Preload the required flag
-	flagKeys := []string{"flag_allow_update"}
-	flags, err := h.PreloadFlags(flagKeys)
-	if err != nil {
-		return res, err
-	}
+	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
 
-	res.FlagReset = append(res.FlagReset, flags["flag_allow_update"])
+	res.FlagReset = append(res.FlagReset, flag_allow_update)
 	return res, nil
 }
 
@@ -377,14 +384,9 @@ func (h *Handlers) ResetAllowUpdate(ctx context.Context, sym string, input []byt
 func (h *Handlers) ResetAccountAuthorized(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
-	// Preload the required flags
-	flagKeys := []string{"flag_account_authorized"}
-	flags, err := h.PreloadFlags(flagKeys)
-	if err != nil {
-		return res, err
-	}
+	flag_account_authorized, _ := h.flagManager.GetFlag("flag_account_authorized")
 
-	res.FlagReset = append(res.FlagReset, flags["flag_account_authorized"])
+	res.FlagReset = append(res.FlagReset, flag_account_authorized)
 	return res, nil
 }
 
@@ -403,26 +405,25 @@ func (h *Handlers) CheckIdentifier(ctx context.Context, sym string, input []byte
 // It sets the required flags that control the flow.
 func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	// Preload the required flags
-	flagKeys := []string{"flag_incorrect_pin", "flag_account_authorized", "flag_allow_update"}
-	flags, err := h.PreloadFlags(flagKeys)
-	if err != nil {
-		return res, err
-	}
+
+	flag_incorrect_pin, _ := h.flagManager.GetFlag("flag_incorrect_pin")
+	flag_account_authorized, _ := h.flagManager.GetFlag("flag_account_authorized")
+	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+
 	storedpin, err := h.db.Fetch([]byte(AccountPin))
 	if err == nil {
 		if len(input) == 4 {
 			if bytes.Equal(input, storedpin) {
-				if h.fs.St.MatchFlag(flags["flag_account_authorized"], false) {
-					res.FlagReset = append(res.FlagReset, flags["flag_incorrect_pin"])
-					res.FlagSet = append(res.FlagSet, flags["flag_allow_update"], flags["flag_account_authorized"])
+				if h.fs.St.MatchFlag(flag_account_authorized, false) {
+					res.FlagReset = append(res.FlagReset, flag_incorrect_pin)
+					res.FlagSet = append(res.FlagSet, flag_allow_update, flag_account_authorized)
 				} else {
-					res.FlagSet = append(res.FlagSet, flags["flag_allow_update"])
-					res.FlagReset = append(res.FlagReset, flags["flag_account_authorized"])
+					res.FlagSet = append(res.FlagSet, flag_allow_update)
+					res.FlagReset = append(res.FlagReset, flag_account_authorized)
 				}
 			} else {
-				res.FlagSet = append(res.FlagSet, flags["flag_incorrect_pin"])
-				res.FlagReset = append(res.FlagReset, flags["flag_account_authorized"])
+				res.FlagSet = append(res.FlagSet, flag_incorrect_pin)
+				res.FlagReset = append(res.FlagReset, flag_account_authorized)
 				return res, nil
 			}
 		}
@@ -438,14 +439,9 @@ func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (res
 func (h *Handlers) ResetIncorrectPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
-	// Preload the required flag
-	flagKeys := []string{"flag_incorrect_pin"}
-	flags, err := h.PreloadFlags(flagKeys)
-	if err != nil {
-		return res, err
-	}
+	flag_incorrect_pin, _ := h.flagManager.GetFlag("flag_incorrect_pin")
 
-	res.FlagReset = append(res.FlagReset, flags["flag_incorrect_pin"])
+	res.FlagReset = append(res.FlagReset, flag_incorrect_pin)
 	return res, nil
 }
 
@@ -454,12 +450,9 @@ func (h *Handlers) ResetIncorrectPin(ctx context.Context, sym string, input []by
 func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
-	// Preload the required flags
-	flagKeys := []string{"flag_account_success", "flag_account_pending"}
-	flags, err := h.PreloadFlags(flagKeys)
-	if err != nil {
-		return res, err
-	}
+	flag_account_success, _ := h.flagManager.GetFlag("flag_account_success")
+	flag_account_pending, _ := h.flagManager.GetFlag("flag_account_pending")
+
 	trackingId, err := h.db.Fetch([]byte(TrackingIdKey))
 
 	if err != nil {
@@ -485,11 +478,11 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 	}
 
 	if status == "SUCCESS" {
-		res.FlagSet = append(res.FlagSet, flags["flag_account_success"])
-		res.FlagReset = append(res.FlagReset, flags["flag_account_pending"])
+		res.FlagSet = append(res.FlagSet, flag_account_success)
+		res.FlagReset = append(res.FlagReset, flag_account_pending)
 	} else {
-		res.FlagReset = append(res.FlagReset, flags["flag_account_success"])
-		res.FlagSet = append(res.FlagSet, flags["flag_account_pending"])
+		res.FlagReset = append(res.FlagReset, flag_account_success)
+		res.FlagSet = append(res.FlagSet, flag_account_pending)
 	}
 	return res, nil
 }
@@ -498,19 +491,14 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 func (h *Handlers) Quit(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
-	// Preload the required flags
-	flagKeys := []string{"flag_account_authorized"}
-	flags, err := h.PreloadFlags(flagKeys)
-	if err != nil {
-		return res, err
-	}
+	flag_account_authorized, _ := h.flagManager.GetFlag("flag_account_authorized")
 
 	code := codeFromCtx(ctx)
 	l := gotext.NewLocale(translationDir, code)
 	l.AddDomain("default")
 
 	res.Content = l.Get("Thank you for using Sarafu. Goodbye!")
-	res.FlagReset = append(res.FlagReset, flags["flag_account_authorized"])
+	res.FlagReset = append(res.FlagReset, flag_account_authorized)
 	return res, nil
 }
 
@@ -518,25 +506,20 @@ func (h *Handlers) Quit(ctx context.Context, sym string, input []byte) (resource
 func (h *Handlers) VerifyYob(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
-	// Preload the required flag
-	flagKeys := []string{"flag_incorrect_date_format"}
-	flags, err := h.PreloadFlags(flagKeys)
-	if err != nil {
-		return res, err
-	}
+	flag_incorrect_date_format, _ := h.flagManager.GetFlag("flag_incorrect_date_format")
 
 	date := string(input)
-	_, err = strconv.Atoi(date)
+	_, err := strconv.Atoi(date)
 	if err != nil {
 		// If conversion fails, input is not numeric
-		res.FlagSet = append(res.FlagSet, flags["flag_incorrect_date_format"])
+		res.FlagSet = append(res.FlagSet, flag_incorrect_date_format)
 		return res, nil
 	}
 
 	if len(date) == 4 {
-		res.FlagReset = append(res.FlagReset, flags["flag_incorrect_date_format"])
+		res.FlagReset = append(res.FlagReset, flag_incorrect_date_format)
 	} else {
-		res.FlagSet = append(res.FlagSet, flags["flag_incorrect_date_format"])
+		res.FlagSet = append(res.FlagSet, flag_incorrect_date_format)
 	}
 
 	return res, nil
@@ -546,14 +529,9 @@ func (h *Handlers) VerifyYob(ctx context.Context, sym string, input []byte) (res
 func (h *Handlers) ResetIncorrectYob(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
-	// Preload the required flags
-	flagKeys := []string{"flag_incorrect_date_format"}
-	flags, err := h.PreloadFlags(flagKeys)
-	if err != nil {
-		return res, err
-	}
+	flag_incorrect_date_format, _ := h.flagManager.GetFlag("flag_incorrect_date_format")
 
-	res.FlagReset = append(res.FlagReset, flags["flag_incorrect_date_format"])
+	res.FlagReset = append(res.FlagReset, flag_incorrect_date_format)
 	return res, nil
 }
 
@@ -581,16 +559,12 @@ func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []by
 	res := resource.Result{}
 	recipient := string(input)
 
-	flagKeys := []string{"flag_invalid_recipient"}
-	flags, err := h.PreloadFlags(flagKeys)
-	if err != nil {
-		return res, err
-	}
+	flag_invalid_recipient, _ := h.flagManager.GetFlag("flag_invalid_recipient")
 
 	if recipient != "0" {
 		// mimic invalid number check
 		if recipient == "000" {
-			res.FlagSet = append(res.FlagSet, flags["flag_invalid_recipient"])
+			res.FlagSet = append(res.FlagSet, flag_invalid_recipient)
 			res.Content = recipient
 
 			return res, nil
@@ -611,14 +585,10 @@ func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []by
 func (h *Handlers) TransactionReset(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
-	// Preload the required flags
-	flagKeys := []string{"flag_invalid_recipient", "flag_invalid_recipient_with_invite"}
-	flags, err := h.PreloadFlags(flagKeys)
-	if err != nil {
-		return res, err
-	}
+	flag_invalid_recipient, _ := h.flagManager.GetFlag("flag_invalid_recipient")
+	flag_invalid_recipient_with_invite, _ := h.flagManager.GetFlag("flag_invalid_recipient_with_invite")
 
-	err = h.db.Delete([]byte(Amount))
+	err := h.db.Delete([]byte(Amount))
 	if err != nil && !errors.Is(err, gdbm.ErrItemNotFound) {
 		return res, err
 	}
@@ -627,7 +597,7 @@ func (h *Handlers) TransactionReset(ctx context.Context, sym string, input []byt
 		return res, err
 	}
 
-	res.FlagReset = append(res.FlagReset, flags["flag_invalid_recipient"], flags["flag_invalid_recipient_with_invite"])
+	res.FlagReset = append(res.FlagReset, flag_invalid_recipient, flag_invalid_recipient_with_invite)
 
 	return res, nil
 }
@@ -636,19 +606,14 @@ func (h *Handlers) TransactionReset(ctx context.Context, sym string, input []byt
 func (h *Handlers) ResetTransactionAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
-	// Preload the required flag
-	flagKeys := []string{"flag_invalid_amount"}
-	flags, err := h.PreloadFlags(flagKeys)
-	if err != nil {
-		return res, err
-	}
+	flag_invalid_amount, _ := h.flagManager.GetFlag("flag_invalid_amount")
 
-	err = h.db.Delete([]byte(Amount))
+	err := h.db.Delete([]byte(Amount))
 	if err != nil && !errors.Is(err, gdbm.ErrItemNotFound) {
 		return res, err
 	}
 
-	res.FlagReset = append(res.FlagReset, flags["flag_invalid_amount"])
+	res.FlagReset = append(res.FlagReset, flag_invalid_amount)
 
 	return res, nil
 }
@@ -676,12 +641,8 @@ func (h *Handlers) MaxAmount(ctx context.Context, sym string, input []byte) (res
 // it is not more than the current balance.
 func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	// Preload the required flag
-	flagKeys := []string{"flag_invalid_amount"}
-	flags, err := h.PreloadFlags(flagKeys)
-	if err != nil {
-		return res, err
-	}
+
+	flag_invalid_amount, _ := h.flagManager.GetFlag("flag_invalid_amount")
 
 	amountStr := string(input)
 	publicKey, err := h.db.Fetch([]byte(PublicKeyKey))
@@ -711,20 +672,20 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 	re := regexp.MustCompile(`^(\d+(\.\d+)?)\s*(?:CELO)?$`)
 	matches := re.FindStringSubmatch(strings.TrimSpace(amountStr))
 	if len(matches) < 2 {
-		res.FlagSet = append(res.FlagSet, flags["flag_invalid_amount"])
+		res.FlagSet = append(res.FlagSet, flag_invalid_amount)
 		res.Content = amountStr
 		return res, nil
 	}
 
 	inputAmount, err := strconv.ParseFloat(matches[1], 64)
 	if err != nil {
-		res.FlagSet = append(res.FlagSet, flags["flag_invalid_amount"])
+		res.FlagSet = append(res.FlagSet, flag_invalid_amount)
 		res.Content = amountStr
 		return res, nil
 	}
 
 	if inputAmount > balanceValue {
-		res.FlagSet = append(res.FlagSet, flags["flag_invalid_amount"])
+		res.FlagSet = append(res.FlagSet, flag_invalid_amount)
 		res.Content = amountStr
 		return res, nil
 	}
@@ -784,12 +745,7 @@ func (h *Handlers) GetAmount(ctx context.Context, sym string, input []byte) (res
 func (h *Handlers) QuitWithBalance(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
-	// Preload the required flag
-	flagKeys := []string{"flag_account_authorized"}
-	flags, err := h.PreloadFlags(flagKeys)
-	if err != nil {
-		return res, err
-	}
+	flag_account_authorized, _ := h.flagManager.GetFlag("flag_account_authorized")
 
 	code := codeFromCtx(ctx)
 	l := gotext.NewLocale(translationDir, code)
@@ -803,7 +759,7 @@ func (h *Handlers) QuitWithBalance(ctx context.Context, sym string, input []byte
 		return res, nil
 	}
 	res.Content = l.Get("Your account balance is %s", balance)
-	res.FlagReset = append(res.FlagReset, flags["flag_account_authorized"])
+	res.FlagReset = append(res.FlagReset, flag_account_authorized)
 	return res, nil
 }
 
@@ -832,10 +788,9 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 
 	res.Content = l.Get("Your request has been sent. %s will receive %s from %s.", string(recipient), string(amount), string(publicKey))
 
-	account_authorized_flag, err := h.parser.GetFlag("flag_account_authorized")
-
+	account_authorized_flag, err := h.flagManager.GetFlag("flag_account_authorized")
 	if err != nil {
-		return res, nil
+		return res, err
 	}
 
 	res.FlagReset = append(res.FlagReset, account_authorized_flag)

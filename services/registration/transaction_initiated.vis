@@ -1,4 +1,6 @@
-LOAD reset_incorrect 0
+LOAD reset_incorrect 6
+CATCH incorrect_pin flag_incorrect_pin 1
+CATCH _ flag_account_authorized 0
 LOAD get_amount 10
 MAP get_amount
 RELOAD get_recipient

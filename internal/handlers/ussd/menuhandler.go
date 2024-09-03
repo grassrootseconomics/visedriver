@@ -219,13 +219,13 @@ func (h *Handlers) SetResetSingleEdit(ctx context.Context, sym string, input []b
 
 	switch menuOption {
 	case "2":
-		res.FlagReset = append(res.FlagSet, flags["flag_allow_update"])
+		res.FlagReset = append(res.FlagReset, flags["flag_allow_update"])
 		res.FlagSet = append(res.FlagSet, flags["flag_single_edit"])
 	case "3":
-		res.FlagReset = append(res.FlagSet, flags["flag_allow_update"])
+		res.FlagReset = append(res.FlagReset, flags["flag_allow_update"])
 		res.FlagSet = append(res.FlagSet, flags["flag_single_edit"])
 	case "4":
-		res.FlagReset = append(res.FlagSet, flags["flag_allow_update"])
+		res.FlagReset = append(res.FlagReset, flags["flag_allow_update"])
 		res.FlagSet = append(res.FlagSet, flags["flag_single_edit"])
 	default:
 		res.FlagReset = append(res.FlagReset, flags["flag_single_edit"])
@@ -489,8 +489,8 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 		res.FlagSet = append(res.FlagSet, flags["flag_account_success"])
 		res.FlagReset = append(res.FlagReset, flags["flag_account_pending"])
 	} else {
-		res.FlagReset = append(res.FlagSet, flags["flag_account_success"])
-		res.FlagSet = append(res.FlagReset, flags["flag_account_pending"])
+		res.FlagReset = append(res.FlagReset, flags["flag_account_success"])
+		res.FlagSet = append(res.FlagSet, flags["flag_account_pending"])
 	}
 	return res, nil
 }

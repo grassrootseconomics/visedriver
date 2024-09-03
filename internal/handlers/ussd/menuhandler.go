@@ -24,7 +24,6 @@ import (
 var (
 	scriptDir      = path.Join("services", "registration")
 	translationDir = path.Join(scriptDir, "locale")
-	//dbFile         = path.Join(scriptDir, "userdata.gdbm")
 )
 
 const (
@@ -219,13 +218,13 @@ func (h *Handlers) SetResetSingleEdit(ctx context.Context, sym string, input []b
 
 	switch menuOption {
 	case "2":
-		res.FlagReset = append(res.FlagSet, flags["flag_allow_update"])
+		res.FlagReset = append(res.FlagReset, flags["flag_allow_update"])
 		res.FlagSet = append(res.FlagSet, flags["flag_single_edit"])
 	case "3":
-		res.FlagReset = append(res.FlagSet, flags["flag_allow_update"])
+		res.FlagReset = append(res.FlagReset, flags["flag_allow_update"])
 		res.FlagSet = append(res.FlagSet, flags["flag_single_edit"])
 	case "4":
-		res.FlagReset = append(res.FlagSet, flags["flag_allow_update"])
+		res.FlagReset = append(res.FlagReset, flags["flag_allow_update"])
 		res.FlagSet = append(res.FlagSet, flags["flag_single_edit"])
 	default:
 		res.FlagReset = append(res.FlagReset, flags["flag_single_edit"])
@@ -755,11 +754,9 @@ func (h *Handlers) GetRecipient(ctx context.Context, sym string, input []byte) (
 	return res, nil
 }
 
-// GetSender retrieves the public key from a JSON data file.
+// GetSender retrieves the public key from the Gdbm Db
 func (h *Handlers) GetSender(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-
-	//accountData, err := h.accountFileHandler.ReadAccountData()
 	publicKey, err := h.db.Fetch([]byte(PublicKeyKey))
 	if err != nil {
 		return res, err
@@ -770,7 +767,7 @@ func (h *Handlers) GetSender(ctx context.Context, sym string, input []byte) (res
 	return res, nil
 }
 
-// GetAmount retrieves the amount from a JSON data file.
+// GetAmount retrieves the amount from teh Gdbm Db
 func (h *Handlers) GetAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	amount, err := h.db.Fetch([]byte(Amount))

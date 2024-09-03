@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"encoding/csv"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path"
+	"strconv"
 
-	"git.defalsify.org/vise.git/asm"
 	"git.defalsify.org/vise.git/cache"
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/persist"
@@ -36,44 +38,40 @@ func main() {
 	st := state.NewState(16)
 	st.UseDebug()
 
-	// Initialize the FlagParser
 	pfp := path.Join(scriptDir, "pp.csv")
-	parser := asm.NewFlagParser()
-
-	// Load flags from the pp.csv file
-	_, err := parser.Load(pfp)
+	file, err := os.Open(pfp)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to load flags: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Failed to open CSV file: %v\n", err)
 		os.Exit(1)
 	}
+	defer file.Close()
+	reader := csv.NewReader(file)
 
-	// Register all flags loaded from pp.csv
-	flagKeys := []string{
-		"flag_language_set",
-		"flag_account_created",
-		"flag_account_creation_failed",
-		"flag_account_pending",
-		"flag_account_success",
-		"flag_pin_mismatch",
-		"flag_pin_set",
-		"flag_account_authorized",
-		"flag_invalid_recipient",
-		"flag_invalid_recipient_with_invite",
-		"flag_invalid_amount",
-		"flag_incorrect_pin",
-		"flag_valid_pin",
-		"flag_allow_update",
-		"flag_single_edit",
-		"flag_incorrect_date_format",
-	}
-
-	for _, key := range flagKeys {
-		id, err := parser.GetFlag(key)
+	// Iterate through the CSV records and register the flags
+	for {
+		record, err := reader.Read()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to get flag %s: %v\n", key, err)
+			if err == io.EOF {
+				break
+			}
+			fmt.Fprintf(os.Stderr, "Error reading CSV file: %v\n", err)
+			os.Exit(1)
+		}
+
+		// Ensure the record starts with "flag" and has at least 3 columns
+		if len(record) < 3 || record[0] != "flag" {
 			continue
 		}
-		state.FlagDebugger.Register(id, key)
+
+		flagName := record[1]
+		flagValue, err := strconv.Atoi(record[2])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to convert flag value %s to integer: %v\n", record[2], err)
+			continue
+		}
+
+		// Register the flag
+		state.FlagDebugger.Register(uint32(flagValue), flagName)
 	}
 
 	rfs := resource.NewFsResource(scriptDir)

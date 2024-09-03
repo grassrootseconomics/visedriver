@@ -80,10 +80,6 @@ func (fm *FlagManager) GetFlag(label string) (uint32, error) {
 	return fm.parser.GetFlag(label)
 }
 
-type FlagParserInterface interface {
-	GetFlag(key string) (uint32, error)
-}
-
 type Handlers struct {
 	fs                 *FSData
 	db                 *gdbm.Database
@@ -122,18 +118,6 @@ const pinPattern = `^\d{4}$`
 func isValidPIN(pin string) bool {
 	match, _ := regexp.MatchString(pinPattern, pin)
 	return match
-}
-
-func (h *Handlers) PreloadFlags(flagKeys []string) (map[string]uint32, error) {
-	flags := make(map[string]uint32)
-	for _, key := range flagKeys {
-		flag, err := h.flagManager.GetFlag(key)
-		if err != nil {
-			return nil, err
-		}
-		flags[key] = flag
-	}
-	return flags, nil
 }
 
 // SetLanguage sets the language across the menu

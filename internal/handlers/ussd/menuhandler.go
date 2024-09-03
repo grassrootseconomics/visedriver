@@ -426,9 +426,6 @@ func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (res
 				res.FlagReset = append(res.FlagReset, flags["flag_account_authorized"])
 				return res, nil
 			}
-		} else {
-			res.FlagSet = append(res.FlagSet, flags["flag_incorrect_pin"])
-			res.FlagReset = append(res.FlagReset, flags["flag_account_authorized"])
 		}
 	} else if errors.Is(err, gdbm.ErrItemNotFound) {
 		return res, err

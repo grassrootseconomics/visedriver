@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path"
 	"strconv"
@@ -71,6 +72,7 @@ func main() {
 		}
 
 		// Register the flag
+		log.Printf("Registering flagName:%s; flagValue:%v", flagName, flagValue)
 		state.FlagDebugger.Register(uint32(flagValue), flagName)
 	}
 
@@ -105,7 +107,7 @@ func main() {
 
 	fp := path.Join(dp, sessionId)
 
-	ussdHandlers, err := ussd.NewHandlers(fp, &st,sessionId)
+	ussdHandlers, err := ussd.NewHandlers(fp, &st, sessionId)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "handler setup failed with error: %v\n", err)

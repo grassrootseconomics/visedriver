@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"git.defalsify.org/vise.git/asm"
-	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/lang"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/state"
@@ -255,7 +254,6 @@ func (h *Handlers) VerifyPin(ctx context.Context, sym string, input []byte) (res
 // codeFromCtx retrieves language codes from the context that can be used for handling translations
 func codeFromCtx(ctx context.Context) string {
 	var code string
-	engine.Logg.DebugCtxf(ctx, "in msg", "ctx", ctx, "val", code)
 	if ctx.Value("Language") != nil {
 		lang := ctx.Value("Language").(lang.Language)
 		code = lang.Code

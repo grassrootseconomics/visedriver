@@ -9,7 +9,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 
 	"git.defalsify.org/vise.git/asm"
 	"git.defalsify.org/vise.git/engine"
@@ -56,7 +55,6 @@ type FSData struct {
 // FlagManager handles centralized flag management
 type FlagManager struct {
 	parser *asm.FlagParser
-	mu     sync.RWMutex
 }
 
 // NewFlagManager creates a new FlagManager instance
@@ -74,9 +72,6 @@ func NewFlagManager(csvPath string) (*FlagManager, error) {
 
 // GetFlag retrieves a flag value by its label
 func (fm *FlagManager) GetFlag(label string) (uint32, error) {
-	fm.mu.RLock()
-	defer fm.mu.RUnlock()
-
 	return fm.parser.GetFlag(label)
 }
 

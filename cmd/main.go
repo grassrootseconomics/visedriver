@@ -11,6 +11,7 @@ import (
 	"strconv"
 
 	"git.defalsify.org/vise.git/cache"
+	fsdb "git.defalsify.org/vise.git/db/fs"
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
@@ -20,7 +21,19 @@ import (
 
 var (
 	scriptDir = path.Join("services", "registration")
+	store     = fsdb.NewFsDb()
+	pr        = persist.NewPersister(store)
 )
+
+type menuResource struct {
+	*resource.DbResource
+}
+
+func newMenuResource(rs *resource.DbResource) resource.Resource {
+	return &menuResource{
+		rs,
+	}
+}
 
 func main() {
 	var dir string
@@ -35,8 +48,6 @@ func main() {
 	fmt.Fprintf(os.Stderr, "starting session at symbol '%s' using resource dir: %s\n", root, dir)
 
 	ctx := context.Background()
-	st := state.NewState(16)
-	st.UseDebug()
 
 	pfp := path.Join(scriptDir, "pp.csv")
 	file, err := os.Open(pfp)
@@ -74,11 +85,11 @@ func main() {
 		state.FlagDebugger.Register(uint32(flagValue), flagName)
 	}
 
-	rfs := resource.NewFsResource(scriptDir)
 	ca := cache.NewCache()
 	cfg := engine.Config{
 		Root:      "root",
 		SessionId: sessionId,
+		FlagCount: uint32(16),
 	}
 
 	dp := path.Join(scriptDir, ".state")
@@ -87,25 +98,26 @@ func main() {
 		fmt.Fprintf(os.Stderr, "state dir create exited with error: %v\n", err)
 		os.Exit(1)
 	}
-	pr := persist.NewFsPersister(dp)
-	en, err := engine.NewPersistedEngine(ctx, cfg, pr, rfs)
 
+	store := fsdb.NewFsDb()
+	err = store.Connect(ctx, scriptDir)
 	if err != nil {
-		pr = pr.WithContent(&st, ca)
-		err = pr.Save(cfg.SessionId)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to save state with error: %v\n", err)
-		}
-		en, err = engine.NewPersistedEngine(ctx, cfg, pr, rfs)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "engine create exited with error: %v\n", err)
-			os.Exit(1)
-		}
+		panic(err)
 	}
+
+	rfs := resource.NewDbResource(store)
+
+	rs, ok := newMenuResource(rfs).(*menuResource)
+	if !ok {
+		os.Exit(1)
+	}
+	en := engine.NewEngine(cfg, rs)
+	en = en.WithMemory(ca)
+	en = en.WithPersister(pr)
 
 	fp := path.Join(dp, sessionId)
 
-	ussdHandlers, err := ussd.NewHandlers(fp, &st,sessionId)
+	ussdHandlers, err := ussd.NewHandlers(fp, pr.State, sessionId)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "handler setup failed with error: %v\n", err)
@@ -144,26 +156,12 @@ func main() {
 	rfs.AddLocalFunc("set_reset_single_edit", ussdHandlers.SetResetSingleEdit)
 	rfs.AddLocalFunc("initiate_transaction", ussdHandlers.InitiateTransaction)
 
-	cont, err := en.Init(ctx)
-	en.SetDebugger(engine.NewSimpleDebug(nil))
+	_, err = en.Init(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "engine init exited with error: %v\n", err)
 		os.Exit(1)
 	}
-	if !cont {
-		_, err = en.WriteResult(ctx, os.Stdout)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "dead init write error: %v\n", err)
-			os.Exit(1)
-		}
-		err = en.Finish()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "engine finish error: %v\n", err)
-			os.Exit(1)
-		}
-		os.Stdout.Write([]byte{0x0a})
-		os.Exit(0)
-	}
+
 	err = engine.Loop(ctx, en, os.Stdin, os.Stdout)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "loop exited with error: %v\n", err)

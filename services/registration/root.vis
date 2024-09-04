@@ -1,7 +1,7 @@
-CATCH select_language 8 0
-CATCH terms 9 0
+CATCH select_language flag_language_set 0
+CATCH terms flag_account_created 0
 LOAD check_account_status 0
-CATCH account_pending 10 1
-CATCH create_pin 18 0
-CATCH main 11 1
+CATCH account_pending flag_account_pending 1
+CATCH create_pin flag_pin_set 0
+CATCH main flag_account_success 1
 HALT

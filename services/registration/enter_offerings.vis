@@ -1,6 +1,6 @@
 LOAD save_location 0
-CATCH incorrect_pin 15 1
-CATCH update_success 16 1
+CATCH incorrect_pin flag_incorrect_pin 1
+CATCH update_success flag_allow_update 1
 MOUT back 0
 HALT
 LOAD save_offerings 0

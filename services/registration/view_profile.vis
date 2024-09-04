@@ -1,8 +1,8 @@
 LOAD get_profile_info 0
 MAP get_profile_info 
-LOAD reset_incorrect 0
-CATCH incorrect_pin 15 1
-CATCH pin_entry 12 0
+LOAD reset_incorrect 6
+CATCH incorrect_pin flag_incorrect_pin 1
+CATCH pin_entry flag_account_authorized 0
 MOUT back 0
 HALT
 INCMP _ 0

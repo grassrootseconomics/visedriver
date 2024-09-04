@@ -3,6 +3,7 @@ package ussd
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -18,6 +19,15 @@ import (
 // MockAccountService implements AccountServiceInterface for testing
 type MockAccountService struct {
 	mock.Mock
+}
+
+type MockFlagParser struct {
+	mock.Mock
+}
+
+func (m *MockFlagParser) GetFlag(key string) (uint32, error) {
+	args := m.Called(key)
+	return args.Get(0).(uint32), args.Error(1)
 }
 
 func (m *MockAccountService) CreateAccount() (*models.AccountResponse, error) {
@@ -69,11 +79,20 @@ func TestCreateAccount(t *testing.T) {
 	// Set up expectations for the mock account service
 	mockAccountService.On("CreateAccount").Return(mockAccountResponse, nil)
 
+	mockParser := new(MockFlagParser)
+
+	flag_account_created := uint32(1)
+	flag_account_creation_failed := uint32(2)
+
+	mockParser.On("GetFlag", "flag_account_created").Return(flag_account_created, nil)
+	mockParser.On("GetFlag", "flag_account_creation_failed").Return(flag_account_creation_failed, nil)
+
 	// Initialize Handlers with mock account service
 	h := &Handlers{
 		fs:                 &FSData{Path: accountFilePath},
 		accountFileHandler: accountFileHandler,
 		accountService:     mockAccountService,
+		parser:             mockParser,
 	}
 
 	tests := []struct {
@@ -86,7 +105,7 @@ func TestCreateAccount(t *testing.T) {
 			name:         "New account creation",
 			existingData: nil,
 			expectedResult: resource.Result{
-				FlagSet: []uint32{models.USERFLAG_ACCOUNT_CREATED},
+				FlagSet: []uint32{flag_account_created},
 			},
 			expectedData: map[string]string{
 				"TrackingId":  "test-tracking-id",
@@ -247,9 +266,15 @@ func TestSavePin(t *testing.T) {
 
 	// Create a new AccountFileHandler and set it in the Handlers struct
 	accountFileHandler := utils.NewAccountFileHandler(accountFilePath)
+	mockParser := new(MockFlagParser)
+	
 	h := &Handlers{
 		accountFileHandler: accountFileHandler,
+		parser:             mockParser,
 	}
+
+	flag_incorrect_pin := uint32(1)
+	mockParser.On("GetFlag", "flag_incorrect_pin").Return(flag_incorrect_pin, nil)
 
 	tests := []struct {
 		name           string
@@ -271,21 +296,21 @@ func TestSavePin(t *testing.T) {
 		{
 			name:           "Invalid PIN - non-numeric",
 			input:          []byte("12ab"),
-			expectedFlags:  []uint32{models.USERFLAG_INCORRECTPIN},
+			expectedFlags:  []uint32{flag_incorrect_pin},
 			expectedData:   initialAccountData, // No changes expected
 			expectedErrors: false,
 		},
 		{
 			name:           "Invalid PIN - less than 4 digits",
 			input:          []byte("123"),
-			expectedFlags:  []uint32{models.USERFLAG_INCORRECTPIN},
+			expectedFlags:  []uint32{flag_incorrect_pin},
 			expectedData:   initialAccountData, // No changes expected
 			expectedErrors: false,
 		},
 		{
 			name:           "Invalid PIN - more than 4 digits",
 			input:          []byte("12345"),
-			expectedFlags:  []uint32{models.USERFLAG_INCORRECTPIN},
+			expectedFlags:  []uint32{flag_incorrect_pin},
 			expectedData:   initialAccountData, // No changes expected
 			expectedErrors: false,
 		},
@@ -293,7 +318,6 @@ func TestSavePin(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Ensure the file exists before running the test
 			err := accountFileHandler.EnsureFileExists()
 			if err != nil {
 				t.Fatalf("Failed to ensure account file exists: %v", err)
@@ -690,7 +714,6 @@ func TestSaveOfferings(t *testing.T) {
 	}
 }
 
-
 func TestSaveGender(t *testing.T) {
 	// Create a new instance of MockAccountFileHandler
 	mockFileHandler := new(mocks.MockAccountFileHandler)
@@ -732,7 +755,7 @@ func TestSaveGender(t *testing.T) {
 			expectedError:  nil,
 			expectedGender: "Unspecified",
 		},
-	
+
 		{
 			name:           "Empty Input",
 			input:          []byte{},
@@ -752,7 +775,7 @@ func TestSaveGender(t *testing.T) {
 				mockFileHandler.On("WriteAccountData", mock.MatchedBy(func(data map[string]string) bool {
 					return data["Gender"] == tt.expectedGender
 				})).Return(tt.writeError)
-			}  else if len(tt.input) == 0 {
+			} else if len(tt.input) == 0 {
 				// For empty input, no WriteAccountData call should be made
 				mockFileHandler.On("WriteAccountData", mock.Anything).Maybe().Return(tt.writeError)
 			}
@@ -876,3 +899,95 @@ func TestGetAmount(t *testing.T) {
 	}
 }
 
+func TestGetProfileInfo(t *testing.T) {
+	tests := []struct {
+		name           string
+		accountData    map[string]string
+		readError      error
+		expectedResult resource.Result
+		expectedError  error
+	}{
+		{
+			name: "Complete Profile",
+			accountData: map[string]string{
+				"FirstName":  "John",
+				"FamilyName": "Doe",
+				"Gender":     "Male",
+				"YOB":        "1980",
+				"Location":   "Mombasa",
+				"Offerings":  "Product A",
+			},
+			readError: nil,
+			expectedResult: resource.Result{
+				Content: fmt.Sprintf(
+					"Name: %s %s\nGender: %s\nAge: %d\nLocation: %s\nYou provide: %s\n",
+					"John", "Doe", "Male", 44, "Mombasa", "Product A",
+				),
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Profile with Not Provided Fields",
+			accountData: map[string]string{
+				"FirstName":  "Not provided",
+				"FamilyName": "Doe",
+				"Gender":     "Female",
+				"YOB":        "1995",
+				"Location":   "Not provided",
+				"Offerings":  "Service B",
+			},
+			readError: nil,
+			expectedResult: resource.Result{
+				Content: fmt.Sprintf(
+					"Name: %s\nGender: %s\nAge: %d\nLocation: %s\nYou provide: %s\n",
+					"Not provided", "Female", 29, "Not provided", "Service B",
+				),
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Profile with YOB as Not provided",
+			accountData: map[string]string{
+				"FirstName":  "Not provided",
+				"FamilyName": "Doe",
+				"Gender":     "Female",
+				"YOB":        "Not provided",
+				"Location":   "Not provided",
+				"Offerings":  "Service B",
+			},
+			readError: nil,
+			expectedResult: resource.Result{
+				Content: fmt.Sprintf(
+					"Name: %s\nGender: %s\nAge: %s\nLocation: %s\nYou provide: %s\n",
+					"Not provided", "Female", "Not provided", "Not provided", "Service B",
+				),
+			},
+			expectedError: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a new instance of MockAccountFileHandler
+			mockFileHandler := new(mocks.MockAccountFileHandler)
+
+			// Set up the mock expectations
+			mockFileHandler.On("ReadAccountData").Return(tt.accountData, tt.readError)
+
+			// Create the Handlers instance with the mock file handler
+			h := &Handlers{
+				accountFileHandler: mockFileHandler,
+			}
+
+			// Call the method
+			result, err := h.GetProfileInfo(context.Background(), "get_profile_info", nil)
+
+			// Assert the results
+			assert.Equal(t, tt.expectedResult, result)
+			assert.Equal(t, tt.expectedError, err)
+
+			// Assert all expectations were met
+			mockFileHandler.AssertExpectations(t)
+		})
+	}
+}

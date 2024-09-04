@@ -2,10 +2,14 @@ package main
 
 import (
 	"context"
+	"encoding/csv"
 	"flag"
 	"fmt"
+	"io"
+	"log"
 	"os"
 	"path"
+	"strconv"
 
 	"git.defalsify.org/vise.git/cache"
 	"git.defalsify.org/vise.git/engine"
@@ -13,7 +17,6 @@ import (
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/state"
 	"git.grassecon.net/urdt/ussd/internal/handlers/ussd"
-	"git.grassecon.net/urdt/ussd/internal/models"
 )
 
 var (
@@ -35,22 +38,43 @@ func main() {
 	ctx := context.Background()
 	st := state.NewState(16)
 	st.UseDebug()
-	state.FlagDebugger.Register(models.USERFLAG_LANGUAGE_SET, "LANGUAGE_CHANGE")
-	state.FlagDebugger.Register(models.USERFLAG_ACCOUNT_CREATED, "ACCOUNT_CREATED")
-	state.FlagDebugger.Register(models.USERFLAG_ACCOUNT_SUCCESS, "ACCOUNT_SUCCESS")
-	state.FlagDebugger.Register(models.USERFLAG_ACCOUNT_PENDING, "ACCOUNT_PENDING")
-	state.FlagDebugger.Register(models.USERFLAG_INCORRECTPIN, "INCORRECTPIN")
-	state.FlagDebugger.Register(models.USERFLAG_INCORRECTDATEFORMAT, "INVALIDDATEFORMAT")
-	state.FlagDebugger.Register(models.USERFLAG_INVALID_RECIPIENT, "INVALIDRECIPIENT")
-	state.FlagDebugger.Register(models.USERFLAG_PINMISMATCH, "PINMISMATCH")
-	state.FlagDebugger.Register(models.USERFLAG_PIN_SET, "PIN_SET")
-	state.FlagDebugger.Register(models.USERFLAG_INVALID_RECIPIENT_WITH_INVITE, "INVALIDRECIPIENT_WITH_INVITE")
-	state.FlagDebugger.Register(models.USERFLAG_INVALID_AMOUNT, "INVALIDAMOUNT")
-	state.FlagDebugger.Register(models.USERFLAG_ALLOW_UPDATE, "UNLOCKFORUPDATE")
-	state.FlagDebugger.Register(models.USERFLAG_VALIDPIN, "VALIDPIN")
-	state.FlagDebugger.Register(models.USERFLAG_VALIDPIN, "ACCOUNTUNLOCKED")
-	state.FlagDebugger.Register(models.USERFLAG_ACCOUNT_CREATION_FAILED, "ACCOUNT_CREATION_FAILED")
-	state.FlagDebugger.Register(models.USERFLAG_SINGLE_EDIT, "SINGLEEDIT")
+
+	pfp := path.Join(scriptDir, "pp.csv")
+	file, err := os.Open(pfp)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to open CSV file: %v\n", err)
+		os.Exit(1)
+	}
+	defer file.Close()
+	reader := csv.NewReader(file)
+
+	// Iterate through the CSV records and register the flags
+	for {
+		record, err := reader.Read()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			fmt.Fprintf(os.Stderr, "Error reading CSV file: %v\n", err)
+			os.Exit(1)
+		}
+
+		// Ensure the record starts with "flag" and has at least 3 columns
+		if len(record) < 3 || record[0] != "flag" {
+			continue
+		}
+
+		flagName := record[1]
+		flagValue, err := strconv.Atoi(record[2])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to convert flag value %s to integer: %v\n", record[2], err)
+			continue
+		}
+
+		// Register the flag
+		log.Printf("Registering flagName:%s; flagValue:%v", flagName, flagValue)
+		state.FlagDebugger.Register(uint32(flagValue), flagName)
+	}
 
 	rfs := resource.NewFsResource(scriptDir)
 	ca := cache.NewCache()
@@ -60,7 +84,7 @@ func main() {
 	}
 
 	dp := path.Join(scriptDir, ".state")
-	err := os.MkdirAll(dp, 0700)
+	err = os.MkdirAll(dp, 0700)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "state dir create exited with error: %v\n", err)
 		os.Exit(1)
@@ -83,7 +107,11 @@ func main() {
 
 	fp := path.Join(dp, sessionId)
 
-	ussdHandlers := ussd.NewHandlers(fp, &st)
+	ussdHandlers, err := ussd.NewHandlers(fp, &st, sessionId)
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "handler setup failed with error: %v\n", err)
+	}
 
 	rfs.AddLocalFunc("select_language", ussdHandlers.SetLanguage)
 	rfs.AddLocalFunc("create_account", ussdHandlers.CreateAccount)

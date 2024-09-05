@@ -106,11 +106,7 @@ func getResource(resourceDir string) (resource.Resource, error) {
 }
 
 func getEngine(cfg Config, rs resource.Resource, pr *persister.Persister) {
-	cfg := engine.Config{
-		Root:      sym,
-		SessionId: sessionId,
-		FlagCount: uint32(16),
-	}
+
 	en := engine.NewEngine(cfg, rfs)
 	en = en.WithPersister(pr)
 	return en
@@ -160,6 +156,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	cfg := engine.Config{
+		Root:      sym,
+		SessionId: sessionId,
+		OutputSize: size,
+		FlagCount: uint32(16),
+	}
 	en := getEngine(cfg, rs, pr)
 	_, err = en.Init(ctx)
 	if err != nil {

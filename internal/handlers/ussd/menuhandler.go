@@ -91,7 +91,7 @@ type Handlers struct {
 
 func NewHandlers(appFlags *asm.FlagParser, pe *persist.Persister, userdataStore db.Db) (*Handlers, error) {
 	h := &Handlers{
-		st:                 state.NewState(uint32(16)),
+		st:                 pe.State,
 		ca:                 pe.GetMemory(),
 		userdataStore:      userdataStore,
 		flagManager:        appFlags,

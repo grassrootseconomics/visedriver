@@ -14,17 +14,17 @@ import (
 	"git.defalsify.org/vise.git/cache"
 	"git.defalsify.org/vise.git/db"
 	"git.defalsify.org/vise.git/lang"
+	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/state"
-	"git.defalsify.org/vise.git/logging"
 	"git.grassecon.net/urdt/ussd/internal/handlers/server"
 	"git.grassecon.net/urdt/ussd/internal/utils"
 	"gopkg.in/leonelquinteros/gotext.v1"
 )
 
 var (
-	logg = logging.NewVanilla().WithDomain("ussdmenuhandler")
+	logg           = logging.NewVanilla().WithDomain("ussdmenuhandler")
 	scriptDir      = path.Join("services", "registration")
 	translationDir = path.Join(scriptDir, "locale")
 )
@@ -244,7 +244,7 @@ func (h *Handlers) VerifyPin(ctx context.Context, sym string, input []byte) (res
 	}
 
 	AccountPin, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_ACCOUNT_PIN)
-		
+
 	if bytes.Equal(input, AccountPin) {
 		res.FlagSet = []uint32{flag_valid_pin}
 		res.FlagReset = []uint32{flag_pin_mismatch}
@@ -388,32 +388,35 @@ func (h *Handlers) CheckIdentifier(ctx context.Context, sym string, input []byte
 func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 
-	// flag_incorrect_pin, _ := h.flagManager.GetFlag("flag_incorrect_pin")
-	// flag_account_authorized, _ := h.flagManager.GetFlag("flag_account_authorized")
-	// flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+	flag_incorrect_pin, _ := h.flagManager.GetFlag("flag_incorrect_pin")
+	flag_account_authorized, _ := h.flagManager.GetFlag("flag_account_authorized")
+	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+	AccountPin, err := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_ACCOUNT_PIN)
 
-	// storedpin, err := h.db.Fetch([]byte(AccountPin))
-	// if err == nil {
-	// 	if len(input) == 4 {
-	// 		if bytes.Equal(input, storedpin) {
-	// 			if h.fs.St.MatchFlag(flag_account_authorized, false) {
-	// 				res.FlagReset = append(res.FlagReset, flag_incorrect_pin)
-	// 				res.FlagSet = append(res.FlagSet, flag_allow_update, flag_account_authorized)
-	// 			} else {
-	// 				res.FlagSet = append(res.FlagSet, flag_allow_update)
-	// 				res.FlagReset = append(res.FlagReset, flag_account_authorized)
-	// 			}
-	// 		} else {
-	// 			res.FlagSet = append(res.FlagSet, flag_incorrect_pin)
-	// 			res.FlagReset = append(res.FlagReset, flag_account_authorized)
-	// 			return res, nil
-	// 		}
-	// 	}
-	// } else if errors.Is(err, gdbm.ErrItemNotFound) {
-	// 	return res, err
-	// } else {
-	// 	return res, err
-	// }
+	if err == nil {
+		if len(input) == 4 {
+			if bytes.Equal(input, AccountPin) {
+				if h.st.MatchFlag(flag_account_authorized, false) {
+					res.FlagReset = append(res.FlagReset, flag_incorrect_pin)
+					res.FlagSet = append(res.FlagSet, flag_allow_update, flag_account_authorized)
+				} else {
+					res.FlagSet = append(res.FlagSet, flag_allow_update)
+					res.FlagReset = append(res.FlagReset, flag_account_authorized)
+				}
+			} else {
+				res.FlagSet = append(res.FlagSet, flag_incorrect_pin)
+				res.FlagReset = append(res.FlagReset, flag_account_authorized)
+				return res, nil
+			}
+		}
+	} else {
+		return res, nil
+	}
+
 	return res, nil
 }
 

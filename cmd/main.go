@@ -115,9 +115,11 @@ func main() {
 	var resourceDir string
 	var size uint
 	var sessionId string
+	var debug bool
 	flag.StringVar(&sessionId, "session-id", "075xx2123", "session id")
 	flag.StringVar(&dbDir, "dbdir", ".state", "database dir to read from")
 	flag.StringVar(&resourceDir, "resourcedir", path.Join("services", "registration"), "resource dir")
+	flag.BoolVar(&debug, "d", false, "use engine debug output")
 	flag.UintVar(&size, "s", 160, "max size of output")
 	flag.Parse()
 
@@ -162,14 +164,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	_, err = getHandler(flagParser, dbResource, pr, store)
+	hl, err := getHandler(flagParser, dbResource, pr, store)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 
 	en := getEngine(cfg, rs, pr)
-	
+	en = en.WithFirst(hl.Init)
+	if debug {
+		en = en.WithDebug(nil)
+	}
 
 	_, err = en.Init(ctx)
 	if err != nil {

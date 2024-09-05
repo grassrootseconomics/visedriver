@@ -112,6 +112,7 @@ func isValidPIN(pin string) bool {
 
 func (h *Handlers) Init(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var r resource.Result
+
 	if h.pe == nil {
 		logg.WarnCtxf(ctx, "handler init called before it is ready or more than once", "state", h.st, "cache", h.ca)
 		return r, nil
@@ -123,15 +124,16 @@ func (h *Handlers) Init(ctx context.Context, sym string, input []byte) (resource
 		return r, fmt.Errorf("cannot get state and memory for handler")
 	}	
 	h.pe = nil
+
+	logg.DebugCtxf(ctx, "handler has been initialized", "state", h.st, "cache", h.ca)
+
 	return r, nil
 }
 
 // SetLanguage sets the language across the menu
 func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
+	var err error
 
 	inputStr := string(input)
 	switch inputStr {
@@ -177,10 +179,9 @@ func (h *Handlers) createAccountNoExist(ctx context.Context, sessionId string, r
 // creates an account on the API,
 // sets the default values and flags
 func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
+	var err error
+
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
 		return res, fmt.Errorf("missing session")
@@ -205,10 +206,9 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 
 // SavePin persists the user's PIN choice into the filesystem
 func (h *Handlers) SavePin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
+	var err error
+	
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
 		return res, fmt.Errorf("missing session")
@@ -235,10 +235,8 @@ func (h *Handlers) SavePin(ctx context.Context, sym string, input []byte) (resou
 
 // SetResetSingleEdit sets and resets  flags to allow gradual editing of profile information.
 func (h *Handlers) SetResetSingleEdit(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
+	
 	menuOption := string(input)
 
 	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
@@ -265,10 +263,7 @@ func (h *Handlers) SetResetSingleEdit(ctx context.Context, sym string, input []b
 // If similar, it sets the USERFLAG_PIN_SET flag allowing the user
 // to access the main menu
 func (h *Handlers) VerifyPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
 
 	flag_valid_pin, _ := h.flagManager.GetFlag("flag_valid_pin")
 	flag_pin_mismatch, _ := h.flagManager.GetFlag("flag_pin_mismatch")
@@ -304,10 +299,8 @@ func codeFromCtx(ctx context.Context) string {
 
 // SaveFirstname updates the first name in a JSON data file with the provided input.
 func (h *Handlers) SaveFirstname(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
+
 	if len(input) > 0 {
 		//name := string(input)
 		//key := []byte(FirstName)
@@ -320,10 +313,8 @@ func (h *Handlers) SaveFirstname(ctx context.Context, sym string, input []byte) 
 
 // SaveFamilyname updates the family name in a JSON data file with the provided input.
 func (h *Handlers) SaveFamilyname(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
+
 	if len(input) > 0 {
 		//secondname := string(input)
 		//key := []byte(FamilyName)
@@ -336,10 +327,8 @@ func (h *Handlers) SaveFamilyname(ctx context.Context, sym string, input []byte)
 
 // SaveYOB updates the Year of Birth(YOB) in a JSON data file with the provided input.
 func (h *Handlers) SaveYob(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
+
 	yob := string(input)
 	if len(yob) == 4 {
 		//yob := string(input)
@@ -353,10 +342,8 @@ func (h *Handlers) SaveYob(ctx context.Context, sym string, input []byte) (resou
 
 // SaveLocation updates the location in a JSON data file with the provided input.
 func (h *Handlers) SaveLocation(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
+
 	if len(input) > 0 {
 		//location := string(input)
 		//key := []byte(Location)
@@ -370,10 +357,8 @@ func (h *Handlers) SaveLocation(ctx context.Context, sym string, input []byte) (
 
 // SaveGender updates the gender in a JSON data file with the provided input.
 func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
+
 	if len(input) > 0 {
 		gender := string(input)
 		switch gender {
@@ -393,10 +378,8 @@ func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (re
 
 // SaveOfferings updates the offerings(goods and services provided by the user) in a JSON data file with the provided input.
 func (h *Handlers) SaveOfferings(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
+
 	if len(input) > 0 {
 		//offerings := string(input)
 		//key := []byte(Offerings)
@@ -408,10 +391,7 @@ func (h *Handlers) SaveOfferings(ctx context.Context, sym string, input []byte) 
 
 // ResetAllowUpdate resets the allowupdate flag that allows a user to update  profile data.
 func (h *Handlers) ResetAllowUpdate(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
 
 	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
 
@@ -421,10 +401,7 @@ func (h *Handlers) ResetAllowUpdate(ctx context.Context, sym string, input []byt
 
 // ResetAccountAuthorized resets the account authorization flag after a successful PIN entry.
 func (h *Handlers) ResetAccountAuthorized(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
 
 	flag_account_authorized, _ := h.flagManager.GetFlag("flag_account_authorized")
 
@@ -434,10 +411,8 @@ func (h *Handlers) ResetAccountAuthorized(ctx context.Context, sym string, input
 
 // CheckIdentifier retrieves the PublicKey from the JSON data file.
 func (h *Handlers) CheckIdentifier(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
+
 	//publicKey, err := h.db.Fetch([]byte(PublicKeyKey))
 	// if err != nil {
 	// 	return res, err
@@ -449,10 +424,8 @@ func (h *Handlers) CheckIdentifier(ctx context.Context, sym string, input []byte
 // Authorize attempts to unlock the next sequential nodes by verifying the provided PIN against the already set PIN.
 // It sets the required flags that control the flow.
 func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
+	var err error
 
 	flag_incorrect_pin, _ := h.flagManager.GetFlag("flag_incorrect_pin")
 	flag_account_authorized, _ := h.flagManager.GetFlag("flag_account_authorized")
@@ -488,10 +461,7 @@ func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (res
 
 // ResetIncorrectPin resets the incorrect pin flag  after a new PIN attempt.
 func (h *Handlers) ResetIncorrectPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
 
 	flag_incorrect_pin, _ := h.flagManager.GetFlag("flag_incorrect_pin")
 
@@ -502,10 +472,7 @@ func (h *Handlers) ResetIncorrectPin(ctx context.Context, sym string, input []by
 // CheckAccountStatus queries the API using the TrackingId and sets flags
 // based on the account status
 func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
 
 	flag_account_success, _ := h.flagManager.GetFlag("flag_account_success")
 	flag_account_pending, _ := h.flagManager.GetFlag("flag_account_pending")
@@ -547,10 +514,7 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 
 // Quit displays the Thank you message and exits the menu
 func (h *Handlers) Quit(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
 
 	flag_account_authorized, _ := h.flagManager.GetFlag("flag_account_authorized")
 
@@ -565,10 +529,8 @@ func (h *Handlers) Quit(ctx context.Context, sym string, input []byte) (resource
 
 // VerifyYob verifies the length of the given input
 func (h *Handlers) VerifyYob(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
+	var err error
 
 	flag_incorrect_date_format, _ := h.flagManager.GetFlag("flag_incorrect_date_format")
 
@@ -591,10 +553,7 @@ func (h *Handlers) VerifyYob(ctx context.Context, sym string, input []byte) (res
 
 // ResetIncorrectYob resets the incorrect date format flag after a new attempt
 func (h *Handlers) ResetIncorrectYob(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
 
 	flag_incorrect_date_format, _ := h.flagManager.GetFlag("flag_incorrect_date_format")
 
@@ -605,10 +564,9 @@ func (h *Handlers) ResetIncorrectYob(ctx context.Context, sym string, input []by
 // CheckBalance retrieves the balance from the API using the "PublicKey" and sets
 // the balance as the result content
 func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
+	var err error
+
 	// publicKey, err := h.db.Fetch([]byte(PublicKeyKey))
 
 	sessionId, ok := ctx.Value("SessionId").(string)
@@ -629,10 +587,8 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 
 // ValidateRecipient validates that the given input is a valid phone number.
 func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
+
 	recipient := string(input)
 
 	flag_invalid_recipient, _ := h.flagManager.GetFlag("flag_invalid_recipient")
@@ -659,10 +615,7 @@ func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []by
 // TransactionReset resets the previous transaction data (Recipient and Amount)
 // as well as the invalid flags
 func (h *Handlers) TransactionReset(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
 
 	flag_invalid_recipient, _ := h.flagManager.GetFlag("flag_invalid_recipient")
 	flag_invalid_recipient_with_invite, _ := h.flagManager.GetFlag("flag_invalid_recipient_with_invite")
@@ -683,10 +636,7 @@ func (h *Handlers) TransactionReset(ctx context.Context, sym string, input []byt
 
 // ResetTransactionAmount resets the transaction amount and invalid flag
 func (h *Handlers) ResetTransactionAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
 
 	flag_invalid_amount, _ := h.flagManager.GetFlag("flag_invalid_amount")
 
@@ -703,10 +653,9 @@ func (h *Handlers) ResetTransactionAmount(ctx context.Context, sym string, input
 // MaxAmount gets the current balance from the API and sets it as
 // the result content.
 func (h *Handlers) MaxAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
+	var err error
+
 	// publicKey, err := h.db.Fetch([]byte(PublicKeyKey))
 	// if err != nil {
 	// 	return res, err
@@ -725,10 +674,8 @@ func (h *Handlers) MaxAmount(ctx context.Context, sym string, input []byte) (res
 // ValidateAmount ensures that the given input is a valid amount and that
 // it is not more than the current balance.
 func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
+	var err error
 
 	flag_invalid_amount, _ := h.flagManager.GetFlag("flag_invalid_amount")
 
@@ -792,10 +739,8 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 
 // GetRecipient returns the transaction recipient from a JSON data file.
 func (h *Handlers) GetRecipient(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
+
 	// recipient, err := h.db.Fetch([]byte(Recipient))
 	// if err != nil {
 	// 	return res, err
@@ -808,10 +753,8 @@ func (h *Handlers) GetRecipient(ctx context.Context, sym string, input []byte) (
 
 // GetSender retrieves the public key from the Gdbm Db
 func (h *Handlers) GetSender(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
+
 	// publicKey, err := h.db.Fetch([]byte(PublicKeyKey))
 	// if err != nil {
 	// 	return res, err
@@ -824,10 +767,8 @@ func (h *Handlers) GetSender(ctx context.Context, sym string, input []byte) (res
 
 // GetAmount retrieves the amount from teh Gdbm Db
 func (h *Handlers) GetAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
+
 	// amount, err := h.db.Fetch([]byte(Amount))
 	// if err != nil {
 	// 	return res, err
@@ -840,10 +781,8 @@ func (h *Handlers) GetAmount(ctx context.Context, sym string, input []byte) (res
 // QuickWithBalance retrieves the balance for a given public key from the custodial balance API endpoint before
 // gracefully exiting the session.
 func (h *Handlers) QuitWithBalance(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
+	var err error
 
 	flag_account_authorized, _ := h.flagManager.GetFlag("flag_account_authorized")
 
@@ -866,10 +805,9 @@ func (h *Handlers) QuitWithBalance(ctx context.Context, sym string, input []byte
 // InitiateTransaction returns a confirmation and resets the transaction data
 // on the JSON file.
 func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
+	var err error
+
 	code := codeFromCtx(ctx)
 	l := gotext.NewLocale(translationDir, code)
 	l.AddDomain("default")
@@ -902,10 +840,7 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 
 // GetProfileInfo retrieves and formats the profile information of a user from a Gdbm backed storage.
 func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res, err := h.Init(ctx, sym, input)
-	if err != nil {
-		return res, err
-	}
+	var res resource.Result
 
 	// Define default values
 	defaultValue := "Not provided"

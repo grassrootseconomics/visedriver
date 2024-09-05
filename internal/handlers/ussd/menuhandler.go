@@ -74,14 +74,6 @@ func (fm *FlagManager) GetFlag(label string) (uint32, error) {
 	return fm.parser.GetFlag(label)
 }
 
-// type Handlers struct {
-// 	fs                 *FSData
-// 	db                 *gdbm.Database
-// 	flagManager        *FlagManager
-// 	accountFileHandler utils.AccountFileHandlerInterface
-// 	accountService     server.AccountServiceInterface
-// }
-
 type Handlers struct {
 	st                 *state.State
 	ca                 cache.Memory
@@ -187,6 +179,10 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 // SavePin persists the user's PIN choice into the filesystem
 func (h *Handlers) SavePin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
 
 	flag_incorrect_pin, _ := h.flagManager.GetFlag("flag_incorrect_pin")
 
@@ -199,10 +195,11 @@ func (h *Handlers) SavePin(ctx context.Context, sym string, input []byte) (resou
 
 	res.FlagReset = append(res.FlagReset, flag_incorrect_pin)
 
-	// key := []byte(AccountPin)
-	// value := []byte(accountPIN)
+	err := utils.WriteEntry(ctx, h.userdataStore, sessionId, utils.DATA_ACCOUNT_PIN, []byte(accountPIN))
+	if err != nil {
+		return res, nil
+	}
 
-	//h.db.Store(key, value, true)
 	return res, nil
 }
 
@@ -241,11 +238,13 @@ func (h *Handlers) VerifyPin(ctx context.Context, sym string, input []byte) (res
 	flag_pin_mismatch, _ := h.flagManager.GetFlag("flag_pin_mismatch")
 	flag_pin_set, _ := h.flagManager.GetFlag("flag_pin_set")
 
-	// AccountPin, err := h.db.Fetch([]byte(AccountPin))
-	// if err != nil {
-	// 	return res, err
-	// }
-	AccountPin := []byte("2768")
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+
+	AccountPin, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_ACCOUNT_PIN)
+		
 	if bytes.Equal(input, AccountPin) {
 		res.FlagSet = []uint32{flag_valid_pin}
 		res.FlagReset = []uint32{flag_pin_mismatch}
@@ -441,10 +440,9 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 		return res, fmt.Errorf("missing session")
 	}
 
-	trackingId, err := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_TRACKING_ID)
-	fmt.Println("Checking status with tracking id:", string(trackingId))
+	trackingId, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_TRACKING_ID)
 
-	status, err := h.accountService.CheckAccountStatus(string("1234"))
+	status, err := h.accountService.CheckAccountStatus(string(trackingId))
 
 	if err != nil {
 		fmt.Println("Error checking account status:", err)
@@ -524,13 +522,15 @@ func (h *Handlers) ResetIncorrectYob(ctx context.Context, sym string, input []by
 // the balance as the result content
 func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
-	// publicKey, err := h.db.Fetch([]byte(PublicKeyKey))
 
-	// if err != nil {
-	// 	return res, err
-	// }
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
 
-	balance, err := h.accountService.CheckBalance(string("publicKey"))
+	publicKey, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_PUBLIC_KEY)
+
+	balance, err := h.accountService.CheckBalance(string(publicKey))
 	if err != nil {
 		return res, nil
 	}

@@ -15,6 +15,7 @@ const (
 	DATA_TRACKING_ID
 	DATA_PUBLIC_KEY
 	DATA_CUSTODIAL_ID
+	DATA_ACCOUNT_PIN
 )
 
 func typToBytes(typ DataTyp) []byte {
@@ -37,7 +38,6 @@ func ReadEntry(ctx context.Context, store db.Db, sessionId string, typ DataTyp) 
 		return nil, err
 	}
 	return b, nil
-
 }
 
 func WriteEntry(ctx context.Context, store db.Db, sessionId string, typ DataTyp, value []byte) error {

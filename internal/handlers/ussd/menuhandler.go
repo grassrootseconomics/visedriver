@@ -17,12 +17,14 @@ import (
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/state"
+	"git.defalsify.org/vise.git/logging"
 	"git.grassecon.net/urdt/ussd/internal/handlers/server"
 	"git.grassecon.net/urdt/ussd/internal/utils"
 	"gopkg.in/leonelquinteros/gotext.v1"
 )
 
 var (
+	logg = logging.NewVanilla().WithDomain("ussdmenuhandler")
 	scriptDir      = path.Join("services", "registration")
 	translationDir = path.Join(scriptDir, "locale")
 )
@@ -98,10 +100,10 @@ func NewHandlers(appFlags *asm.FlagParser, pe *persist.Persister, userdataStore 
 		accountFileHandler: utils.NewAccountFileHandler(userdataStore),
 		accountService:     &server.AccountService{},
 	}
-	if h.st == nil || h.ca == nil || h.userdataStore == nil || h.flagManager == nil {
-		//logg.Errorf("have nil for essential value in handler", "state", h.st, "cache", h.ca, "store", h.userdataStore, "flags", h.flagManager)
-		return nil, fmt.Errorf("have nil for essential value")
-	}
+//	if h.st == nil || h.ca == nil || h.userdataStore == nil || h.flagManager == nil {
+//		logg.Errorf("have nil for essential value in handler", "state", h.st, "cache", h.ca, "store", h.userdataStore, "flags", h.flagManager)
+//		return nil, fmt.Errorf("have nil for essential value")
+//	}
 	return h, nil
 }
 

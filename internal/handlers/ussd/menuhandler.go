@@ -11,9 +11,13 @@ import (
 	"strings"
 
 	"git.defalsify.org/vise.git/asm"
+	"git.defalsify.org/vise.git/db"
 	"git.defalsify.org/vise.git/lang"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/state"
+	"git.defalsify.org/vise.git/cache"
+	"git.defalsify.org/vise.git/persist"
+	"git.defalsify.org/vise.git/logging"
 	"git.grassecon.net/urdt/ussd/internal/handlers/server"
 	"git.grassecon.net/urdt/ussd/internal/utils"
 	"github.com/graygnuorg/go-gdbm"
@@ -21,6 +25,7 @@ import (
 )
 
 var (
+	logg = logging.NewVanilla().WithDomain("urdt_ussdhandler")
 	scriptDir      = path.Join("services", "registration")
 	translationDir = path.Join(scriptDir, "locale")
 )
@@ -42,67 +47,29 @@ const (
 	AccountCreated = "ACCOUNTCREATED"
 )
 
-func toBytes(s string) []byte {
-	return []byte(s)
-}
-
-type FSData struct {
-	Path string
-	St   *state.State
-}
-
-// FlagManager handles centralized flag management
-type FlagManager struct {
-	parser *asm.FlagParser
-}
-
-// NewFlagManager creates a new FlagManager instance
-func NewFlagManager(csvPath string) (*FlagManager, error) {
-	parser := asm.NewFlagParser()
-	_, err := parser.Load(csvPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load flag parser: %v", err)
-	}
-
-	return &FlagManager{
-		parser: parser,
-	}, nil
-}
-
-// GetFlag retrieves a flag value by its label
-func (fm *FlagManager) GetFlag(label string) (uint32, error) {
-	return fm.parser.GetFlag(label)
-}
-
 type Handlers struct {
-	fs                 *FSData
-	db                 *gdbm.Database
-	flagManager        *FlagManager
-	accountFileHandler utils.AccountFileHandlerInterface
+	st	*state.State
+	ca	cache.Memory
+	userdataStore	db.Db
+	flagManager        *asm.FlagParser
+	accountFileHandler *utils.AccountFileHandler
 	accountService     server.AccountServiceInterface
 }
 
-func NewHandlers(dir string, st *state.State, sessionId string) (*Handlers, error) {
-	filename := path.Join(scriptDir, sessionId+"_userdata.gdbm")
-	db, err := gdbm.Open(filename, gdbm.ModeWrcreat)
-	if err != nil {
-		panic(err)
-	}
-	pfp := path.Join(scriptDir, "pp.csv")
-	flagManager, err := NewFlagManager(pfp)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create flag manager: %v", err)
-	}
-	return &Handlers{
-		db: db,
-		fs: &FSData{
-			Path: dir,
-			St:   st,
-		},
-		flagManager:        flagManager,
-		accountFileHandler: utils.NewAccountFileHandler(dir + "_data"),
+func NewHandlers(appFlags *asm.FlagParser, pe *persist.Persister, userdataStore db.Db) (*Handlers, error) {
+	h := &Handlers{
+		st: pe.GetState(),
+		ca: pe.GetMemory(),
+		userdataStore:	userdataStore,
+		flagManager:        appFlags,
+		accountFileHandler: utils.NewAccountFileHandler(userdataStore),
 		accountService:     &server.AccountService{},
-	}, nil
+	}
+	if h.st == nil || h.ca == nil || h.userdataStore == nil || h.flagManager == nil {
+		logg.Errorf("have nil for essential value in handler", "state", h.st, "cache", h.ca, "store", h.userdataStore, "flags", h.flagManager)
+		return nil, fmt.Errorf("have nil for essential value")
+	}
+	return h, nil
 }
 
 // Define the regex pattern as a constant
@@ -138,45 +105,58 @@ func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (r
 	return res, nil
 }
 
+func (h *Handlers) createAccountNoExist(ctx context.Context, sessionId string, res *resource.Result) error {
+	accountResp, err := h.accountService.CreateAccount()
+	if err != nil {
+		flag_account_creation_failed, _ := h.flagManager.GetFlag("flag_account_creation_failed")
+		res.FlagSet = append(res.FlagSet, flag_account_creation_failed)
+		return err
+	}
+//	data := map[string]string{
+//		TrackingIdKey:  accountResp.Result.TrackingId,
+//		PublicKeyKey:   accountResp.Result.PublicKey,
+//		CustodialIdKey: accountResp.Result.CustodialId.String(),
+//	}
+	data := map[utils.DataTyp]string{
+		utils.DATA_TRACKING_ID:  accountResp.Result.TrackingId,
+		utils.DATA_PUBLIC_KEY:   accountResp.Result.PublicKey,
+		utils.DATA_CUSTODIAL_ID: accountResp.Result.CustodialId.String(),
+	}
+
+	for key, value := range data {
+		err := utils.WriteEntry(ctx, h.userdataStore, sessionId, key, []byte(value))
+		if err != nil {
+			return err
+		}
+	}
+	// NOTE: this is covered by the flag, no?
+	//key := []byte(AccountCreated)
+	//value := []byte("1")
+	//h.db.Store(key, value, true)
+	flag_account_created, _ := h.flagManager.GetFlag("flag_account_created")
+	res.FlagSet = append(res.FlagSet, flag_account_created)
+	return err
+}
+
 // CreateAccount checks if any account exists on the JSON data file, and if not
 // creates an account on the API,
 // sets the default values and flags
 func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	res := resource.Result{}
-
-	_, err := h.db.Fetch([]byte(AccountCreated))
-	if err != nil {
-		if errors.Is(err, gdbm.ErrItemNotFound) {
-			accountResp, err := h.accountService.CreateAccount()
-			if err != nil {
-				flag_account_creation_failed, _ := h.flagManager.GetFlag("flag_account_creation_failed")
-				res.FlagSet = append(res.FlagSet, flag_account_creation_failed)
-				return res, err
-			}
-			data := map[string]string{
-				TrackingIdKey:  accountResp.Result.TrackingId,
-				PublicKeyKey:   accountResp.Result.PublicKey,
-				CustodialIdKey: accountResp.Result.CustodialId.String(),
-			}
-
-			for key, value := range data {
-				err := h.db.Store(toBytes(key), toBytes(value), true)
-				if err != nil {
-					return res, err
-				}
-			}
-			key := []byte(AccountCreated)
-			value := []byte("1")
-			h.db.Store(key, value, true)
-			flag_account_created, _ := h.flagManager.GetFlag("flag_account_created")
-			res.FlagSet = append(res.FlagSet, flag_account_created)
-			return res, err
-		} else {
-			return res, err
-		}
-	} else {
-		return res, nil
+	var err error
+	var res resource.Result
+	
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
 	}
+
+	_, err = utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_ACCOUNT_CREATED)
+	if err != nil {
+		if db.IsNotFound(err) {
+			err = h.createAccountNoExist(ctx, sessionId, &res)
+		}
+	}
+	return res, err
 }
 
 // SavePin persists the user's PIN choice into the filesystem
@@ -444,12 +424,12 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 
 	}
 
-	err = h.db.Store(toBytes(AccountStatus), toBytes(status), true)
+	err = h.db.Store([]byte(AccountStatus), []byte(status), true)
 	if err != nil {
 		return res, nil
 	}
 
-	err = h.db.Store(toBytes(TrackingIdKey), toBytes(status), true)
+	err = h.db.Store([]byte(TrackingIdKey), []byte(status), true)
 	if err != nil {
 		return res, nil
 	}

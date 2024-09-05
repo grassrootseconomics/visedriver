@@ -18,10 +18,9 @@ const (
 )
 
 func typToBytes(typ DataTyp) []byte {
-	//var b []byte
-	b := make([]byte, 2) 
-	binary.BigEndian.PutUint16(b, uint16(typ))
-	return b
+	var b [2]byte
+	binary.BigEndian.PutUint16(b[:], uint16(typ))
+	return b[:]
 }
 
 func packKey(typ DataTyp, data []byte) []byte {
@@ -31,9 +30,8 @@ func packKey(typ DataTyp, data []byte) []byte {
 
 func ReadEntry(ctx context.Context, store db.Db, sessionId string, typ DataTyp) ([]byte, error) {
 	store.SetPrefix(db.DATATYPE_USERDATA)
-	 store.SetSession(sessionId)
-	 k := packKey(typ, []byte(sessionId))
-	//k := []byte(sessionId)
+	store.SetSession(sessionId)
+	k := packKey(typ, []byte(sessionId))
 	b, err := store.Get(ctx, k)
 	if err != nil {
 		return nil, err
@@ -45,7 +43,6 @@ func ReadEntry(ctx context.Context, store db.Db, sessionId string, typ DataTyp) 
 func WriteEntry(ctx context.Context, store db.Db, sessionId string, typ DataTyp, value []byte) error {
 	store.SetPrefix(db.DATATYPE_USERDATA)
 	store.SetSession(sessionId)
-	//k := packKey(typ, []byte(sessionId))
-	k := []byte(sessionId)
+	k := packKey(typ, []byte(sessionId))
 	return store.Put(ctx, k, value)
 }

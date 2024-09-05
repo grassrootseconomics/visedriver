@@ -75,18 +75,25 @@ func getHandler(appFlags *asm.FlagParser, rs *resource.DbResource, pe *persist.P
 	return ussdHandlers, nil
 }
 
-func getDataPersister(dbDir string) (*persist.Persister, error) {
+func getPersister(dbDir string) (*persist.Persister, error) {
 	err = os.MkdirAll(dp, 0700)
 	if err != nil {
 		return nil, fmt.Errorf("state dir create exited with error: %v\n", err)
 	}
 
-	dataStore := gdbmdb.NewGdbmDb()
-	dataStoreFile := path.Join(dbDir, "states.gdbm")
-	dataStore.Connect(ctx, dataStoreFile)
-	pr := persist.NewPersister(dataStore)
+	store := gdbmdb.NewGdbmDb()
+	storeFile := path.Join(dbDir, "states.gdbm")
+	store.Connect(ctx, storeFile)
+	pr := persist.NewPersister(store)
 
 	return pr
+}
+
+func getUserdataDb(dbDir string) {
+	store := gdbmdb.NewGdbmDb()
+	storeFile := path.Join(dbDir, "userdata.gdbm")
+	store.Connect(ctx, storeFile)
+	return store
 }
 
 func getResource(resourceDir string) (resource.Resource, error) {
@@ -141,7 +148,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	store, err := getUserDb(dataDir)
+	store, err := getUserdataDb(dataDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)

@@ -15,13 +15,13 @@ import (
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/state"
+	"git.defalsify.org/vise.git/logging"
 	"git.grassecon.net/urdt/ussd/internal/handlers/ussd"
 )
 
 var (
+	logg = logging.NewVanilla()
 	scriptDir = path.Join("services", "registration")
-	store     = fsdb.NewFsDb()
-	pr        = persist.NewPersister(store)
 )
 
 func getFlags(fp string, debug bool) (*asm.FlagParser, error) {
@@ -35,7 +35,7 @@ func getFlags(fp string, debug bool) (*asm.FlagParser, error) {
 
 func getHandler(appFlags *asm.FlagParser, rs *resource.DbResource, pe *persist.Persister, userdataStore db.Db) (*ussd.Handlers, error) {
 
-	ussdHandlers, err := ussd.NewHandlers(appFlags, pr, store)
+	ussdHandlers, err := ussd.NewHandlers(appFlags, pe, userdataStore)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func getPersister(dbDir string, ctx context.Context) (*persist.Persister, error)
 		return nil, fmt.Errorf("state dir create exited with error: %v\n", err)
 	}
 	store := gdbmdb.NewGdbmDb()
-	storeFile := path.Join(dbDir, ".state")
+	storeFile := path.Join(dbDir, "state.gdbm")
 	store.Connect(ctx, storeFile)
 	pr := persist.NewPersister(store)
 	return pr, nil
@@ -112,28 +112,20 @@ func getEngine(cfg engine.Config, rs resource.Resource, pr *persist.Persister) *
 }
 
 func main() {
-	//var dir string
 	var dbDir string
 	var resourceDir string
-	//var root string
 	var size uint
 	var sessionId string
-	//flag.StringVar(&dir, "d", ".", "resource dir to read from")
-	// flag.UintVar(&size, "s", 0, "max size of output")
-	// flag.StringVar(&root, "root", "root", "entry point symbol")
 	flag.StringVar(&sessionId, "session-id", "075xx2123", "session id")
-	// flag.Parse()
-	// fmt.Fprintf(os.Stderr, "starting session at symbol '%s' using resource dir: %s\n", root, dir)
-	//logg.Infof("starting session", "symbol", root, "dbdir", dbDir, "sessionid", sessionId, "outsize", size)
-
 	flag.StringVar(&dbDir, "dbdir", ".state", "database dir to read from")
 	flag.StringVar(&resourceDir, "resourcedir", path.Join("services", "registration"), "resource dir")
 	flag.UintVar(&size, "s", 160, "max size of output")
+	flag.Parse()
+
+	logg.Infof("start command", "dbdir", dbDir, "resourcedir", resourceDir,  "outputsize", size)
 
 	ctx := context.Background()
-	
-   
-    ctx = context.WithValue(ctx, "SessionId",sessionId)
+	ctx = context.WithValue(ctx, "SessionId",sessionId)
 	pfp := path.Join(scriptDir, "pp.csv")
 	flagParser, err := getFlags(pfp, true)
 
@@ -147,18 +139,14 @@ func main() {
 		OutputSize: uint32(size),
 		FlagCount:  uint32(16),
 	}
-	//ca := cache.Cache{}
 
 	rs, err := getResource(resourceDir, ctx)
-
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 
 	pr, err := getPersister(dbDir, ctx)
-	//pr.WithContent(state.NewState(uint32(16)),&ca)
-
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
@@ -169,8 +157,8 @@ func main() {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
-	dbResource, ok := rs.(*resource.DbResource)
 
+	dbResource, ok := rs.(*resource.DbResource)
 	if !ok {
 		os.Exit(1)
 	}

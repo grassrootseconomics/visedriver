@@ -100,10 +100,6 @@ func NewHandlers(appFlags *asm.FlagParser, pe *persist.Persister, userdataStore 
 		accountFileHandler: utils.NewAccountFileHandler(userdataStore),
 		accountService:     &server.AccountService{},
 	}
-//	if h.st == nil || h.ca == nil || h.userdataStore == nil || h.flagManager == nil {
-//		logg.Errorf("have nil for essential value in handler", "state", h.st, "cache", h.ca, "store", h.userdataStore, "flags", h.flagManager)
-//		return nil, fmt.Errorf("have nil for essential value")
-//	}
 	return h, nil
 }
 
@@ -179,7 +175,6 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 				return res, err
 			}
 		} else {
-			fmt.Println("Error here:", err)
 			err = h.createAccountNoExist(ctx, sessionId, &res)
 			if err != nil {
 				return res, err

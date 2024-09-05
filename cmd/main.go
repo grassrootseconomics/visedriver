@@ -14,7 +14,6 @@ import (
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
-	"git.defalsify.org/vise.git/state"
 	"git.defalsify.org/vise.git/logging"
 	"git.grassecon.net/urdt/ussd/internal/handlers/ussd"
 )
@@ -170,7 +169,7 @@ func main() {
 	}
 
 	en := getEngine(cfg, rs, pr)
-	en.WithState(state.NewState(uint32(16)))
+	
 
 	_, err = en.Init(ctx)
 	if err != nil {

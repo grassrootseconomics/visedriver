@@ -172,7 +172,7 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 	_, err = utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_ACCOUNT_CREATED)
 	if err != nil {
 		if db.IsNotFound(err) {
-			fmt.Println("Creating an account because it doesn't exist")
+			logg.Printf(logging.LVL_INFO, "Creating an account because it doesn't exist")
 			err = h.createAccountNoExist(ctx, sessionId, &res)
 			if err != nil {
 				return res, err
@@ -315,6 +315,8 @@ func (h *Handlers) SaveFamilyname(ctx context.Context, sym string, input []byte)
 		if err != nil {
 			return res, nil
 		}
+	} else {
+		return res,fmt.Errorf("a family name cannot be less than one character")
 	}
 
 	return res, nil

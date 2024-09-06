@@ -316,7 +316,7 @@ func (h *Handlers) SaveFamilyname(ctx context.Context, sym string, input []byte)
 			return res, nil
 		}
 	} else {
-		return res,fmt.Errorf("a family name cannot be less than one character")
+		return res, fmt.Errorf("a family name cannot be less than one character")
 	}
 
 	return res, nil
@@ -886,62 +886,55 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 // GetProfileInfo retrieves and formats the profile information of a user from a Gdbm backed storage.
 func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
 
-	// Define default values
-	defaultValue := "Not provided"
-	name := defaultValue
-	familyName := defaultValue
-	yob := defaultValue
-	gender := defaultValue
-	location := defaultValue
-	offerings := defaultValue
+	// Default value when an entry is not found
+	defaultValue := "Not Provided"
 
-	// Fetch data using a map for better organization
-	// dataKeys := map[string]*string{
-	// 	FirstName:   &name,
-	// 	FamilyName:  &familyName,
-	// 	YearOfBirth: &yob,
-	// 	Location:    &location,
-	// 	Gender:      &gender,
-	// 	Offerings:   &offerings,
-	// }
+	// Helper function to handle nil byte slices and convert them to string
+	getEntryOrDefault := func(entry []byte, err error) string {
+		if err != nil || entry == nil {
+			return defaultValue
+		}
+		return string(entry)
+	}
 
-	// Iterate over keys and fetch values
-	//iter := h.db.Iterator()
-	// next := h.db.Iterator()
-	// //defer iter.Close() // Ensure the iterator is closed
-	// for key, err := next(); err == nil; key, err = next() {
-	// 	if valuePointer, ok := dataKeys[string(key)]; ok {
-	// 		// value, fetchErr := h.db.Fetch(key)
-	// 		// if fetchErr == nil {
-	// 		// 	*valuePointer = string(value)
-	// 		// }
-	// 	}
-	// }
+	// Retrieve user data as strings with fallback to defaultValue
+	firstName := getEntryOrDefault(utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_FIRST_NAME))
+	familyName := getEntryOrDefault(utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_FAMILY_NAME))
+	yob := getEntryOrDefault(utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_YOB))
+	gender := getEntryOrDefault(utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_GENDER))
+	location := getEntryOrDefault(utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_LOCATION))
+	offerings := getEntryOrDefault(utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_OFFERINGS))
 
 	// Construct the full name
+	name := defaultValue
 	if familyName != defaultValue {
-		if name == defaultValue {
+		if firstName == defaultValue {
 			name = familyName
 		} else {
-			name = name + " " + familyName
+			name = firstName + " " + familyName
 		}
 	}
 
 	// Calculate age from year of birth
-	var age string
+	age := defaultValue
 	if yob != defaultValue {
-		yobInt, err := strconv.Atoi(yob)
-		if err != nil {
+		if yobInt, err := strconv.Atoi(yob); err == nil {
+			age = strconv.Itoa(utils.CalculateAgeWithYOB(yobInt))
+		} else {
 			return res, fmt.Errorf("invalid year of birth: %v", err)
 		}
-		age = strconv.Itoa(utils.CalculateAgeWithYOB(yobInt))
-	} else {
-		age = defaultValue
 	}
 
 	// Format the result
-	formattedData := fmt.Sprintf("Name: %s\nGender: %s\nAge: %s\nLocation: %s\nYou provide: %s\n", name, gender, age, location, offerings)
-	res.Content = formattedData
+	res.Content = fmt.Sprintf(
+		"Name: %s\nGender: %s\nAge: %s\nLocation: %s\nYou provide: %s\n",
+		name, gender, age, location, offerings,
+	)
+
 	return res, nil
 }

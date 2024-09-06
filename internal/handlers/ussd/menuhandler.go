@@ -316,7 +316,7 @@ func (h *Handlers) SaveFamilyname(ctx context.Context, sym string, input []byte)
 			return res, nil
 		}
 	} else {
-		return res,fmt.Errorf("a family name cannot be less than one character")
+		return res, fmt.Errorf("a family name cannot be less than one character")
 	}
 
 	return res, nil

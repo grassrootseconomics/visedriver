@@ -29,23 +29,6 @@ var (
 	translationDir = path.Join(scriptDir, "locale")
 )
 
-const (
-	TrackingIdKey  = "TRACKINGID"
-	PublicKeyKey   = "PUBLICKEY"
-	CustodialIdKey = "CUSTODIALID"
-	AccountPin     = "ACCOUNTPIN"
-	AccountStatus  = "ACCOUNTSTATUS"
-	FirstName      = "FIRSTNAME"
-	FamilyName     = "FAMILYNAME"
-	YearOfBirth    = "YOB"
-	Location       = "LOCATION"
-	Gender         = "GENDER"
-	Offerings      = "OFFERINGS"
-	Recipient      = "RECIPIENT"
-	Amount         = "AMOUNT"
-	AccountCreated = "ACCOUNTCREATED"
-)
-
 type FSData struct {
 	Path string
 	St   *state.State
@@ -75,7 +58,7 @@ func (fm *FlagManager) GetFlag(label string) (uint32, error) {
 }
 
 type Handlers struct {
-	pe	*persist.Persister
+	pe                 *persist.Persister
 	st                 *state.State
 	ca                 cache.Memory
 	userdataStore      db.Db
@@ -92,7 +75,7 @@ func NewHandlers(appFlags *asm.FlagParser, pe *persist.Persister, userdataStore 
 		return nil, fmt.Errorf("cannot create handler with nil userdata store")
 	}
 	h := &Handlers{
-		pe:	pe,
+		pe:                 pe,
 		userdataStore:      userdataStore,
 		flagManager:        appFlags,
 		accountFileHandler: utils.NewAccountFileHandler(userdataStore),
@@ -122,7 +105,7 @@ func (h *Handlers) Init(ctx context.Context, sym string, input []byte) (resource
 	if h.st == nil || h.ca == nil {
 		logg.ErrorCtxf(ctx, "perister fail in handler", "state", h.st, "cache", h.ca)
 		return r, fmt.Errorf("cannot get state and memory for handler")
-	}	
+	}
 	h.pe = nil
 
 	logg.DebugCtxf(ctx, "handler has been initialized", "state", h.st, "cache", h.ca)
@@ -208,7 +191,7 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 func (h *Handlers) SavePin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	var err error
-	
+
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
 		return res, fmt.Errorf("missing session")
@@ -236,7 +219,7 @@ func (h *Handlers) SavePin(ctx context.Context, sym string, input []byte) (resou
 // SetResetSingleEdit sets and resets  flags to allow gradual editing of profile information.
 func (h *Handlers) SetResetSingleEdit(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
-	
+
 	menuOption := string(input)
 
 	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
@@ -297,67 +280,94 @@ func codeFromCtx(ctx context.Context) string {
 	return code
 }
 
-// SaveFirstname updates the first name in a JSON data file with the provided input.
+// SaveFirstname updates the first name in the gdbm with the provided input.
 func (h *Handlers) SaveFirstname(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
+	var err error
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
 
 	if len(input) > 0 {
-		//name := string(input)
-		//key := []byte(FirstName)
-		//value := []byte(name)
-		//h.db.Store(key, value, true)
+		firstName := string(input)
+		err = utils.WriteEntry(ctx, h.userdataStore, sessionId, utils.DATA_FIRST_NAME, []byte(firstName))
+		if err != nil {
+			return res, nil
+		}
 	}
 
 	return res, nil
 }
 
-// SaveFamilyname updates the family name in a JSON data file with the provided input.
+// SaveFamilyname updates the family name in the gdbm with the provided input.
 func (h *Handlers) SaveFamilyname(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
+	var err error
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
 
 	if len(input) > 0 {
-		//secondname := string(input)
-		//key := []byte(FamilyName)
-		//value := []byte(secondname)
-		//h.db.Store(key, value, true)
+		familyName := string(input)
+		err = utils.WriteEntry(ctx, h.userdataStore, sessionId, utils.DATA_FAMILY_NAME, []byte(familyName))
+		if err != nil {
+			return res, nil
+		}
 	}
 
 	return res, nil
 }
 
-// SaveYOB updates the Year of Birth(YOB) in a JSON data file with the provided input.
+// SaveYOB updates the Year of Birth(YOB) in the gdbm with the provided input.
 func (h *Handlers) SaveYob(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
+	var err error
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
 
-	yob := string(input)
-	if len(yob) == 4 {
-		//yob := string(input)
-		//key := []byte(YearOfBirth)
-		//value := []byte(yob)
-		//h.db.Store(key, value, true)
+	if len(input) == 4 {
+		yob := string(input)
+		err = utils.WriteEntry(ctx, h.userdataStore, sessionId, utils.DATA_YOB, []byte(yob))
+		if err != nil {
+			return res, nil
+		}
 	}
 
 	return res, nil
 }
 
-// SaveLocation updates the location in a JSON data file with the provided input.
+// SaveLocation updates the location in the gdbm with the provided input.
 func (h *Handlers) SaveLocation(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
+	var err error
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
 
 	if len(input) > 0 {
-		//location := string(input)
-		//key := []byte(Location)
-		//value := []byte(location)
-
-		//h.db.Store(key, value, true)
+		location := string(input)
+		err = utils.WriteEntry(ctx, h.userdataStore, sessionId, utils.DATA_LOCATION, []byte(location))
+		if err != nil {
+			return res, nil
+		}
 	}
 
 	return res, nil
 }
 
-// SaveGender updates the gender in a JSON data file with the provided input.
+// SaveGender updates the gender in the gdbm with the provided input.
 func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
+	var err error
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
 
 	if len(input) > 0 {
 		gender := string(input)
@@ -369,23 +379,32 @@ func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (re
 		case "3":
 			gender = "Unspecified"
 		}
-		//key := []byte(Gender)
-		//value := []byte(gender)
-		//h.db.Store(key, value, true)
+		err = utils.WriteEntry(ctx, h.userdataStore, sessionId, utils.DATA_GENDER, []byte(gender))
+		if err != nil {
+			return res, nil
+		}
 	}
+
 	return res, nil
 }
 
-// SaveOfferings updates the offerings(goods and services provided by the user) in a JSON data file with the provided input.
+// SaveOfferings updates the offerings(goods and services provided by the user) in the gdbm with the provided input.
 func (h *Handlers) SaveOfferings(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
+	var err error
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
 
 	if len(input) > 0 {
-		//offerings := string(input)
-		//key := []byte(Offerings)
-		//value := []byte(offerings)
-		//h.db.Store(key, value, true)
+		offerings := string(input)
+		err = utils.WriteEntry(ctx, h.userdataStore, sessionId, utils.DATA_OFFERINGS, []byte(offerings))
+		if err != nil {
+			return res, nil
+		}
 	}
+
 	return res, nil
 }
 
@@ -413,11 +432,15 @@ func (h *Handlers) ResetAccountAuthorized(ctx context.Context, sym string, input
 func (h *Handlers) CheckIdentifier(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 
-	//publicKey, err := h.db.Fetch([]byte(PublicKeyKey))
-	// if err != nil {
-	// 	return res, err
-	// }
-	res.Content = "string(publicKey)"
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+
+	publicKey, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_PUBLIC_KEY)
+
+	res.Content = string(publicKey)
+
 	return res, nil
 }
 
@@ -427,13 +450,15 @@ func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (res
 	var res resource.Result
 	var err error
 
-	flag_incorrect_pin, _ := h.flagManager.GetFlag("flag_incorrect_pin")
-	flag_account_authorized, _ := h.flagManager.GetFlag("flag_account_authorized")
-	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
+
+	flag_incorrect_pin, _ := h.flagManager.GetFlag("flag_incorrect_pin")
+	flag_account_authorized, _ := h.flagManager.GetFlag("flag_account_authorized")
+	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+
 	AccountPin, err := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_ACCOUNT_PIN)
 
 	if err == nil {
@@ -485,22 +510,15 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 	trackingId, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_TRACKING_ID)
 
 	status, err := h.accountService.CheckAccountStatus(string(trackingId))
-
 	if err != nil {
 		fmt.Println("Error checking account status:", err)
 		return res, err
-
 	}
 
-	// err = h.db.Store(toBytes(AccountStatus), toBytes(status), true)
-	// if err != nil {
-	// 	return res, nil
-	// }
-
-	// err = h.db.Store(toBytes(TrackingIdKey), toBytes(status), true)
-	// if err != nil {
-	// 	return res, nil
-	// }
+	err = utils.WriteEntry(ctx, h.userdataStore, sessionId, utils.DATA_ACCOUNT_STATUS, []byte(status))
+	if err != nil {
+		return res, nil
+	}
 
 	if status == "SUCCESS" {
 		res.FlagSet = append(res.FlagSet, flag_account_success)
@@ -567,8 +585,6 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 	var res resource.Result
 	var err error
 
-	// publicKey, err := h.db.Fetch([]byte(PublicKeyKey))
-
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
 		return res, fmt.Errorf("missing session")
@@ -588,6 +604,12 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 // ValidateRecipient validates that the given input is a valid phone number.
 func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
+	var err error
+
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
 
 	recipient := string(input)
 
@@ -602,11 +624,10 @@ func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []by
 			return res, nil
 		}
 
-		// accountData["Recipient"] = recipient
-		// key := []byte(Recipient)
-		// value := []byte(recipient)
-
-		// h.db.Store(key, value, true)
+		err = utils.WriteEntry(ctx, h.userdataStore, sessionId, utils.DATA_RECIPIENT, []byte(recipient))
+		if err != nil {
+			return res, nil
+		}
 	}
 
 	return res, nil
@@ -616,18 +637,25 @@ func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []by
 // as well as the invalid flags
 func (h *Handlers) TransactionReset(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
+	var err error
+
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
 
 	flag_invalid_recipient, _ := h.flagManager.GetFlag("flag_invalid_recipient")
 	flag_invalid_recipient_with_invite, _ := h.flagManager.GetFlag("flag_invalid_recipient_with_invite")
 
-	// err := h.db.Delete([]byte(Amount))
-	// if err != nil && !errors.Is(err, gdbm.ErrItemNotFound) {
-	// 	return res, err
-	// }
-	// err = h.db.Delete([]byte(Recipient))
-	// if err != nil && !errors.Is(err, gdbm.ErrItemNotFound) {
-	// 	return res, err
-	// }
+	err = utils.WriteEntry(ctx, h.userdataStore, sessionId, utils.DATA_AMOUNT, []byte(""))
+	if err != nil {
+		return res, nil
+	}
+
+	err = utils.WriteEntry(ctx, h.userdataStore, sessionId, utils.DATA_RECIPIENT, []byte(""))
+	if err != nil {
+		return res, nil
+	}
 
 	res.FlagReset = append(res.FlagReset, flag_invalid_recipient, flag_invalid_recipient_with_invite)
 
@@ -637,13 +665,19 @@ func (h *Handlers) TransactionReset(ctx context.Context, sym string, input []byt
 // ResetTransactionAmount resets the transaction amount and invalid flag
 func (h *Handlers) ResetTransactionAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
+	var err error
+
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
 
 	flag_invalid_amount, _ := h.flagManager.GetFlag("flag_invalid_amount")
 
-	// err := h.db.Delete([]byte(Amount))
-	// if err != nil && !errors.Is(err, gdbm.ErrItemNotFound) {
-	// 	return res, err
-	// }
+	err = utils.WriteEntry(ctx, h.userdataStore, sessionId, utils.DATA_AMOUNT, []byte(""))
+	if err != nil {
+		return res, nil
+	}
 
 	res.FlagReset = append(res.FlagReset, flag_invalid_amount)
 
@@ -656,12 +690,14 @@ func (h *Handlers) MaxAmount(ctx context.Context, sym string, input []byte) (res
 	var res resource.Result
 	var err error
 
-	// publicKey, err := h.db.Fetch([]byte(PublicKeyKey))
-	// if err != nil {
-	// 	return res, err
-	// }
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
 
-	balance, err := h.accountService.CheckBalance(string("publicKey"))
+	publicKey, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_PUBLIC_KEY)
+
+	balance, err := h.accountService.CheckBalance(string(publicKey))
 	if err != nil {
 		return res, nil
 	}
@@ -677,16 +713,18 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 	var res resource.Result
 	var err error
 
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+
 	flag_invalid_amount, _ := h.flagManager.GetFlag("flag_invalid_amount")
 
+	publicKey, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_PUBLIC_KEY)
+
 	amountStr := string(input)
-	// publicKey, err := h.db.Fetch([]byte(PublicKeyKey))
 
-	// if err != nil {
-	// 	return res, err
-	// }
-
-	balanceStr, err := h.accountService.CheckBalance(string("publicKey"))
+	balanceStr, err := h.accountService.CheckBalance(string(publicKey))
 
 	if err != nil {
 		return res, err
@@ -726,10 +764,8 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 	}
 
 	res.Content = fmt.Sprintf("%.3f", inputAmount) // Format to 3 decimal places
-	// key := []byte(Amount)
-	// value := []byte(res.Content)
-	// h.db.Store(key, value, true)
 
+	err = utils.WriteEntry(ctx, h.userdataStore, sessionId, utils.DATA_AMOUNT, []byte(amountStr))
 	if err != nil {
 		return res, err
 	}
@@ -737,16 +773,18 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 	return res, nil
 }
 
-// GetRecipient returns the transaction recipient from a JSON data file.
+// GetRecipient returns the transaction recipient from the gdbm.
 func (h *Handlers) GetRecipient(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 
-	// recipient, err := h.db.Fetch([]byte(Recipient))
-	// if err != nil {
-	// 	return res, err
-	// }
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
 
-	res.Content = string("recipient")
+	recipient, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_RECIPIENT)
+
+	res.Content = string(recipient)
 
 	return res, nil
 }
@@ -755,12 +793,14 @@ func (h *Handlers) GetRecipient(ctx context.Context, sym string, input []byte) (
 func (h *Handlers) GetSender(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 
-	// publicKey, err := h.db.Fetch([]byte(PublicKeyKey))
-	// if err != nil {
-	// 	return res, err
-	// }
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
 
-	res.Content = string("publicKey")
+	publicKey, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_PUBLIC_KEY)
+
+	res.Content = string(publicKey)
 
 	return res, nil
 }
@@ -769,11 +809,14 @@ func (h *Handlers) GetSender(ctx context.Context, sym string, input []byte) (res
 func (h *Handlers) GetAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 
-	// amount, err := h.db.Fetch([]byte(Amount))
-	// if err != nil {
-	// 	return res, err
-	// }
-	res.Content = string("amount")
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+
+	amount, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_AMOUNT)
+
+	res.Content = string(amount)
 
 	return res, nil
 }
@@ -783,17 +826,20 @@ func (h *Handlers) GetAmount(ctx context.Context, sym string, input []byte) (res
 func (h *Handlers) QuitWithBalance(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	var err error
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
 
 	flag_account_authorized, _ := h.flagManager.GetFlag("flag_account_authorized")
 
 	code := codeFromCtx(ctx)
 	l := gotext.NewLocale(translationDir, code)
 	l.AddDomain("default")
-	// publicKey, err := h.db.Fetch([]byte(PublicKeyKey))
-	// if err != nil {
-	// 	return res, err
-	// }
-	balance, err := h.accountService.CheckBalance(string("publicKey"))
+
+	publicKey, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_PUBLIC_KEY)
+
+	balance, err := h.accountService.CheckBalance(string(publicKey))
 	if err != nil {
 		return res, nil
 	}
@@ -803,10 +849,14 @@ func (h *Handlers) QuitWithBalance(ctx context.Context, sym string, input []byte
 }
 
 // InitiateTransaction returns a confirmation and resets the transaction data
-// on the JSON file.
+// on the gdbm store.
 func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	var err error
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
 
 	code := codeFromCtx(ctx)
 	l := gotext.NewLocale(translationDir, code)
@@ -814,20 +864,13 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 	// TODO
 	// Use the amount, recipient and sender to call the API and initialize the transaction
 
-	// publicKey, err := h.db.Fetch([]byte(PublicKeyKey))
-	// if err != nil {
-	// 	return res, err
-	// }
-	// amount, err := h.db.Fetch([]byte(Amount))
-	// if err != nil {
-	// 	return res, err
-	// }
-	// recipient, err := h.db.Fetch([]byte(Recipient))
-	// if err != nil {
-	// 	return res, err
-	// }
+	publicKey, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_PUBLIC_KEY)
 
-	//res.Content = l.Get("Your request has been sent. %s will receive %s from %s.", string(recipient), string(amount), string(publicKey))
+	amount, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_AMOUNT)
+
+	recipient, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_RECIPIENT)
+
+	res.Content = l.Get("Your request has been sent. %s will receive %s from %s.", string(recipient), string(amount), string(publicKey))
 
 	account_authorized_flag, err := h.flagManager.GetFlag("flag_account_authorized")
 	if err != nil {

@@ -23,7 +23,7 @@ var (
 	scriptDir = path.Join("services", "registration")
 )
 
-func getFlags(fp string, debug bool) (*asm.FlagParser, error) {
+func getParser(fp string, debug bool) (*asm.FlagParser, error) {
 	flagParser := asm.NewFlagParser().WithDebug()
 	_, err := flagParser.Load(fp)
 	if err != nil {
@@ -128,7 +128,7 @@ func main() {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "SessionId",sessionId)
 	pfp := path.Join(scriptDir, "pp.csv")
-	flagParser, err := getFlags(pfp, true)
+	flagParser, err := getParser(pfp, true)
 
 	if err != nil {
 		os.Exit(1)

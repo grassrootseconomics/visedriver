@@ -177,12 +177,7 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 			if err != nil {
 				return res, err
 			}
-		} else {
-			err = h.createAccountNoExist(ctx, sessionId, &res)
-			if err != nil {
-				return res, err
-			}
-		}
+		} 
 	}
 	return res, nil
 }

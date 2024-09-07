@@ -145,7 +145,6 @@ func (h *Handlers) createAccountNoExist(ctx context.Context, sessionId string, r
 		utils.DATA_PUBLIC_KEY:   accountResp.Result.PublicKey,
 		utils.DATA_CUSTODIAL_ID: accountResp.Result.CustodialId.String(),
 	}
-
 	for key, value := range data {
 		err := utils.WriteEntry(ctx, h.userdataStore, sessionId, key, []byte(value))
 		if err != nil {
@@ -164,7 +163,6 @@ func (h *Handlers) createAccountNoExist(ctx context.Context, sessionId string, r
 func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	var err error
-
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
 		return res, fmt.Errorf("missing session")
@@ -177,7 +175,7 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 			if err != nil {
 				return res, err
 			}
-		} 
+		}
 	}
 	return res, nil
 }

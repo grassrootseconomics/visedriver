@@ -1,0 +1,9 @@
+LOAD save_gender 0
+CATCH update_success flag_allow_update 1
+MOUT back 0
+HALT
+INCMP _ 0
+LOAD verify_yob 8
+LOAD save_yob 0
+CATCH pin_entry flag_single_edit 1
+INCMP enter_location *

@@ -1,0 +1,9 @@
+CATCH incorrect_date_format flag_incorrect_date_format 1
+LOAD save_yob 0
+CATCH update_success flag_allow_update 1
+MOUT back 0
+HALT
+INCMP _ 0
+LOAD save_location 0
+CATCH pin_entry flag_single_edit 1
+INCMP enter_offerings *

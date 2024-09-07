@@ -1,0 +1,6 @@
+MOUT change_pin 1
+MOUT reset_pin 2
+MOUT guard_pin 3
+MOUT back 0
+HALT
+INCMP _ 0

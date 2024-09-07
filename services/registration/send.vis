@@ -1,0 +1,8 @@
+LOAD transaction_reset 0
+MOUT back 0
+HALT
+LOAD validate_recipient 20
+RELOAD validate_recipient
+CATCH invalid_recipient flag_invalid_recipient 1
+INCMP _ 0
+INCMP amount *

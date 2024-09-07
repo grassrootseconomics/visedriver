@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"git.defalsify.org/vise.git/lang"
-	"git.grassecon.net/urdt/ussd/internal/utils"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -13,7 +12,7 @@ type MockDb struct {
 }
 
 func (m *MockDb) SetPrefix(prefix uint8) {
-	m.Called(utils.DATA_FAMILY_NAME)
+	m.Called(prefix)
 }
 
 func (m *MockDb) Prefix() uint8 {

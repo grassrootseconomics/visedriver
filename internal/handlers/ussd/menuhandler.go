@@ -203,7 +203,7 @@ func (h *Handlers) SavePin(ctx context.Context, sym string, input []byte) (resou
 
 	err = utils.WriteEntry(ctx, h.userdataStore, sessionId, utils.DATA_ACCOUNT_PIN, []byte(accountPIN))
 	if err != nil {
-		return res, nil
+		return res, err
 	}
 
 	return res, nil

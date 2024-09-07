@@ -12,14 +12,14 @@ import (
 	fsdb "git.defalsify.org/vise.git/db/fs"
 	gdbmdb "git.defalsify.org/vise.git/db/gdbm"
 	"git.defalsify.org/vise.git/engine"
+	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
-	"git.defalsify.org/vise.git/logging"
 	"git.grassecon.net/urdt/ussd/internal/handlers/ussd"
 )
 
 var (
-	logg = logging.NewVanilla()
+	logg      = logging.NewVanilla()
 	scriptDir = path.Join("services", "registration")
 )
 
@@ -90,7 +90,7 @@ func getUserdataDb(dbDir string, ctx context.Context) db.Db {
 	store := gdbmdb.NewGdbmDb()
 	storeFile := path.Join(dbDir, "userdata.gdbm")
 	store.Connect(ctx, storeFile)
-	
+
 	return store
 }
 
@@ -123,10 +123,10 @@ func main() {
 	flag.UintVar(&size, "s", 160, "max size of output")
 	flag.Parse()
 
-	logg.Infof("start command", "dbdir", dbDir, "resourcedir", resourceDir,  "outputsize", size)
+	logg.Infof("start command", "dbdir", dbDir, "resourcedir", resourceDir, "outputsize", size)
 
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, "SessionId",sessionId)
+	ctx = context.WithValue(ctx, "SessionId", sessionId)
 	pfp := path.Join(scriptDir, "pp.csv")
 	flagParser, err := getParser(pfp, true)
 

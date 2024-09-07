@@ -165,3 +165,7 @@ func TestSaveFamilyname(t *testing.T) {
 		})
 	}
 }
+
+func testSavePin () {
+	
+}

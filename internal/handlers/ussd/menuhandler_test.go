@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"git.grassecon.net/urdt/ussd/internal/handlers/ussd/mocks"
+	"git.defalsify.org/vise.git/lang"
 	"git.grassecon.net/urdt/ussd/internal/models"
-	"git.grassecon.net/urdt/ussd/internal/utils"
+
 	"github.com/alecthomas/assert/v2"
 	"github.com/stretchr/testify/mock"
 )
@@ -14,15 +14,6 @@ import (
 // MockAccountService implements AccountServiceInterface for testing
 type MockAccountService struct {
 	mock.Mock
-}
-
-type MockFlagParser struct {
-	mock.Mock
-}
-
-func (m *MockFlagParser) GetFlag(key string) (uint32, error) {
-	args := m.Called(key)
-	return args.Get(0).(uint32), args.Error(1)
 }
 
 func (m *MockAccountService) CreateAccount() (*models.AccountResponse, error) {
@@ -38,6 +29,58 @@ func (m *MockAccountService) CheckBalance(publicKey string) (string, error) {
 func (m *MockAccountService) CheckAccountStatus(trackingId string) (string, error) {
 	args := m.Called(trackingId)
 	return args.String(0), args.Error(1)
+}
+
+// MockDb is a mock implementation of the db.Db interface
+type MockDb struct {
+	mock.Mock
+}
+
+func (m *MockDb) SetPrefix(prefix uint8) {
+	m.Called(prefix)
+}
+
+func (m *MockDb) Prefix() uint8 {
+	args := m.Called()
+	return args.Get(0).(uint8)
+}
+
+func (m *MockDb) Safe() bool {
+	args := m.Called()
+	return args.Get(0).(bool)
+}
+
+func (m *MockDb) SetLanguage(language *lang.Language) {
+	m.Called(language)
+}
+
+func (m *MockDb) SetLock(uint8, bool) error {
+	args := m.Called()
+	return args.Error(0)
+}
+
+func (m *MockDb) Connect(ctx context.Context, connectionStr string) error {
+	args := m.Called(ctx, connectionStr)
+	return args.Error(0)
+}
+
+func (m *MockDb) SetSession(sessionId string) {
+	m.Called(sessionId)
+}
+
+func (m *MockDb) Put(ctx context.Context, key, value []byte) error {
+	args := m.Called(ctx, key, value)
+	return args.Error(0)
+}
+
+func (m *MockDb) Get(ctx context.Context, key []byte) ([]byte, error) {
+	args := m.Called(ctx, key)
+	return nil, args.Error(0)
+}
+
+func (m *MockDb) Close() error {
+	args := m.Called(nil)
+	return args.Error(0)
 }
 
 // func TestCreateAccount(t *testing.T) {
@@ -425,147 +468,121 @@ func (m *MockAccountService) CheckAccountStatus(trackingId string) (string, erro
 // 	}
 // }
 
-// func TestSaveFirstname(t *testing.T) {
-// 	// Create a new instance of MockAccountFileHandler
-// 	mockFileHandler := new(mocks.MockAccountFileHandler)
+func TestSaveFirstname(t *testing.T) {
+	// Create a mock database
+	mockDb := new(MockDb)
 
-// 	// Define test cases
-// 	tests := []struct {
-// 		name           string
-// 		input          []byte
-// 		existingData   map[string]string
-// 		writeError     error
-// 		expectedResult resource.Result
-// 		expectedError  error
-// 	}{
-// 		{
-// 			name:           "Successful Save",
-// 			input:          []byte("Joe"),
-// 			existingData:   map[string]string{"Name": "Joe"},
-// 			writeError:     nil,
-// 			expectedResult: resource.Result{},
-// 			expectedError:  nil,
-// 		},
-// 		{
-// 			name:          "Empty Input",
-// 			input:         []byte{},
-// 			existingData:  map[string]string{"OtherKey": "OtherValue"},
-// 			writeError:    nil,
-// 			expectedError: nil,
-// 		},
-// 	}
+	// Create a Handlers instance with the mock database
+	h := &Handlers{
+		userdataStore: mockDb,
+	}
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			// Set up the mock expectations
-// 			mockFileHandler.On("ReadAccountData").Return(tt.existingData, tt.expectedError)
-// 			if tt.expectedError == nil && len(tt.input) > 0 {
-// 				mockFileHandler.On("WriteAccountData", mock.MatchedBy(func(data map[string]string) bool {
-// 					return data["FirstName"] == string(tt.input)
-// 				})).Return(tt.writeError)
-// 			} else if len(tt.input) == 0 {
-// 				// For empty input, no WriteAccountData call should be made
-// 				mockFileHandler.On("WriteAccountData", mock.Anything).Maybe().Return(tt.writeError)
-// 				return
-// 			}
+	// Create a context with a session ID
+	ctx := context.WithValue(context.Background(), "SessionId", "test-session")
 
-// 			// Create the Handlers instance with the mock file handler
-// 			h := &Handlers{
-// 				accountFileHandler: mockFileHandler,
-// 			}
+	tests := []struct {
+		name        string
+		input       []byte
+		expectError bool
+		setupMock   func(*MockDb)
+	}{
+		{
+			name:        "Valid first name",
+			input:       []byte("John"),
+			expectError: false,
+			setupMock: func(m *MockDb) {
+				m.On("SetPrefix", uint8(0x20)).Return(nil)
+				m.On("SetSession", "test-session").Return(nil)
+				m.On("Put", mock.Anything, mock.Anything, []byte("John")).Return(nil)
+			},
+		},
+		{
+			name:        "Empty first name",
+			input:       []byte{},
+			expectError: false, // Note: The function doesn't return an error for empty input
+			setupMock:   func(m *MockDb) {},
+		},
+	}
 
-// 			// Call save location
-// 			result, err := h.SaveFirstname(context.Background(), "save_location", tt.input)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Setup mock expectations
+			tt.setupMock(mockDb)
 
-// 			if err != nil {
-// 				t.Fatalf("Failed to save first name with error: %v", err)
-// 			}
-// 			savedData, err := h.accountFileHandler.ReadAccountData()
-// 			if err == nil {
-// 				//Assert that the input provided is what was saved into the file
-// 				assert.Equal(t, string(tt.input), savedData["FirstName"])
-// 			}
+			// Call the function
+			_, err := h.SaveFirstname(ctx, "", tt.input)
 
-// 			// Assert the results
-// 			assert.Equal(t, tt.expectedResult, result)
-// 			assert.Equal(t, tt.expectedError, err)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				mockDb.AssertExpectations(t)
+			}
 
-// 			// Assert all expectations were met
-// 			mockFileHandler.AssertExpectations(t)
-// 		})
-// 	}
-// }
+			// Clear mock for the next test
+			mockDb.ExpectedCalls = nil
+			mockDb.Calls = nil
+		})
+	}
+}
 
-// func TestSaveFamilyName(t *testing.T) {
-// 	// Create a new instance of MockAccountFileHandler
-// 	mockFileHandler := new(mocks.MockAccountFileHandler)
+func TestSaveFamilyname(t *testing.T) {
+	// Create a mock database
+	mockDb := new(MockDb)
 
-// 	// Define test cases
-// 	tests := []struct {
-// 		name           string
-// 		input          []byte
-// 		existingData   map[string]string
-// 		writeError     error
-// 		expectedResult resource.Result
-// 		expectedError  error
-// 	}{
-// 		{
-// 			name:           "Successful Save",
-// 			input:          []byte("Doe"),
-// 			existingData:   map[string]string{"FamilyName": "Doe"},
-// 			writeError:     nil,
-// 			expectedResult: resource.Result{},
-// 			expectedError:  nil,
-// 		},
-// 		{
-// 			name:          "Empty Input",
-// 			input:         []byte{},
-// 			existingData:  map[string]string{"FamilyName": "Doe"},
-// 			writeError:    nil,
-// 			expectedError: nil,
-// 		},
-// 	}
+	// Create a Handlers instance with the mock database
+	h := &Handlers{
+		userdataStore: mockDb,
+	}
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			// Set up the mock expectations
-// 			mockFileHandler.On("ReadAccountData").Return(tt.existingData, tt.expectedError)
-// 			if tt.expectedError == nil && len(tt.input) > 0 {
-// 				mockFileHandler.On("WriteAccountData", mock.MatchedBy(func(data map[string]string) bool {
-// 					return data["FamilyName"] == string(tt.input)
-// 				})).Return(tt.writeError)
-// 			} else if len(tt.input) == 0 {
-// 				// For empty input, no WriteAccountData call should be made
-// 				mockFileHandler.On("WriteAccountData", mock.Anything).Maybe().Return(tt.writeError)
-// 				return
-// 			}
+	// Create a context with a session ID
+	ctx := context.WithValue(context.Background(), "SessionId", "test-session")
 
-// 			// Create the Handlers instance with the mock file handler
-// 			h := &Handlers{
-// 				accountFileHandler: mockFileHandler,
-// 			}
+	tests := []struct {
+		name        string
+		input       []byte
+		expectError bool
+		setupMock   func(*MockDb)
+	}{
+		{
+			name:        "Valid family name",
+			input:       []byte("Smith"),
+			expectError: false,
+			setupMock: func(m *MockDb) {
+				m.On("SetPrefix", uint8(0x20)).Return(nil)
+				m.On("SetSession", "test-session").Return(nil)
+				m.On("Put", mock.Anything, mock.Anything, []byte("Smith")).Return(nil)
+			},
+		},
+		{
+			name:        "Empty family name",
+			input:       []byte{},
+			expectError: true,
+			setupMock:   func(m *MockDb) {},
+		},
+	}
 
-// 			// Call save familyname
-// 			result, err := h.SaveFamilyname(context.Background(), "save_familyname", tt.input)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Setup mock expectations
+			tt.setupMock(mockDb)
 
-// 			if err != nil {
-// 				t.Fatalf("Failed to save family name with error: %v", err)
-// 			}
-// 			savedData, err := h.accountFileHandler.ReadAccountData()
-// 			if err == nil {
-// 				//Assert that the input provided is what was saved into the file
-// 				assert.Equal(t, string(tt.input), savedData["FamilyName"])
-// 			}
+			// Call the function
+			_, err := h.SaveFamilyname(ctx, "", tt.input)
 
-// 			// Assert the results
-// 			assert.Equal(t, tt.expectedResult, result)
-// 			assert.Equal(t, tt.expectedError, err)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				mockDb.AssertExpectations(t)
+			}
 
-// 			// Assert all expectations were met
-// 			mockFileHandler.AssertExpectations(t)
-// 		})
-// 	}
-// }
+			// Clear mock for the next test
+			mockDb.ExpectedCalls = nil
+			mockDb.Calls = nil
+		})
+	}
+}
 
 // func TestSaveYOB(t *testing.T) {
 // 	// Create a new instance of MockAccountFileHandler
@@ -986,60 +1003,3 @@ func (m *MockAccountService) CheckAccountStatus(trackingId string) (string, erro
 // 		})
 // 	}
 // }
-
-// Test SaveFirstname
-func TestSaveFirstName(t *testing.T) {
-	// Create a new instance of MockDb
-	mockDb := new(mocks.MockDb)
-	k := utils.PackKey(utils.DATA_FAMILY_NAME, []byte("session123"))
-	// Define test cases
-	tests := []struct {
-		name          string
-		ctxValue      string
-		input         []byte
-		mockPutError  error
-		expectedError error
-		expectedCalls []mock.Call
-	}{
-		{
-			name:          "Successful save",
-			ctxValue:      "session123",
-			input:         []byte("John"),
-			mockPutError:  nil,
-			expectedError: nil,
-			expectedCalls: []mock.Call{
-				// Expect the SetPrefix and SetSession calls
-				*mockDb.On("SetPrefix", utils.DATA_FAMILY_NAME).Return(),
-				*mockDb.On("SetSession", "session123").Return(),
-				// Expect the Put call
-				*mockDb.On("Put", context.WithValue(context.Background(), "SessionId", "session123"), k, []byte("John")).Return(nil),
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Set up the mock expectations
-			for _, call := range tt.expectedCalls {
-				call.Run(func(args mock.Arguments) {})
-			}
-
-			// Create the Handlers instance with the mock db
-			h := &Handlers{
-				userdataStore: mockDb,
-			}
-
-			// Create the context with the session ID
-			ctx := context.WithValue(context.Background(), "SessionId", tt.ctxValue)
-
-			// Call the method
-			_, err := h.SaveFamilyname(ctx, "save_familyname", []byte("John"))
-
-			// Assert the results
-			assert.Equal(t, tt.expectedError, err)
-
-			// Assert all expectations were met
-			mockDb.AssertExpectations(t)
-		})
-	}
-}

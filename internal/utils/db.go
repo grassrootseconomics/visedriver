@@ -33,15 +33,16 @@ func typToBytes(typ DataTyp) []byte {
 	return b[:]
 }
 
-func packKey(typ DataTyp, data []byte) []byte {
+func PackKey(typ DataTyp, data []byte) []byte {
 	v := typToBytes(typ)
 	return append(v, data...)
 }
 
 func ReadEntry(ctx context.Context, store db.Db, sessionId string, typ DataTyp) ([]byte, error) {
+
 	store.SetPrefix(db.DATATYPE_USERDATA)
 	store.SetSession(sessionId)
-	k := packKey(typ, []byte(sessionId))
+	k := PackKey(typ, []byte(sessionId))
 	b, err := store.Get(ctx, k)
 	if err != nil {
 		return nil, err
@@ -52,6 +53,6 @@ func ReadEntry(ctx context.Context, store db.Db, sessionId string, typ DataTyp) 
 func WriteEntry(ctx context.Context, store db.Db, sessionId string, typ DataTyp, value []byte) error {
 	store.SetPrefix(db.DATATYPE_USERDATA)
 	store.SetSession(sessionId)
-	k := packKey(typ, []byte(sessionId))
+	k := PackKey(typ, []byte(sessionId))
 	return store.Put(ctx, k, value)
 }

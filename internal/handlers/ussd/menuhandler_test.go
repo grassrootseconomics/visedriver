@@ -10,61 +10,6 @@ import (
 	"github.com/alecthomas/assert/v2"
 )
 
-// func TestCreateAccount(t *testing.T) {
-// 	// Create a new instance of MockMyDataStore
-// 	mockDataStore := new(mocks.MockMyDataStore)
-// 	mockCreateAccountService := new(mocks.MockAccountService)
-
-// 	// Define session ID and mock data
-// 	sessionId := "session123"
-// 	typ := utils.DATA_ACCOUNT_CREATED
-// 	fakeError := db.ErrNotFound{}
-// 	// Create context with session ID
-// 	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
-
-// 	// Define expected interactions with the mock
-// 	mockDataStore.On("ReadEntry", ctx, sessionId, typ).Return([]byte("123"), fakeError)
-// 	expectedAccountResp := &models.AccountResponse{
-// 		Ok: true,
-// 		Result: struct {
-// 			CustodialId json.Number `json:"custodialId"`
-// 			PublicKey   string      `json:"publicKey"`
-// 			TrackingId  string      `json:"trackingId"`
-// 		}{
-// 			CustodialId: "12",
-// 			PublicKey:   "0x8E0XSCSVA",
-// 			TrackingId:  "d95a7e83-196c-4fd0-866fSGAGA",
-// 		},
-// 	}
-// 	mockCreateAccountService.On("CreateAccount").Return(expectedAccountResp, nil)
-// 	data := map[utils.DataTyp]string{
-// 		utils.DATA_TRACKING_ID:  expectedAccountResp.Result.TrackingId,
-// 		utils.DATA_PUBLIC_KEY:   expectedAccountResp.Result.PublicKey,
-// 		utils.DATA_CUSTODIAL_ID: expectedAccountResp.Result.CustodialId.String(),
-// 	}
-
-// 	for key, value := range data {
-// 		//err := utils.WriteEntry(ctx, h.userdataStore, sessionId, key, []byte(value))
-// 		mockDataStore.On("WriteEntry", ctx, sessionId, key, []byte(value)).Return(nil)
-// 	}
-// 	//mockDataStore.On("WriteEntry", mock.Anything, sessionId, mock.Anything, mock.Anything).Return(nil)
-
-// 	// Create a Handlers instance with the mock data store
-// 	h := &Handlers{
-// 		userdataStore:  mockDataStore,
-// 		accountService: mockCreateAccountService,
-// 	}
-
-// 	// Call the method you want to test
-// 	_, err := h.CreateAccount(ctx, "some-symbol", []byte("some-input"))
-
-// 	// Assert that no errors occurred
-// 	assert.NoError(t, err)
-
-// 	// Assert that expectations were met
-// 	mockDataStore.AssertExpectations(t)
-// }
-
 func TestSaveFirstname(t *testing.T) {
 	// Create a new instance of MockMyDataStore
 	mockStore := new(mocks.MockUserDataStore)
@@ -94,7 +39,7 @@ func TestSaveFirstname(t *testing.T) {
 }
 
 func TestSaveFamilyname(t *testing.T) {
-	// Create a new instance of MockMyDataStore
+	// Create a new instance of UserDataStore
 	mockStore := new(mocks.MockUserDataStore)
 
 	// Define test data

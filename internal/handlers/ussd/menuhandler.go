@@ -58,16 +58,18 @@ func (fm *FlagManager) GetFlag(label string) (uint32, error) {
 }
 
 type Handlers struct {
-	pe                 *persist.Persister
-	st                 *state.State
-	ca                 cache.Memory
-	userdataStore      db.Db
-	flagManager        *asm.FlagParser
-	accountFileHandler *utils.AccountFileHandler
-	accountService     server.AccountServiceInterface
+	pe             *persist.Persister
+	st             *state.State
+	ca             cache.Memory
+	userdataStore  utils.DataStore
+	flagManager    *asm.FlagParser
+	accountService server.AccountServiceInterface
 }
 
-func NewHandlers(appFlags *asm.FlagParser, pe *persist.Persister, userdataStore db.Db) (*Handlers, error) {
+func NewHandlers(parser *asm.FlagParser, pe *persist.Persister, userdataStore db.Db) (*Handlers, error) {
+	userDb := utils.UserDataStore{
+		Store: userdataStore,
+	}
 	if pe == nil {
 		return nil, fmt.Errorf("cannot create handler with nil persister")
 	}
@@ -75,11 +77,10 @@ func NewHandlers(appFlags *asm.FlagParser, pe *persist.Persister, userdataStore 
 		return nil, fmt.Errorf("cannot create handler with nil userdata store")
 	}
 	h := &Handlers{
-		pe:                 pe,
-		userdataStore:      userdataStore,
-		flagManager:        appFlags,
-		accountFileHandler: utils.NewAccountFileHandler(userdataStore),
-		accountService:     &server.AccountService{},
+		pe:             pe,
+		userdataStore:  userDb,
+		flagManager:    parser,
+		accountService: &server.AccountService{},
 	}
 	return h, nil
 }
@@ -145,8 +146,10 @@ func (h *Handlers) createAccountNoExist(ctx context.Context, sessionId string, r
 		utils.DATA_PUBLIC_KEY:   accountResp.Result.PublicKey,
 		utils.DATA_CUSTODIAL_ID: accountResp.Result.CustodialId.String(),
 	}
+
 	for key, value := range data {
-		err := utils.WriteEntry(ctx, h.userdataStore, sessionId, key, []byte(value))
+		store := h.userdataStore
+		err := store.WriteEntry(ctx, sessionId, key, []byte(value))
 		if err != nil {
 			return err
 		}
@@ -167,7 +170,8 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-	_, err = utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_ACCOUNT_CREATED)
+	store := h.userdataStore
+	_, err = store.ReadEntry(ctx, sessionId, utils.DATA_ACCOUNT_CREATED)
 	if err != nil {
 		if db.IsNotFound(err) {
 			logg.Printf(logging.LVL_INFO, "Creating an account because it doesn't exist")
@@ -200,12 +204,11 @@ func (h *Handlers) SavePin(ctx context.Context, sym string, input []byte) (resou
 	}
 
 	res.FlagReset = append(res.FlagReset, flag_incorrect_pin)
-
-	err = utils.WriteEntry(ctx, h.userdataStore, sessionId, utils.DATA_ACCOUNT_PIN, []byte(accountPIN))
+	store := h.userdataStore
+	err = store.WriteEntry(ctx, sessionId, utils.DATA_ACCOUNT_PIN, []byte(accountPIN))
 	if err != nil {
 		return res, err
 	}
-
 	return res, nil
 }
 
@@ -250,7 +253,12 @@ func (h *Handlers) VerifyPin(ctx context.Context, sym string, input []byte) (res
 		return res, fmt.Errorf("missing session")
 	}
 
-	AccountPin, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_ACCOUNT_PIN)
+	//AccountPin, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_ACCOUNT_PIN)
+	store := h.userdataStore.(utils.UserDataStore)
+	AccountPin, err := store.ReadEntry(ctx, sessionId, utils.DATA_ACCOUNT_PIN)
+	if err != nil {
+		return res, err
+	}
 
 	if bytes.Equal(input, AccountPin) {
 		res.FlagSet = []uint32{flag_valid_pin}
@@ -284,9 +292,10 @@ func (h *Handlers) SaveFirstname(ctx context.Context, sym string, input []byte) 
 
 	if len(input) > 0 {
 		firstName := string(input)
-		err = utils.WriteEntry(ctx, h.userdataStore, sessionId, utils.DATA_FIRST_NAME, []byte(firstName))
+		store := h.userdataStore
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_FIRST_NAME, []byte(firstName))
 		if err != nil {
-			return res, nil
+			return res, err
 		}
 	}
 
@@ -304,7 +313,11 @@ func (h *Handlers) SaveFamilyname(ctx context.Context, sym string, input []byte)
 
 	if len(input) > 0 {
 		familyName := string(input)
-		err = utils.WriteEntry(ctx, h.userdataStore, sessionId, utils.DATA_FAMILY_NAME, []byte(familyName))
+		store := h.userdataStore
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_FAMILY_NAME, []byte(familyName))
+		if err != nil {
+			return res, err
+		}
 		if err != nil {
 			return res, nil
 		}
@@ -326,9 +339,10 @@ func (h *Handlers) SaveYob(ctx context.Context, sym string, input []byte) (resou
 
 	if len(input) == 4 {
 		yob := string(input)
-		err = utils.WriteEntry(ctx, h.userdataStore, sessionId, utils.DATA_YOB, []byte(yob))
+		store := h.userdataStore
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_YOB, []byte(yob))
 		if err != nil {
-			return res, nil
+			return res, err
 		}
 	}
 
@@ -346,9 +360,10 @@ func (h *Handlers) SaveLocation(ctx context.Context, sym string, input []byte) (
 
 	if len(input) > 0 {
 		location := string(input)
-		err = utils.WriteEntry(ctx, h.userdataStore, sessionId, utils.DATA_LOCATION, []byte(location))
+		store := h.userdataStore
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_LOCATION, []byte(location))
 		if err != nil {
-			return res, nil
+			return res, err
 		}
 	}
 
@@ -374,7 +389,8 @@ func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (re
 		case "3":
 			gender = "Unspecified"
 		}
-		err = utils.WriteEntry(ctx, h.userdataStore, sessionId, utils.DATA_GENDER, []byte(gender))
+		store := h.userdataStore
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_GENDER, []byte(gender))
 		if err != nil {
 			return res, nil
 		}
@@ -394,7 +410,8 @@ func (h *Handlers) SaveOfferings(ctx context.Context, sym string, input []byte) 
 
 	if len(input) > 0 {
 		offerings := string(input)
-		err = utils.WriteEntry(ctx, h.userdataStore, sessionId, utils.DATA_OFFERINGS, []byte(offerings))
+		store := h.userdataStore
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_OFFERINGS, []byte(offerings))
 		if err != nil {
 			return res, nil
 		}
@@ -432,7 +449,8 @@ func (h *Handlers) CheckIdentifier(ctx context.Context, sym string, input []byte
 		return res, fmt.Errorf("missing session")
 	}
 
-	publicKey, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_PUBLIC_KEY)
+	store := h.userdataStore
+	publicKey, _ := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
 
 	res.Content = string(publicKey)
 
@@ -454,7 +472,11 @@ func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (res
 	flag_account_authorized, _ := h.flagManager.GetFlag("flag_account_authorized")
 	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
 
-	AccountPin, err := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_ACCOUNT_PIN)
+	store := h.userdataStore
+	AccountPin, err := store.ReadEntry(ctx, sessionId, utils.DATA_ACCOUNT_PIN)
+	if err != nil {
+		return res, err
+	}
 
 	if err == nil {
 		if len(input) == 4 {
@@ -501,8 +523,11 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-
-	trackingId, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_TRACKING_ID)
+	store := h.userdataStore.(utils.UserDataStore)
+	trackingId, err := store.ReadEntry(ctx, sessionId, utils.DATA_TRACKING_ID)
+	if err != nil {
+		return res, err
+	}
 
 	status, err := h.accountService.CheckAccountStatus(string(trackingId))
 	if err != nil {
@@ -510,7 +535,7 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 		return res, err
 	}
 
-	err = utils.WriteEntry(ctx, h.userdataStore, sessionId, utils.DATA_ACCOUNT_STATUS, []byte(status))
+	err = store.WriteEntry(ctx, sessionId, utils.DATA_ACCOUNT_STATUS, []byte(status))
 	if err != nil {
 		return res, nil
 	}
@@ -585,7 +610,11 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 		return res, fmt.Errorf("missing session")
 	}
 
-	publicKey, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_PUBLIC_KEY)
+	store := h.userdataStore.(utils.UserDataStore)
+	publicKey, err := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
+	if err != nil {
+		return res, err
+	}
 
 	balance, err := h.accountService.CheckBalance(string(publicKey))
 	if err != nil {
@@ -618,8 +647,8 @@ func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []by
 
 			return res, nil
 		}
-
-		err = utils.WriteEntry(ctx, h.userdataStore, sessionId, utils.DATA_RECIPIENT, []byte(recipient))
+		store := h.userdataStore
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_RECIPIENT, []byte(recipient))
 		if err != nil {
 			return res, nil
 		}
@@ -641,13 +670,13 @@ func (h *Handlers) TransactionReset(ctx context.Context, sym string, input []byt
 
 	flag_invalid_recipient, _ := h.flagManager.GetFlag("flag_invalid_recipient")
 	flag_invalid_recipient_with_invite, _ := h.flagManager.GetFlag("flag_invalid_recipient_with_invite")
-
-	err = utils.WriteEntry(ctx, h.userdataStore, sessionId, utils.DATA_AMOUNT, []byte(""))
+	store := h.userdataStore
+	err = store.WriteEntry(ctx, sessionId, utils.DATA_AMOUNT, []byte(""))
 	if err != nil {
 		return res, nil
 	}
 
-	err = utils.WriteEntry(ctx, h.userdataStore, sessionId, utils.DATA_RECIPIENT, []byte(""))
+	err = store.WriteEntry(ctx, sessionId, utils.DATA_RECIPIENT, []byte(""))
 	if err != nil {
 		return res, nil
 	}
@@ -668,8 +697,8 @@ func (h *Handlers) ResetTransactionAmount(ctx context.Context, sym string, input
 	}
 
 	flag_invalid_amount, _ := h.flagManager.GetFlag("flag_invalid_amount")
-
-	err = utils.WriteEntry(ctx, h.userdataStore, sessionId, utils.DATA_AMOUNT, []byte(""))
+	store := h.userdataStore
+	err = store.WriteEntry(ctx, sessionId, utils.DATA_AMOUNT, []byte(""))
 	if err != nil {
 		return res, nil
 	}
@@ -689,8 +718,8 @@ func (h *Handlers) MaxAmount(ctx context.Context, sym string, input []byte) (res
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-
-	publicKey, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_PUBLIC_KEY)
+	store := h.userdataStore
+	publicKey, _ := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
 
 	balance, err := h.accountService.CheckBalance(string(publicKey))
 	if err != nil {
@@ -759,8 +788,8 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 	}
 
 	res.Content = fmt.Sprintf("%.3f", inputAmount) // Format to 3 decimal places
-
-	err = utils.WriteEntry(ctx, h.userdataStore, sessionId, utils.DATA_AMOUNT, []byte(amountStr))
+	store := h.userdataStore
+	err = store.WriteEntry(ctx, sessionId, utils.DATA_AMOUNT, []byte(amountStr))
 	if err != nil {
 		return res, err
 	}
@@ -776,8 +805,8 @@ func (h *Handlers) GetRecipient(ctx context.Context, sym string, input []byte) (
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-
-	recipient, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_RECIPIENT)
+	store := h.userdataStore
+	recipient, _ := store.ReadEntry(ctx, sessionId, utils.DATA_RECIPIENT)
 
 	res.Content = string(recipient)
 
@@ -793,7 +822,8 @@ func (h *Handlers) GetSender(ctx context.Context, sym string, input []byte) (res
 		return res, fmt.Errorf("missing session")
 	}
 
-	publicKey, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_PUBLIC_KEY)
+	store := h.userdataStore
+	publicKey, _ := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
 
 	res.Content = string(publicKey)
 
@@ -808,8 +838,8 @@ func (h *Handlers) GetAmount(ctx context.Context, sym string, input []byte) (res
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-
-	amount, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_AMOUNT)
+	store := h.userdataStore
+	amount, _ := store.ReadEntry(ctx, sessionId, utils.DATA_AMOUNT)
 
 	res.Content = string(amount)
 
@@ -832,8 +862,11 @@ func (h *Handlers) QuitWithBalance(ctx context.Context, sym string, input []byte
 	l := gotext.NewLocale(translationDir, code)
 	l.AddDomain("default")
 
-	publicKey, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_PUBLIC_KEY)
-
+	store := h.userdataStore.(utils.UserDataStore)
+	publicKey, err := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
+	if err != nil {
+		return res, err
+	}
 	balance, err := h.accountService.CheckBalance(string(publicKey))
 	if err != nil {
 		return res, nil
@@ -858,12 +891,12 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 	l.AddDomain("default")
 	// TODO
 	// Use the amount, recipient and sender to call the API and initialize the transaction
+	store := h.userdataStore
+	publicKey, _ := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
 
-	publicKey, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_PUBLIC_KEY)
+	amount, _ := store.ReadEntry(ctx, sessionId, utils.DATA_AMOUNT)
 
-	amount, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_AMOUNT)
-
-	recipient, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_RECIPIENT)
+	recipient, _ := store.ReadEntry(ctx, sessionId, utils.DATA_RECIPIENT)
 
 	res.Content = l.Get("Your request has been sent. %s will receive %s from %s.", string(recipient), string(amount), string(publicKey))
 
@@ -894,14 +927,14 @@ func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte)
 		}
 		return string(entry)
 	}
-
+	store := h.userdataStore
 	// Retrieve user data as strings with fallback to defaultValue
-	firstName := getEntryOrDefault(utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_FIRST_NAME))
-	familyName := getEntryOrDefault(utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_FAMILY_NAME))
-	yob := getEntryOrDefault(utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_YOB))
-	gender := getEntryOrDefault(utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_GENDER))
-	location := getEntryOrDefault(utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_LOCATION))
-	offerings := getEntryOrDefault(utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_OFFERINGS))
+	firstName := getEntryOrDefault(store.ReadEntry(ctx, sessionId, utils.DATA_FIRST_NAME))
+	familyName := getEntryOrDefault(store.ReadEntry(ctx, sessionId, utils.DATA_FAMILY_NAME))
+	yob := getEntryOrDefault(store.ReadEntry(ctx, sessionId, utils.DATA_YOB))
+	gender := getEntryOrDefault(store.ReadEntry(ctx, sessionId, utils.DATA_GENDER))
+	location := getEntryOrDefault(store.ReadEntry(ctx, sessionId, utils.DATA_LOCATION))
+	offerings := getEntryOrDefault(store.ReadEntry(ctx, sessionId, utils.DATA_OFFERINGS))
 
 	// Construct the full name
 	name := defaultValue

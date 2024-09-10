@@ -2,170 +2,184 @@ package main
 
 import (
 	"context"
-	"encoding/csv"
 	"flag"
 	"fmt"
-	"io"
-	"log"
 	"os"
 	"path"
-	"strconv"
 
-	"git.defalsify.org/vise.git/cache"
+	"git.defalsify.org/vise.git/asm"
+	"git.defalsify.org/vise.git/db"
+	fsdb "git.defalsify.org/vise.git/db/fs"
+	gdbmdb "git.defalsify.org/vise.git/db/gdbm"
 	"git.defalsify.org/vise.git/engine"
+	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
-	"git.defalsify.org/vise.git/state"
 	"git.grassecon.net/urdt/ussd/internal/handlers/ussd"
 )
 
 var (
+	logg      = logging.NewVanilla()
 	scriptDir = path.Join("services", "registration")
 )
 
+func getParser(fp string, debug bool) (*asm.FlagParser, error) {
+	flagParser := asm.NewFlagParser().WithDebug()
+	_, err := flagParser.Load(fp)
+	if err != nil {
+		return nil, err
+	}
+	return flagParser, nil
+}
+
+func getHandler(appFlags *asm.FlagParser, rs *resource.DbResource, pe *persist.Persister, userdataStore db.Db) (*ussd.Handlers, error) {
+
+	ussdHandlers, err := ussd.NewHandlers(appFlags, pe, userdataStore)
+	if err != nil {
+		return nil, err
+	}
+	rs.AddLocalFunc("select_language", ussdHandlers.SetLanguage)
+	rs.AddLocalFunc("create_account", ussdHandlers.CreateAccount)
+	rs.AddLocalFunc("save_pin", ussdHandlers.SavePin)
+	rs.AddLocalFunc("verify_pin", ussdHandlers.VerifyPin)
+	rs.AddLocalFunc("check_identifier", ussdHandlers.CheckIdentifier)
+	rs.AddLocalFunc("check_account_status", ussdHandlers.CheckAccountStatus)
+	rs.AddLocalFunc("authorize_account", ussdHandlers.Authorize)
+	rs.AddLocalFunc("quit", ussdHandlers.Quit)
+	rs.AddLocalFunc("check_balance", ussdHandlers.CheckBalance)
+	rs.AddLocalFunc("validate_recipient", ussdHandlers.ValidateRecipient)
+	rs.AddLocalFunc("transaction_reset", ussdHandlers.TransactionReset)
+	rs.AddLocalFunc("max_amount", ussdHandlers.MaxAmount)
+	rs.AddLocalFunc("validate_amount", ussdHandlers.ValidateAmount)
+	rs.AddLocalFunc("reset_transaction_amount", ussdHandlers.ResetTransactionAmount)
+	rs.AddLocalFunc("get_recipient", ussdHandlers.GetRecipient)
+	rs.AddLocalFunc("get_sender", ussdHandlers.GetSender)
+	rs.AddLocalFunc("get_amount", ussdHandlers.GetAmount)
+	rs.AddLocalFunc("reset_incorrect", ussdHandlers.ResetIncorrectPin)
+	rs.AddLocalFunc("save_firstname", ussdHandlers.SaveFirstname)
+	rs.AddLocalFunc("save_familyname", ussdHandlers.SaveFamilyname)
+	rs.AddLocalFunc("save_gender", ussdHandlers.SaveGender)
+	rs.AddLocalFunc("save_location", ussdHandlers.SaveLocation)
+	rs.AddLocalFunc("save_yob", ussdHandlers.SaveYob)
+	rs.AddLocalFunc("save_offerings", ussdHandlers.SaveOfferings)
+	rs.AddLocalFunc("quit_with_balance", ussdHandlers.QuitWithBalance)
+	rs.AddLocalFunc("reset_account_authorized", ussdHandlers.ResetAccountAuthorized)
+	rs.AddLocalFunc("reset_allow_update", ussdHandlers.ResetAllowUpdate)
+	rs.AddLocalFunc("get_profile_info", ussdHandlers.GetProfileInfo)
+	rs.AddLocalFunc("verify_yob", ussdHandlers.VerifyYob)
+	rs.AddLocalFunc("reset_incorrect_date_format", ussdHandlers.ResetIncorrectYob)
+	rs.AddLocalFunc("set_reset_single_edit", ussdHandlers.SetResetSingleEdit)
+	rs.AddLocalFunc("initiate_transaction", ussdHandlers.InitiateTransaction)
+
+	return ussdHandlers, nil
+}
+
+func getPersister(dbDir string, ctx context.Context) (*persist.Persister, error) {
+	err := os.MkdirAll(dbDir, 0700)
+	if err != nil {
+		return nil, fmt.Errorf("state dir create exited with error: %v\n", err)
+	}
+	store := gdbmdb.NewGdbmDb()
+	storeFile := path.Join(dbDir, "state.gdbm")
+	store.Connect(ctx, storeFile)
+	pr := persist.NewPersister(store)
+	return pr, nil
+}
+
+func getUserdataDb(dbDir string, ctx context.Context) db.Db {
+	store := gdbmdb.NewGdbmDb()
+	storeFile := path.Join(dbDir, "userdata.gdbm")
+	store.Connect(ctx, storeFile)
+
+	return store
+}
+
+func getResource(resourceDir string, ctx context.Context) (resource.Resource, error) {
+	store := fsdb.NewFsDb()
+	err := store.Connect(ctx, resourceDir)
+	if err != nil {
+		return nil, err
+	}
+	rfs := resource.NewDbResource(store)
+	return rfs, nil
+}
+
+func getEngine(cfg engine.Config, rs resource.Resource, pr *persist.Persister) *engine.DefaultEngine {
+	en := engine.NewEngine(cfg, rs)
+	en = en.WithPersister(pr)
+	return en
+}
+
 func main() {
-	var dir string
-	var root string
+	var dbDir string
 	var size uint
 	var sessionId string
-	flag.StringVar(&dir, "d", ".", "resource dir to read from")
-	flag.UintVar(&size, "s", 0, "max size of output")
-	flag.StringVar(&root, "root", "root", "entry point symbol")
-	flag.StringVar(&sessionId, "session-id", "default", "session id")
+	var debug bool
+	flag.StringVar(&sessionId, "session-id", "075xx2123", "session id")
+	flag.StringVar(&dbDir, "dbdir", ".state", "database dir to read from")
+	flag.BoolVar(&debug, "d", false, "use engine debug output")
+	flag.UintVar(&size, "s", 160, "max size of output")
 	flag.Parse()
-	fmt.Fprintf(os.Stderr, "starting session at symbol '%s' using resource dir: %s\n", root, dir)
+
+	logg.Infof("start command", "dbdir", dbDir, "outputsize", size)
 
 	ctx := context.Background()
-	st := state.NewState(16)
-	st.UseDebug()
-
+	ctx = context.WithValue(ctx, "SessionId", sessionId)
 	pfp := path.Join(scriptDir, "pp.csv")
-	file, err := os.Open(pfp)
+	flagParser, err := getParser(pfp, true)
+
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to open CSV file: %v\n", err)
 		os.Exit(1)
 	}
-	defer file.Close()
-	reader := csv.NewReader(file)
 
-	// Iterate through the CSV records and register the flags
-	for {
-		record, err := reader.Read()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			fmt.Fprintf(os.Stderr, "Error reading CSV file: %v\n", err)
-			os.Exit(1)
-		}
-
-		// Ensure the record starts with "flag" and has at least 3 columns
-		if len(record) < 3 || record[0] != "flag" {
-			continue
-		}
-
-		flagName := record[1]
-		flagValue, err := strconv.Atoi(record[2])
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to convert flag value %s to integer: %v\n", record[2], err)
-			continue
-		}
-
-		// Register the flag
-		log.Printf("Registering flagName:%s; flagValue:%v", flagName, flagValue)
-		state.FlagDebugger.Register(uint32(flagValue), flagName)
-	}
-
-	rfs := resource.NewFsResource(scriptDir)
-	ca := cache.NewCache()
 	cfg := engine.Config{
-		Root:      "root",
-		SessionId: sessionId,
+		Root:       "root",
+		SessionId:  sessionId,
+		OutputSize: uint32(size),
+		FlagCount:  uint32(16),
 	}
 
-	dp := path.Join(scriptDir, ".state")
-	err = os.MkdirAll(dp, 0700)
+	rs, err := getResource(scriptDir, ctx)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "state dir create exited with error: %v\n", err)
+		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
-	pr := persist.NewFsPersister(dp)
-	en, err := engine.NewPersistedEngine(ctx, cfg, pr, rfs)
 
+	pr, err := getPersister(dbDir, ctx)
 	if err != nil {
-		pr = pr.WithContent(&st, ca)
-		err = pr.Save(cfg.SessionId)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to save state with error: %v\n", err)
-		}
-		en, err = engine.NewPersistedEngine(ctx, cfg, pr, rfs)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "engine create exited with error: %v\n", err)
-			os.Exit(1)
-		}
+		fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
 	}
 
-	fp := path.Join(dp, sessionId)
-
-	ussdHandlers, err := ussd.NewHandlers(fp, &st, sessionId)
-
+	store := getUserdataDb(dbDir, ctx)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "handler setup failed with error: %v\n", err)
+		fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
 	}
 
-	rfs.AddLocalFunc("select_language", ussdHandlers.SetLanguage)
-	rfs.AddLocalFunc("create_account", ussdHandlers.CreateAccount)
-	rfs.AddLocalFunc("save_pin", ussdHandlers.SavePin)
-	rfs.AddLocalFunc("verify_pin", ussdHandlers.VerifyPin)
-	rfs.AddLocalFunc("check_identifier", ussdHandlers.CheckIdentifier)
-	rfs.AddLocalFunc("check_account_status", ussdHandlers.CheckAccountStatus)
-	rfs.AddLocalFunc("authorize_account", ussdHandlers.Authorize)
-	rfs.AddLocalFunc("quit", ussdHandlers.Quit)
-	rfs.AddLocalFunc("check_balance", ussdHandlers.CheckBalance)
-	rfs.AddLocalFunc("validate_recipient", ussdHandlers.ValidateRecipient)
-	rfs.AddLocalFunc("transaction_reset", ussdHandlers.TransactionReset)
-	rfs.AddLocalFunc("max_amount", ussdHandlers.MaxAmount)
-	rfs.AddLocalFunc("validate_amount", ussdHandlers.ValidateAmount)
-	rfs.AddLocalFunc("reset_transaction_amount", ussdHandlers.ResetTransactionAmount)
-	rfs.AddLocalFunc("get_recipient", ussdHandlers.GetRecipient)
-	rfs.AddLocalFunc("get_sender", ussdHandlers.GetSender)
-	rfs.AddLocalFunc("get_amount", ussdHandlers.GetAmount)
-	rfs.AddLocalFunc("reset_incorrect", ussdHandlers.ResetIncorrectPin)
-	rfs.AddLocalFunc("save_firstname", ussdHandlers.SaveFirstname)
-	rfs.AddLocalFunc("save_familyname", ussdHandlers.SaveFamilyname)
-	rfs.AddLocalFunc("save_gender", ussdHandlers.SaveGender)
-	rfs.AddLocalFunc("save_location", ussdHandlers.SaveLocation)
-	rfs.AddLocalFunc("save_yob", ussdHandlers.SaveYob)
-	rfs.AddLocalFunc("save_offerings", ussdHandlers.SaveOfferings)
-	rfs.AddLocalFunc("quit_with_balance", ussdHandlers.QuitWithBalance)
-	rfs.AddLocalFunc("reset_account_authorized", ussdHandlers.ResetAccountAuthorized)
-	rfs.AddLocalFunc("reset_allow_update", ussdHandlers.ResetAllowUpdate)
-	rfs.AddLocalFunc("get_profile_info", ussdHandlers.GetProfileInfo)
-	rfs.AddLocalFunc("verify_yob", ussdHandlers.VerifyYob)
-	rfs.AddLocalFunc("reset_incorrect_date_format", ussdHandlers.ResetIncorrectYob)
-	rfs.AddLocalFunc("set_reset_single_edit", ussdHandlers.SetResetSingleEdit)
-	rfs.AddLocalFunc("initiate_transaction", ussdHandlers.InitiateTransaction)
+	dbResource, ok := rs.(*resource.DbResource)
+	if !ok {
+		os.Exit(1)
+	}
 
-	cont, err := en.Init(ctx)
-	en.SetDebugger(engine.NewSimpleDebug(nil))
+	hl, err := getHandler(flagParser, dbResource, pr, store)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+
+	en := getEngine(cfg, rs, pr)
+	en = en.WithFirst(hl.Init)
+	if debug {
+		en = en.WithDebug(nil)
+	}
+
+	_, err = en.Init(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "engine init exited with error: %v\n", err)
 		os.Exit(1)
 	}
-	if !cont {
-		_, err = en.WriteResult(ctx, os.Stdout)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "dead init write error: %v\n", err)
-			os.Exit(1)
-		}
-		err = en.Finish()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "engine finish error: %v\n", err)
-			os.Exit(1)
-		}
-		os.Stdout.Write([]byte{0x0a})
-		os.Exit(0)
-	}
+
 	err = engine.Loop(ctx, en, os.Stdin, os.Stdout)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "loop exited with error: %v\n", err)

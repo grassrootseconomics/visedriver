@@ -68,7 +68,7 @@ type Handlers struct {
 
 func NewHandlers(parser *asm.FlagParser, pe *persist.Persister, userdataStore db.Db) (*Handlers, error) {
 	userDb := utils.UserDataStore{
-		Store: userdataStore,
+		Db: userdataStore,
 	}
 	if pe == nil {
 		return nil, fmt.Errorf("cannot create handler with nil persister")
@@ -78,7 +78,7 @@ func NewHandlers(parser *asm.FlagParser, pe *persist.Persister, userdataStore db
 	}
 	h := &Handlers{
 		pe:             pe,
-		userdataStore:  userDb,
+		userdataStore:  &userDb,
 		flagManager:    parser,
 		accountService: &server.AccountService{},
 	}
@@ -254,7 +254,7 @@ func (h *Handlers) VerifyPin(ctx context.Context, sym string, input []byte) (res
 	}
 
 	//AccountPin, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_ACCOUNT_PIN)
-	store := h.userdataStore.(utils.UserDataStore)
+	store := h.userdataStore
 	AccountPin, err := store.ReadEntry(ctx, sessionId, utils.DATA_ACCOUNT_PIN)
 	if err != nil {
 		return res, err
@@ -523,7 +523,7 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-	store := h.userdataStore.(utils.UserDataStore)
+	store := h.userdataStore
 	trackingId, err := store.ReadEntry(ctx, sessionId, utils.DATA_TRACKING_ID)
 	if err != nil {
 		return res, err
@@ -610,7 +610,7 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 		return res, fmt.Errorf("missing session")
 	}
 
-	store := h.userdataStore.(utils.UserDataStore)
+	store := h.userdataStore
 	publicKey, err := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
 	if err != nil {
 		return res, err
@@ -862,7 +862,7 @@ func (h *Handlers) QuitWithBalance(ctx context.Context, sym string, input []byte
 	l := gotext.NewLocale(translationDir, code)
 	l.AddDomain("default")
 
-	store := h.userdataStore.(utils.UserDataStore)
+	store := h.userdataStore
 	publicKey, err := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
 	if err != nil {
 		return res, err

@@ -1,10 +1,7 @@
 package utils
 
 import (
-	"context"
 	"encoding/binary"
-
-	"git.defalsify.org/vise.git/db"
 )
 
 type DataTyp uint16
@@ -36,23 +33,4 @@ func typToBytes(typ DataTyp) []byte {
 func PackKey(typ DataTyp, data []byte) []byte {
 	v := typToBytes(typ)
 	return append(v, data...)
-}
-
-func ReadEntry(ctx context.Context, store db.Db, sessionId string, typ DataTyp) ([]byte, error) {
-
-	store.SetPrefix(db.DATATYPE_USERDATA)
-	store.SetSession(sessionId)
-	k := PackKey(typ, []byte(sessionId))
-	b, err := store.Get(ctx, k)
-	if err != nil {
-		return nil, err
-	}
-	return b, nil
-}
-
-func WriteEntry(ctx context.Context, store db.Db, sessionId string, typ DataTyp, value []byte) error {
-	store.SetPrefix(db.DATATYPE_USERDATA)
-	store.SetSession(sessionId)
-	k := PackKey(typ, []byte(sessionId))
-	return store.Put(ctx, k, value)
 }

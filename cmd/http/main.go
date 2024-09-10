@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
 	"path"
 	"strconv"
+	"syscall"
 
 	"git.defalsify.org/vise.git/asm"
 	"git.defalsify.org/vise.git/db"
@@ -78,11 +80,15 @@ func getHandler(appFlags *asm.FlagParser, rs *resource.DbResource, userdataStore
 	return ussdHandlers, nil
 }
 
-func getStateStore(dbDir string, ctx context.Context) (db.Db, error) {
+func ensureDbDir(dbDir string) error {
 	err := os.MkdirAll(dbDir, 0700)
 	if err != nil {
-		return nil, fmt.Errorf("state dir create exited with error: %v\n", err)
+		return fmt.Errorf("state dir create exited with error: %v\n", err)
 	}
+	return nil
+}
+
+func getStateStore(dbDir string, ctx context.Context) (db.Db, error) {
 	store := gdbmdb.NewGdbmDb()
 	storeFile := path.Join(dbDir, "state.gdbm")
 	store.Connect(ctx, storeFile)
@@ -117,12 +123,10 @@ func main() {
 	var dbDir string
 	var resourceDir string
 	var size uint
-	var sessionId string
 	var engineDebug bool
 	var stateDebug bool
 	var host string
 	var port uint
-	flag.StringVar(&sessionId, "session-id", "075xx2123", "session id")
 	flag.StringVar(&dbDir, "dbdir", ".state", "database dir to read from")
 	flag.StringVar(&resourceDir, "resourcedir", path.Join("services", "registration"), "resource dir")
 	flag.BoolVar(&engineDebug, "engine-debug", false, "use engine debug output")
@@ -135,7 +139,6 @@ func main() {
 	logg.Infof("start command", "dbdir", dbDir, "resourcedir", resourceDir,  "outputsize", size)
 
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, "SessionId",sessionId)
 	pfp := path.Join(scriptDir, "pp.csv")
 	flagParser, err := getFlags(pfp, true)
 
@@ -145,7 +148,6 @@ func main() {
 
 	cfg := engine.Config{
 		Root:       "root",
-		SessionId:  sessionId,
 		OutputSize: uint32(size),
 		FlagCount:  uint32(16),
 	}
@@ -162,11 +164,18 @@ func main() {
 		os.Exit(1)
 	}
 
+	err = ensureDbDir(dbDir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+
 	userdataStore := getUserdataDb(dbDir, ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
+	defer userdataStore.Close()
 
 	dbResource, ok := rs.(*resource.DbResource)
 	if !ok {
@@ -184,16 +193,28 @@ func main() {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
+	defer stateStore.Close()
 
-	sh := httpserver.NewSessionHandler(cfg, rs, userdataStore, stateStore, hl.Init)
+	sh := httpserver.NewSessionHandler(cfg, rs, stateStore, userdataStore, hl.Init)
 	s := &http.Server{
 		Addr: fmt.Sprintf("%s:%s", host, strconv.Itoa(int(port))),
 		Handler: sh,
 	}
+	s.RegisterOnShutdown(sh.Shutdown)
 
+	cint := make(chan os.Signal)
+	cterm := make(chan os.Signal)
+	signal.Notify(cint, os.Interrupt, syscall.SIGINT)
+	signal.Notify(cterm, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		select {
+		case _ = <-cint:
+		case _ = <-cterm:
+		}
+		s.Shutdown(ctx)
+	}()
 	err = s.ListenAndServe()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Server error: %s", err)
-		os.Exit(1)
+		logg.Infof("Server closed with error", "err", err)
 	}
 }

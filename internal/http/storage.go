@@ -39,5 +39,5 @@ func (p *SimpleStorageProvider) Put(sessionId string, storage Storage) error {
 }
 
 func (p *SimpleStorageProvider) Close() error {
-	return nil
+	return p.Storage.UserdataDb.Close()
 }

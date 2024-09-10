@@ -39,7 +39,6 @@ func PackKey(typ DataTyp, data []byte) []byte {
 }
 
 func ReadEntry(ctx context.Context, store db.Db, sessionId string, typ DataTyp) ([]byte, error) {
-
 	store.SetPrefix(db.DATATYPE_USERDATA)
 	store.SetSession(sessionId)
 	k := PackKey(typ, []byte(sessionId))

@@ -66,6 +66,13 @@ func(f *SessionHandler) writeError(w http.ResponseWriter, code int, msg string, 
 	return 
 }
 
+func(f* SessionHandler) Shutdown() {
+	err := f.provider.Close()
+	if err != nil {
+		logg.Errorf("handler shutdown error", "err", err)
+	}
+}
+
 func(f *SessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	var r bool
 	sessionId, err := f.rp.GetSessionId(req)
@@ -89,6 +96,7 @@ func(f *SessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		f.writeError(w, 500, "Storage retrieval fail", err)
 		return
 	}
+	defer f.provider.Put(cfg.SessionId, storage)
 	en := getEngine(cfg, f.rs, storage.Persister)
 	en = en.WithFirst(f.first)
 	if cfg.EngineDebug {

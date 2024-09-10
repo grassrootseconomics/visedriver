@@ -112,18 +112,16 @@ func getEngine(cfg engine.Config, rs resource.Resource, pr *persist.Persister) *
 
 func main() {
 	var dbDir string
-	var resourceDir string
 	var size uint
 	var sessionId string
 	var debug bool
 	flag.StringVar(&sessionId, "session-id", "075xx2123", "session id")
 	flag.StringVar(&dbDir, "dbdir", ".state", "database dir to read from")
-	flag.StringVar(&resourceDir, "resourcedir", path.Join("services", "registration"), "resource dir")
 	flag.BoolVar(&debug, "d", false, "use engine debug output")
 	flag.UintVar(&size, "s", 160, "max size of output")
 	flag.Parse()
 
-	logg.Infof("start command", "dbdir", dbDir, "resourcedir", resourceDir, "outputsize", size)
+	logg.Infof("start command", "dbdir", dbDir, "outputsize", size)
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
@@ -141,7 +139,7 @@ func main() {
 		FlagCount:  uint32(16),
 	}
 
-	rs, err := getResource(resourceDir, ctx)
+	rs, err := getResource(scriptDir, ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)

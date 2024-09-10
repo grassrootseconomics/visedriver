@@ -477,7 +477,6 @@ func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (res
 	if err != nil {
 		return res, err
 	}
-
 	if err == nil {
 		if len(input) == 4 {
 			if bytes.Equal(input, AccountPin) {
@@ -744,7 +743,8 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 
 	flag_invalid_amount, _ := h.flagManager.GetFlag("flag_invalid_amount")
 
-	publicKey, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_PUBLIC_KEY)
+	store := h.userdataStore
+	publicKey, _ := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
 
 	amountStr := string(input)
 
@@ -788,7 +788,7 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 	}
 
 	res.Content = fmt.Sprintf("%.3f", inputAmount) // Format to 3 decimal places
-	store := h.userdataStore
+	store = h.userdataStore
 	err = store.WriteEntry(ctx, sessionId, utils.DATA_AMOUNT, []byte(amountStr))
 	if err != nil {
 		return res, err

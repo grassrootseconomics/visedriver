@@ -3,7 +3,7 @@ module git.grassecon.net/urdt/ussd
 go 1.22.6
 
 require (
-	git.defalsify.org/vise.git v0.1.0-rc.2.0.20240907200911-15fe28c9d5b0
+	git.defalsify.org/vise.git v0.1.0-rc.3.0.20240910220239-03876d1a78bd
 	github.com/alecthomas/assert/v2 v2.2.2
 	gopkg.in/leonelquinteros/gotext.v1 v1.3.1
 )

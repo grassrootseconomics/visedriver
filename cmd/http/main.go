@@ -195,7 +195,8 @@ func main() {
 	}
 	defer stateStore.Close()
 
-	sh := httpserver.NewSessionHandler(cfg, rs, stateStore, userdataStore, hl.Init)
+	rp := &httpserver.DefaultRequestParser{}
+	sh := httpserver.NewSessionHandler(cfg, rs, stateStore, userdataStore, rp, hl.Init)
 	s := &http.Server{
 		Addr: fmt.Sprintf("%s:%s", host, strconv.Itoa(int(port))),
 		Handler: sh,

@@ -22,6 +22,7 @@ type SimpleStorageProvider struct {
 
 func NewSimpleStorageProvider(stateStore db.Db, userdataStore db.Db) StorageProvider {
 	pe := persist.NewPersister(stateStore)
+	pe = pe.WithFlush()
 	return &SimpleStorageProvider{
 		Storage: Storage{
 			Persister: pe,

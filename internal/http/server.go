@@ -16,10 +16,15 @@ var (
 	logg = logging.NewVanilla().WithDomain("httpserver")
 )
 
-type RequestParser struct {
+type RequestParser interface {
+	GetSessionId(rq *http.Request) (string, error)
+	GetInput(rq *http.Request) ([]byte, error)
 }
 
-func(rp *RequestParser) GetSessionId(rq *http.Request) (string, error) {
+type DefaultRequestParser struct {
+}
+
+func(rp *DefaultRequestParser) GetSessionId(rq *http.Request) (string, error) {
 	v := rq.Header.Get("X-Vise-Session")
 	if v == "" {
 		return "", fmt.Errorf("no session found")
@@ -27,7 +32,7 @@ func(rp *RequestParser) GetSessionId(rq *http.Request) (string, error) {
 	return v, nil
 }
 
-func(rp *RequestParser) GetInput(rq *http.Request) ([]byte, error) {
+func(rp *DefaultRequestParser) GetInput(rq *http.Request) ([]byte, error) {
 	defer rq.Body.Close()
 	v, err := ioutil.ReadAll(rq.Body)
 	if err != nil {
@@ -44,12 +49,12 @@ type SessionHandler struct {
 	provider StorageProvider
 }
 
-func NewSessionHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, first resource.EntryFunc) *SessionHandler {
+func NewSessionHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp RequestParser, first resource.EntryFunc) *SessionHandler {
 	return &SessionHandler{
 		cfgTemplate: cfg,
 		rs: rs,
 		first: first,
-		rp: RequestParser{},
+		rp: rp,
 		provider: NewSimpleStorageProvider(stateDb, userdataDb),
 	}
 }
@@ -128,6 +133,7 @@ func(f *SessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		f.writeError(w, 500, "Engine finish fail", err)
 		return
 	}
+
 	_ = r
 }
 

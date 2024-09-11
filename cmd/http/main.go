@@ -16,7 +16,6 @@ import (
 	fsdb "git.defalsify.org/vise.git/db/fs"
 	gdbmdb "git.defalsify.org/vise.git/db/gdbm"
 	"git.defalsify.org/vise.git/engine"
-	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/logging"
 
@@ -113,12 +112,6 @@ func getResource(resourceDir string, ctx context.Context) (resource.Resource, er
 	return rfs, nil
 }
 
-func getEngine(cfg engine.Config, rs resource.Resource, pr *persist.Persister) *engine.DefaultEngine {
-	en := engine.NewEngine(cfg, rs)
-	en = en.WithPersister(pr)
-	return en
-}
-
 func main() {
 	var dbDir string
 	var resourceDir string
@@ -196,7 +189,8 @@ func main() {
 	defer stateStore.Close()
 
 	rp := &httpserver.DefaultRequestParser{}
-	sh := httpserver.NewSessionHandler(cfg, rs, stateStore, userdataStore, rp, hl.Init)
+	//sh := httpserver.NewSessionHandler(cfg, rs, stateStore, userdataStore, rp, hl.Init)
+	sh := httpserver.NewSessionHandler(cfg, rs, stateStore, userdataStore, rp, hl)
 	s := &http.Server{
 		Addr: fmt.Sprintf("%s:%s", host, strconv.Itoa(int(port))),
 		Handler: sh,

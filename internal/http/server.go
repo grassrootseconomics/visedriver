@@ -10,6 +10,8 @@ import (
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
+
+	"git.grassecon.net/urdt/ussd/internal/handlers/ussd"
 )
 
 var (
@@ -45,15 +47,18 @@ type SessionHandler struct {
 	cfgTemplate engine.Config
 	rp RequestParser
 	rs resource.Resource
-	first resource.EntryFunc
+	//first resource.EntryFunc
+	hn *ussd.Handlers
 	provider StorageProvider
 }
 
-func NewSessionHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp RequestParser, first resource.EntryFunc) *SessionHandler {
+//func NewSessionHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp RequestParser, first resource.EntryFunc) *SessionHandler {
+func NewSessionHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp RequestParser, hn *ussd.Handlers) *SessionHandler {
 	return &SessionHandler{
 		cfgTemplate: cfg,
 		rs: rs,
-		first: first,
+		//first: first,
+		hn: hn,
 		rp: rp,
 		provider: NewSimpleStorageProvider(stateDb, userdataDb),
 	}
@@ -101,9 +106,10 @@ func(f *SessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		f.writeError(w, 500, "Storage retrieval fail", err)
 		return
 	}
+	f.hn = f.hn.WithPersister(storage.Persister)
 	defer f.provider.Put(cfg.SessionId, storage)
 	en := getEngine(cfg, f.rs, storage.Persister)
-	en = en.WithFirst(f.first)
+	en = en.WithFirst(f.hn.Init)
 	if cfg.EngineDebug {
 		en = en.WithDebug(nil)
 	}

@@ -477,21 +477,19 @@ func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (res
 	if err != nil {
 		return res, err
 	}
-	if err == nil {
-		if len(input) == 4 {
-			if bytes.Equal(input, AccountPin) {
-				if h.st.MatchFlag(flag_account_authorized, false) {
-					res.FlagReset = append(res.FlagReset, flag_incorrect_pin)
-					res.FlagSet = append(res.FlagSet, flag_allow_update, flag_account_authorized)
-				} else {
-					res.FlagSet = append(res.FlagSet, flag_allow_update)
-					res.FlagReset = append(res.FlagReset, flag_account_authorized)
-				}
+	if len(input) == 4 {
+		if bytes.Equal(input, AccountPin) {
+			if h.st.MatchFlag(flag_account_authorized, false) {
+				res.FlagReset = append(res.FlagReset, flag_incorrect_pin)
+				res.FlagSet = append(res.FlagSet, flag_allow_update, flag_account_authorized)
 			} else {
-				res.FlagSet = append(res.FlagSet, flag_incorrect_pin)
+				res.FlagSet = append(res.FlagSet, flag_allow_update)
 				res.FlagReset = append(res.FlagReset, flag_account_authorized)
-				return res, nil
 			}
+		} else {
+			res.FlagSet = append(res.FlagSet, flag_incorrect_pin)
+			res.FlagReset = append(res.FlagReset, flag_account_authorized)
+			return res, nil
 		}
 	} else {
 		return res, nil
@@ -538,7 +536,6 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 	if err != nil {
 		return res, nil
 	}
-
 	if status == "SUCCESS" {
 		res.FlagSet = append(res.FlagSet, flag_account_success)
 		res.FlagReset = append(res.FlagReset, flag_account_pending)
@@ -753,6 +750,7 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 	if err != nil {
 		return res, err
 	}
+
 	res.Content = balanceStr
 
 	// Parse the balance
@@ -760,6 +758,7 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 	if len(balanceParts) != 2 {
 		return res, fmt.Errorf("unexpected balance format: %s", balanceStr)
 	}
+
 	balanceValue, err := strconv.ParseFloat(balanceParts[0], 64)
 	if err != nil {
 		return res, fmt.Errorf("failed to parse balance: %v", err)
@@ -769,6 +768,7 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 	re := regexp.MustCompile(`^(\d+(\.\d+)?)\s*(?:CELO)?$`)
 	matches := re.FindStringSubmatch(strings.TrimSpace(amountStr))
 	if len(matches) < 2 {
+
 		res.FlagSet = append(res.FlagSet, flag_invalid_amount)
 		res.Content = amountStr
 		return res, nil
@@ -776,6 +776,7 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 
 	inputAmount, err := strconv.ParseFloat(matches[1], 64)
 	if err != nil {
+
 		res.FlagSet = append(res.FlagSet, flag_invalid_amount)
 		res.Content = amountStr
 		return res, nil

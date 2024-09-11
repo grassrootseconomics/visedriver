@@ -2,8 +2,8 @@ package http
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
-	"strings"
 
 	"git.defalsify.org/vise.git/db"
 	"git.defalsify.org/vise.git/engine"
@@ -25,31 +25,20 @@ type DefaultRequestParser struct {
 }
 
 func(rp *DefaultRequestParser) GetSessionId(rq *http.Request) (string, error) {
-	if err := rq.ParseForm(); err != nil {
-		return "", fmt.Errorf("failed to parse form data: %v", err)
+	v := rq.Header.Get("X-Vise-Session")
+	if v == "" {
+		return "", fmt.Errorf("no session found")
 	}
-
-	phoneNumber := rq.FormValue("phoneNumber")
-	if phoneNumber == "" {
-		return "", fmt.Errorf("no phone number found")
-	}
-
-	return phoneNumber, nil
+	return v, nil
 }
 
 func(rp *DefaultRequestParser) GetInput(rq *http.Request) ([]byte, error) {
-	if err := rq.ParseForm(); err != nil {
-		return nil, fmt.Errorf("failed to parse form data: %v", err)
+	defer rq.Body.Close()
+	v, err := ioutil.ReadAll(rq.Body)
+	if err != nil {
+		return nil, err
 	}
-
-	text := rq.FormValue("text")
-
-	parts := strings.Split(text, "*")
-	if len(parts) == 0 {
-		return nil, fmt.Errorf("no input found")
-	}
-
-	return []byte(parts[len(parts)-1]), nil
+	return v, nil
 }
 
 type SessionHandler struct {

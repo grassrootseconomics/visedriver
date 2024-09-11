@@ -4,26 +4,31 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
+	"os/signal"
 	"path"
+	"strconv"
+	"syscall"
 
 	"git.defalsify.org/vise.git/asm"
 	"git.defalsify.org/vise.git/db"
 	fsdb "git.defalsify.org/vise.git/db/fs"
 	gdbmdb "git.defalsify.org/vise.git/db/gdbm"
 	"git.defalsify.org/vise.git/engine"
-	"git.defalsify.org/vise.git/logging"
-	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
+	"git.defalsify.org/vise.git/logging"
+
 	"git.grassecon.net/urdt/ussd/internal/handlers/ussd"
+	httpserver "git.grassecon.net/urdt/ussd/internal/http"
 )
 
 var (
-	logg      = logging.NewVanilla()
+	logg = logging.NewVanilla()
 	scriptDir = path.Join("services", "registration")
 )
 
-func getParser(fp string, debug bool) (*asm.FlagParser, error) {
+func getFlags(fp string, debug bool) (*asm.FlagParser, error) {
 	flagParser := asm.NewFlagParser().WithDebug()
 	_, err := flagParser.Load(fp)
 	if err != nil {
@@ -32,13 +37,12 @@ func getParser(fp string, debug bool) (*asm.FlagParser, error) {
 	return flagParser, nil
 }
 
-func getHandler(appFlags *asm.FlagParser, rs *resource.DbResource, pe *persist.Persister, userdataStore db.Db) (*ussd.Handlers, error) {
+func getHandler(appFlags *asm.FlagParser, rs *resource.DbResource, userdataStore db.Db) (*ussd.Handlers, error) {
 
 	ussdHandlers, err := ussd.NewHandlers(appFlags, userdataStore)
 	if err != nil {
 		return nil, err
 	}
-	ussdHandlers = ussdHandlers.WithPersister(pe)
 	rs.AddLocalFunc("select_language", ussdHandlers.SetLanguage)
 	rs.AddLocalFunc("create_account", ussdHandlers.CreateAccount)
 	rs.AddLocalFunc("save_pin", ussdHandlers.SavePin)
@@ -83,23 +87,18 @@ func ensureDbDir(dbDir string) error {
 	return nil
 }
 
-func getPersister(dbDir string, ctx context.Context) (*persist.Persister, error) {
-	err := ensureDbDir(dbDir)
-	if err != nil {
-		return nil, err
-	}
+func getStateStore(dbDir string, ctx context.Context) (db.Db, error) {
 	store := gdbmdb.NewGdbmDb()
 	storeFile := path.Join(dbDir, "state.gdbm")
 	store.Connect(ctx, storeFile)
-	pr := persist.NewPersister(store)
-	return pr, nil
+	return store, nil
 }
 
 func getUserdataDb(dbDir string, ctx context.Context) db.Db {
 	store := gdbmdb.NewGdbmDb()
 	storeFile := path.Join(dbDir, "userdata.gdbm")
 	store.Connect(ctx, storeFile)
-
+	
 	return store
 }
 
@@ -113,29 +112,28 @@ func getResource(resourceDir string, ctx context.Context) (resource.Resource, er
 	return rfs, nil
 }
 
-func getEngine(cfg engine.Config, rs resource.Resource, pr *persist.Persister) *engine.DefaultEngine {
-	en := engine.NewEngine(cfg, rs)
-	en = en.WithPersister(pr)
-	return en
-}
-
 func main() {
 	var dbDir string
+	var resourceDir string
 	var size uint
-	var sessionId string
-	var debug bool
-	flag.StringVar(&sessionId, "session-id", "075xx2123", "session id")
+	var engineDebug bool
+	var stateDebug bool
+	var host string
+	var port uint
 	flag.StringVar(&dbDir, "dbdir", ".state", "database dir to read from")
-	flag.BoolVar(&debug, "d", false, "use engine debug output")
+	flag.StringVar(&resourceDir, "resourcedir", path.Join("services", "registration"), "resource dir")
+	flag.BoolVar(&engineDebug, "engine-debug", false, "use engine debug output")
+	flag.BoolVar(&stateDebug, "state-debug", false, "use engine debug output")
 	flag.UintVar(&size, "s", 160, "max size of output")
+	flag.StringVar(&host, "h", "127.0.0.1", "http host")
+	flag.UintVar(&port, "p", 7123, "http port")
 	flag.Parse()
 
-	logg.Infof("start command", "dbdir", dbDir, "outputsize", size)
+	logg.Infof("start command", "dbdir", dbDir, "resourcedir", resourceDir,  "outputsize", size)
 
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, "SessionId", sessionId)
 	pfp := path.Join(scriptDir, "pp.csv")
-	flagParser, err := getParser(pfp, true)
+	flagParser, err := getFlags(pfp, true)
 
 	if err != nil {
 		os.Exit(1)
@@ -143,56 +141,75 @@ func main() {
 
 	cfg := engine.Config{
 		Root:       "root",
-		SessionId:  sessionId,
 		OutputSize: uint32(size),
 		FlagCount:  uint32(16),
 	}
+	if stateDebug {
+		cfg.StateDebug = true
+	}
+	if engineDebug {
+		cfg.EngineDebug = true
+	}
 
-	rs, err := getResource(scriptDir, ctx)
+	rs, err := getResource(resourceDir, ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 
-	pe, err := getPersister(dbDir, ctx)
+	err = ensureDbDir(dbDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 
-	store := getUserdataDb(dbDir, ctx)
+	userdataStore := getUserdataDb(dbDir, ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
+	defer userdataStore.Close()
 
 	dbResource, ok := rs.(*resource.DbResource)
 	if !ok {
-		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 
-	hl, err := getHandler(flagParser, dbResource, pe, store)
+	hl, err := getHandler(flagParser, dbResource, userdataStore)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 
-	en := getEngine(cfg, rs, pe)
-	en = en.WithFirst(hl.Init)
-	if debug {
-		en = en.WithDebug(nil)
-	}
-
-	_, err = en.Init(ctx)
+	stateStore, err := getStateStore(dbDir, ctx)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "engine init exited with error: %v\n", err)
+		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
+	defer stateStore.Close()
 
-	err = engine.Loop(ctx, en, os.Stdin, os.Stdout)
+	rp := &httpserver.DefaultRequestParser{}
+	//sh := httpserver.NewSessionHandler(cfg, rs, stateStore, userdataStore, rp, hl.Init)
+	sh := httpserver.NewSessionHandler(cfg, rs, stateStore, userdataStore, rp, hl)
+	s := &http.Server{
+		Addr: fmt.Sprintf("%s:%s", host, strconv.Itoa(int(port))),
+		Handler: sh,
+	}
+	s.RegisterOnShutdown(sh.Shutdown)
+
+	cint := make(chan os.Signal)
+	cterm := make(chan os.Signal)
+	signal.Notify(cint, os.Interrupt, syscall.SIGINT)
+	signal.Notify(cterm, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		select {
+		case _ = <-cint:
+		case _ = <-cterm:
+		}
+		s.Shutdown(ctx)
+	}()
+	err = s.ListenAndServe()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "loop exited with error: %v\n", err)
-		os.Exit(1)
+		logg.Infof("Server closed with error", "err", err)
 	}
 }

@@ -5,6 +5,7 @@ go 1.22.6
 require (
 	git.defalsify.org/vise.git v0.1.0-rc.3.0.20240911162138-1f2af8672dc7
 	github.com/alecthomas/assert/v2 v2.2.2
+	github.com/peteole/testdata-loader v0.3.0
 	gopkg.in/leonelquinteros/gotext.v1 v1.3.1
 )
 

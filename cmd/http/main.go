@@ -20,6 +20,7 @@ import (
 	"git.defalsify.org/vise.git/logging"
 
 	"git.grassecon.net/urdt/ussd/internal/handlers/ussd"
+	"git.grassecon.net/urdt/ussd/internal/handlers"
 	httpserver "git.grassecon.net/urdt/ussd/internal/http"
 )
 
@@ -191,7 +192,8 @@ func main() {
 
 	rp := &httpserver.DefaultRequestParser{}
 	//sh := httpserver.NewSessionHandler(cfg, rs, stateStore, userdataStore, rp, hl.Init)
-	sh := httpserver.NewSessionHandler(cfg, rs, stateStore, userdataStore, rp, hl)
+	bsh := handlers.NewBaseSessionHandler(cfg, rs, stateStore, userdataStore, rp, hl)
+	sh := httpserver.ToSessionHandler(bsh)
 	s := &http.Server{
 		Addr: fmt.Sprintf("%s:%s", host, strconv.Itoa(int(port))),
 		Handler: sh,

@@ -38,6 +38,7 @@ type RequestSession struct {
 
 type engineMaker func(cfg engine.Config, rs resource.Resource, pr *persist.Persister) engine.Engine
 
+// TODO: seems like can remove this.
 type RequestParser interface {
 	GetSessionId(rq any) (string, error)
 	GetInput(rq any) ([]byte, error)
@@ -50,5 +51,5 @@ type RequestHandler interface {
 	Process(rs RequestSession) (RequestSession, error)
 	Output(rs RequestSession) (RequestSession, error)
 	Reset(rs RequestSession) (RequestSession, error)
-	ShutDown()
+	Shutdown()
 }

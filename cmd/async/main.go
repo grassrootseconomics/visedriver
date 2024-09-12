@@ -5,7 +5,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
 	"path"
+	"syscall"
 
 	"git.defalsify.org/vise.git/asm"
 	"git.defalsify.org/vise.git/db"
@@ -210,6 +212,19 @@ func main() {
 		Writer: os.Stdout,
 		Config: cfg,
 	}
+
+	cint := make(chan os.Signal)
+	cterm := make(chan os.Signal)
+	signal.Notify(cint, os.Interrupt, syscall.SIGINT)
+	signal.Notify(cterm, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		select {
+		case _ = <-cint:
+		case _ = <-cterm:
+		}
+		sh.Shutdown()
+	}()
+
 	for true {
 		rqs, err = sh.Process(rqs)
 		if err != nil {

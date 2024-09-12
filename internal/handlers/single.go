@@ -32,7 +32,7 @@ type RequestSession struct {
 	Config engine.Config
 	Engine engine.Engine
 	Input []byte
-	Storage storage.Storage
+	Storage *storage.Storage
 	Writer io.Writer
 }
 

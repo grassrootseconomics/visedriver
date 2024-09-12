@@ -50,7 +50,7 @@ func(f *BaseSessionHandler) Process(rqs RequestSession) (RequestSession, error) 
 
 	rqs.Storage, err = f.provider.Get(rqs.Config.SessionId)
 	if err != nil {
-		logg.ErrorCtxf(rqs.Ctx, "", "storage error", "err", err)
+		logg.ErrorCtxf(rqs.Ctx, "", "storage get error", err)
 		return rqs, ErrStorage
 	}
 
@@ -58,6 +58,11 @@ func(f *BaseSessionHandler) Process(rqs RequestSession) (RequestSession, error) 
 	eni := f.GetEngine(rqs.Config, f.rs, rqs.Storage.Persister)
 	en, ok := eni.(*engine.DefaultEngine)
 	if !ok {
+		perr := f.provider.Put(rqs.Config.SessionId, rqs.Storage)
+		rqs.Storage = nil
+		if perr != nil {
+			logg.ErrorCtxf(rqs.Ctx, "", "storage put error", perr)
+		}
 		return rqs, ErrEngineType
 	}
 	en = en.WithFirst(f.hn.Init)
@@ -68,6 +73,11 @@ func(f *BaseSessionHandler) Process(rqs RequestSession) (RequestSession, error) 
 
 	r, err = rqs.Engine.Init(rqs.Ctx)
 	if err != nil {
+		perr := f.provider.Put(rqs.Config.SessionId, rqs.Storage)
+		rqs.Storage = nil
+		if perr != nil {
+			logg.ErrorCtxf(rqs.Ctx, "", "storage put error", perr)
+		}
 		return rqs, err
 	}
 
@@ -75,6 +85,11 @@ func(f *BaseSessionHandler) Process(rqs RequestSession) (RequestSession, error) 
 		r, err = rqs.Engine.Exec(rqs.Ctx, rqs.Input)
 	}
 	if err != nil {
+		perr := f.provider.Put(rqs.Config.SessionId, rqs.Storage)
+		rqs.Storage = nil
+		if perr != nil {
+			logg.ErrorCtxf(rqs.Ctx, "", "storage put error", perr)
+		}
 		return rqs, err
 	}
 

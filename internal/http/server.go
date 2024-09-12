@@ -68,6 +68,7 @@ func(f *SessionHandler) writeError(w http.ResponseWriter, code int, err error) {
 func(f *SessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	var code int
 	var err error
+	var perr error
 
 	rqs := handlers.RequestSession{
 		Ctx: req.Context(),
@@ -109,14 +110,13 @@ func(f *SessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(200)
 	w.Header().Set("Content-Type", "text/plain")
 	rqs, err = f.Output(rqs)
+	rqs, perr = f.Reset(rqs)
 	if err != nil {
 		f.writeError(w, 500, err)
 		return
 	}
-
-	rqs, err = f.Reset(rqs)
-	if err != nil {
-		f.writeError(w, 500, err)
+	if perr != nil {
+		f.writeError(w, 500, perr)
 		return
 	}
 }

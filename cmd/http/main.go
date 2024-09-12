@@ -191,7 +191,6 @@ func main() {
 	defer stateStore.Close()
 
 	rp := &httpserver.DefaultRequestParser{}
-	//sh := httpserver.NewSessionHandler(cfg, rs, stateStore, userdataStore, rp, hl.Init)
 	bsh := handlers.NewBaseSessionHandler(cfg, rs, stateStore, userdataStore, rp, hl)
 	sh := httpserver.ToSessionHandler(bsh)
 	s := &http.Server{

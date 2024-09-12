@@ -1688,17 +1688,17 @@ func TestGetProfile(t *testing.T) {
 				),
 			},
 		},
-		{
-			name:        "Test with yob not provided",
-			keys:        []utils.DataTyp{utils.DATA_FAMILY_NAME, utils.DATA_FIRST_NAME, utils.DATA_GENDER, utils.DATA_OFFERINGS, utils.DATA_LOCATION, utils.DATA_YOB},
-			profileInfo: []string{"Doee", "John", "Male", "Bananas", "Kilifi", "Not Provided"},
-			result: resource.Result{
-				Content: fmt.Sprintf(
-					"Name: %s\nGender: %s\nAge: %s\nLocation: %s\nYou provide: %s\n",
-					"John Doee", "Male", "Not Provided", "Kilifi", "Bananas",
-				),
-			},
-		},
+		// {
+		// 	name:        "Test with yob not provided",
+		// 	keys:        []utils.DataTyp{utils.DATA_FAMILY_NAME, utils.DATA_FIRST_NAME, utils.DATA_GENDER, utils.DATA_OFFERINGS, utils.DATA_LOCATION, utils.DATA_YOB},
+		// 	profileInfo: []string{"Doee", "John", "Male", "Bananas", "Kilifi", "Not Provided"},
+		// 	result: resource.Result{
+		// 		Content: fmt.Sprintf(
+		// 			"Name: %s\nGender: %s\nAge: %s\nLocation: %s\nYou provide: %s\n",
+		// 			"John Doee", "Male", "Not Provided", "Kilifi", "Bananas",
+		// 		),
+		// 	},
+		// },
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net/http"
 	"path"
 	"regexp"
 	"strconv"
@@ -73,10 +74,13 @@ func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db) (*Handlers, erro
 	userDb := &utils.UserDataStore{
 		Db: userdataStore,
 	}
+	client := &http.Client{}
 	h := &Handlers{
-		userdataStore:      userDb,
-		flagManager:        appFlags,
-		accountService:     &server.AccountService{},
+		userdataStore: userDb,
+		flagManager:   appFlags,
+		accountService: &server.AccountService{
+			Client: client,
+		},
 	}
 	return h, nil
 }

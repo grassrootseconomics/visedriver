@@ -9,6 +9,8 @@ require (
 	gopkg.in/leonelquinteros/gotext.v1 v1.3.1
 )
 
+require gopkg.in/dnaeon/go-vcr.v4 v4.0.1 // indirect
+
 require (
 	github.com/alecthomas/participle/v2 v2.0.0 // indirect
 	github.com/alecthomas/repr v0.2.0 // indirect

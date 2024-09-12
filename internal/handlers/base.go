@@ -78,7 +78,7 @@ func(f *BaseSessionHandler) Process(rqs RequestSession) (RequestSession, error) 
 		return rqs, err
 	}
 
-	_ = r
+	rqs.Continue = r 
 	return rqs, nil
 }
 

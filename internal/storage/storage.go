@@ -1,4 +1,4 @@
-package http
+package storage
 
 import (
 	"git.defalsify.org/vise.git/db"

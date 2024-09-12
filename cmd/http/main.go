@@ -112,6 +112,7 @@ func getResource(resourceDir string, ctx context.Context) (resource.Resource, er
 	return rfs, nil
 }
 
+
 func main() {
 	var dbDir string
 	var resourceDir string

@@ -16,6 +16,7 @@ type AccountServiceInterface interface {
 }
 
 type AccountService struct {
+	Client *http.Client
 }
 
 
@@ -34,7 +35,8 @@ type AccountService struct {
 //     If no error occurs, this will be nil.
 //
 func (as *AccountService) CheckAccountStatus(trackingId string) (string, error) {
-	resp, err := http.Get(config.TrackStatusURL + trackingId)
+	resp,err := as.Client.Get(config.TrackStatusURL + trackingId)
+	// resp, err := http.Get(config.TrackStatusURL + trackingId)
 	if err != nil {
 		return "", err
 	}
@@ -62,7 +64,8 @@ func (as *AccountService) CheckAccountStatus(trackingId string) (string, error) 
 //   - publicKey: The public key associated with the account whose balance needs to be checked.
 func (as *AccountService) CheckBalance(publicKey string) (string, error) {
 
-	resp, err := http.Get(config.BalanceURL + publicKey)
+	//resp, err := http.Get(config.BalanceURL + publicKey)
+	resp, err := as.Client.Get(config.BalanceURL + publicKey)
 	if err != nil {
 		return "0.0", err
 	}
@@ -91,7 +94,8 @@ func (as *AccountService) CheckBalance(publicKey string) (string, error) {
 //   - error: An error if any occurred during the HTTP request, reading the response, or unmarshalling the JSON data.
 //     If no error occurs, this will be nil.
 func (as *AccountService) CreateAccount() (*models.AccountResponse, error) {
-	resp, err := http.Post(config.CreateAccountURL, "application/json", nil)
+	//resp, err := http.Post(config.CreateAccountURL, "application/json", nil)
+	resp, err := as.Client.Post(config.CreateAccountURL, "application/json", nil)
 	if err != nil {
 		return nil, err
 	}

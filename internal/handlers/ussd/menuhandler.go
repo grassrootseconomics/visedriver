@@ -66,21 +66,17 @@ type Handlers struct {
 	accountService server.AccountServiceInterface
 }
 
-func NewHandlers(parser *asm.FlagParser, pe *persist.Persister, userdataStore db.Db) (*Handlers, error) {
-	userDb := utils.UserDataStore{
-		Db: userdataStore,
-	}
-	if pe == nil {
-		return nil, fmt.Errorf("cannot create handler with nil persister")
-	}
+func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db) (*Handlers, error) {
 	if userdataStore == nil {
 		return nil, fmt.Errorf("cannot create handler with nil userdata store")
 	}
+	userDb := &utils.UserDataStore{
+		Db: userdataStore,
+	}
 	h := &Handlers{
-		pe:             pe,
-		userdataStore:  &userDb,
-		flagManager:    parser,
-		accountService: &server.AccountService{},
+		userdataStore:      userDb,
+		flagManager:        appFlags,
+		accountService:     &server.AccountService{},
 	}
 	return h, nil
 }
@@ -92,6 +88,14 @@ const pinPattern = `^\d{4}$`
 func isValidPIN(pin string) bool {
 	match, _ := regexp.MatchString(pinPattern, pin)
 	return match
+}
+
+func (h *Handlers) WithPersister(pe *persist.Persister) *Handlers {
+	if h.pe != nil {
+		panic("persister already set")
+	}
+	h.pe = pe
+	return h
 }
 
 func (h *Handlers) Init(ctx context.Context, sym string, input []byte) (resource.Result, error) {

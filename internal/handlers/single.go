@@ -8,8 +8,13 @@ import (
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/persist"
+	"git.defalsify.org/vise.git/logging"
 
 	"git.grassecon.net/urdt/ussd/internal/storage"
+)
+
+var (
+	logg = logging.NewVanilla().WithDomain("handlers")
 )
 
 var (
@@ -39,6 +44,8 @@ type RequestParser interface {
 }
 
 type RequestHandler interface {
+	GetConfig() engine.Config
+	GetRequestParser() RequestParser
 	GetEngine(cfg engine.Config, rs resource.Resource, pe *persist.Persister) engine.Engine 
 	Process(rs RequestSession) (RequestSession, error)
 	Output(rs RequestSession) (RequestSession, error)

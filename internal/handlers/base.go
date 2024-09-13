@@ -1,13 +1,15 @@
 package handlers
 
 import (
-	"git.defalsify.org/vise.git/engine"
-	"git.defalsify.org/vise.git/resource"
-	"git.defalsify.org/vise.git/persist"
-	"git.defalsify.org/vise.git/db"
+	"io"
 
-	"git.grassecon.net/urdt/ussd/internal/storage"
+	"git.defalsify.org/vise.git/db"
+	"git.defalsify.org/vise.git/engine"
+	"git.defalsify.org/vise.git/persist"
+	"git.defalsify.org/vise.git/resource"
+
 	"git.grassecon.net/urdt/ussd/internal/handlers/ussd"
+	"git.grassecon.net/urdt/ussd/internal/storage"
 )
 
 type BaseSessionHandler struct {
@@ -84,6 +86,25 @@ func(f *BaseSessionHandler) Process(rqs RequestSession) (RequestSession, error) 
 
 func(f *BaseSessionHandler) Output(rqs RequestSession) (RequestSession,  error) {
 	var err error
+	_, err = rqs.Engine.WriteResult(rqs.Ctx, rqs.Writer)
+	return rqs, err
+}
+
+func (f *BaseSessionHandler) AtOutput(rqs RequestSession) (RequestSession, error) {
+	var err error
+	var prefix string
+
+	if rqs.Continue {
+		prefix = "CON "
+	} else {
+		prefix = "END "
+	}
+
+	_, err = io.WriteString(rqs.Writer, prefix)
+	if err != nil {
+		return rqs, err
+	}
+
 	_, err = rqs.Engine.WriteResult(rqs.Ctx, rqs.Writer)
 	return rqs, err
 }

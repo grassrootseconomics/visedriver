@@ -51,6 +51,7 @@ type RequestHandler interface {
 	GetEngine(cfg engine.Config, rs resource.Resource, pe *persist.Persister) engine.Engine 
 	Process(rs RequestSession) (RequestSession, error)
 	Output(rs RequestSession) (RequestSession, error)
+	AtOutput(rs RequestSession) (RequestSession, error)
 	Reset(rs RequestSession) (RequestSession, error)
 	Shutdown()
 }

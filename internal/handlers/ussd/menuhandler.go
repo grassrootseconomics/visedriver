@@ -192,6 +192,48 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 	return res, nil
 }
 
+func (h *Handlers) SaveTemporaryPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	var err error
+
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+	flag_incorrect_pin, _ := h.flagManager.GetFlag("flag_incorrect_pin")
+
+	accountPIN := string(input)
+	// Validate that the PIN is a 4-digit number
+	if !isValidPIN(accountPIN) {
+		res.FlagSet = append(res.FlagSet, flag_incorrect_pin)
+		return res, nil
+	}
+	store := h.userdataStore
+	err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_PIN, []byte(accountPIN))
+	if err != nil {
+		return res, err
+	}
+	return res, nil
+}
+
+func (h *Handlers) ConfirmPinChange(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+	store := h.userdataStore
+	temporaryPin, err := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_PIN)
+	if err != nil {
+		return res, err
+	}
+	err = store.WriteEntry(ctx, sessionId, utils.DATA_ACCOUNT_PIN, []byte(temporaryPin))
+	if err != nil {
+		return res, err
+	}
+	return res, nil
+}
+
 // SavePin persists the user's PIN choice into the filesystem
 func (h *Handlers) SavePin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
@@ -260,15 +302,19 @@ func (h *Handlers) VerifyPin(ctx context.Context, sym string, input []byte) (res
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-
-	//AccountPin, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_ACCOUNT_PIN)
 	store := h.userdataStore
 	AccountPin, err := store.ReadEntry(ctx, sessionId, utils.DATA_ACCOUNT_PIN)
 	if err != nil {
 		return res, err
 	}
+	TemporaryPIn, err := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_PIN)
+	if err != nil {
+		if !db.IsNotFound(err) {
+			return res, err
+		}
+	}
 
-	if bytes.Equal(input, AccountPin) {
+	if bytes.Equal(input, AccountPin) || bytes.Equal(input, TemporaryPIn) {
 		res.FlagSet = []uint32{flag_valid_pin}
 		res.FlagReset = []uint32{flag_pin_mismatch}
 		res.FlagSet = append(res.FlagSet, flag_pin_set)
@@ -568,7 +614,6 @@ func (h *Handlers) Quit(ctx context.Context, sym string, input []byte) (resource
 	res.FlagReset = append(res.FlagReset, flag_account_authorized)
 	return res, nil
 }
-
 
 // Quit displays the Thank you message and exits the menu
 func (h *Handlers) QuitWithHelp(ctx context.Context, sym string, input []byte) (resource.Result, error) {

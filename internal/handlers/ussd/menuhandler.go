@@ -615,7 +615,7 @@ func (h *Handlers) Quit(ctx context.Context, sym string, input []byte) (resource
 	return res, nil
 }
 
-// Quit displays the Thank you message and exits the menu
+// QuitWithHelp displays helpline information then exits the menu
 func (h *Handlers) QuitWithHelp(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 

@@ -1378,6 +1378,61 @@ func TestQuit(t *testing.T) {
 		})
 	}
 }
+
+func TestQuitWithHelp(t *testing.T) {
+	fm, err := NewFlagManager(flagsPath)
+
+	if err != nil {
+		t.Logf(err.Error())
+	}
+	flag_account_authorized, _ := fm.parser.GetFlag("flag_account_authorized")
+
+	mockDataStore := new(mocks.MockUserDataStore)
+	mockCreateAccountService := new(mocks.MockAccountService)
+
+	sessionId := "session123"
+
+	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
+
+	h := &Handlers{
+		userdataStore:  mockDataStore,
+		accountService: mockCreateAccountService,
+		flagManager:    fm.parser,
+	}
+	tests := []struct {
+		name           string
+		input          []byte
+		status         string
+		expectedResult resource.Result
+	}{
+		{
+			name: "Test quit with help message",
+			expectedResult: resource.Result{
+				FlagReset: []uint32{flag_account_authorized},
+				Content:   "For more help,please call: 0757628885",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			// Call the method under test
+			res, _ := h.QuitWithHelp(ctx, "test_quit with help", tt.input)
+
+			// Assert that no errors occurred
+			assert.NoError(t, err)
+
+			//Assert that the account created flag has been set to the result
+			assert.Equal(t, res, tt.expectedResult, "Expected result should be equal to the actual result")
+
+			// Assert that expectations were met
+			mockDataStore.AssertExpectations(t)
+
+		})
+	}
+}
+
 func TestIsValidPIN(t *testing.T) {
 	tests := []struct {
 		name     string

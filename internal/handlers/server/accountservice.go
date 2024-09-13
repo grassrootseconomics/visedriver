@@ -2,7 +2,6 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -33,7 +32,6 @@ type AccountService struct {
 //     If no error occurs, this will be nil.
 func (as *AccountService) CheckAccountStatus(trackingId string) (string, error) {
 	resp, err := as.Client.Get(config.TrackStatusURL + trackingId)
-	// resp, err := http.Get(config.TrackStatusURL + trackingId)
 	if err != nil {
 		return "", err
 	}
@@ -49,8 +47,6 @@ func (as *AccountService) CheckAccountStatus(trackingId string) (string, error) 
 	if err != nil {
 		return "", err
 	}
-	fmt.Println("hash:", trackResp.Result.Transaction.TxHash)
-
 	status := trackResp.Result.Transaction.Status
 
 	return status, nil

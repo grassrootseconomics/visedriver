@@ -6,3 +6,6 @@ msgstr "Ombi lako limetumwa. %s atapokea %s kutoka kwa %s."
 
 msgid "Thank you for using Sarafu. Goodbye!"
 msgstr "Asante kwa kutumia huduma ya Sarafu. Kwaheri!"
+
+msgid "For more help,please call: 0757628885"
+msgstr "Kwa usaidizi zaidi,piga: 0757628885"

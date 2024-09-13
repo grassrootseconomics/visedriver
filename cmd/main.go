@@ -71,6 +71,7 @@ func getHandler(appFlags *asm.FlagParser, rs *resource.DbResource, pe *persist.P
 	rs.AddLocalFunc("reset_incorrect_date_format", ussdHandlers.ResetIncorrectYob)
 	rs.AddLocalFunc("set_reset_single_edit", ussdHandlers.SetResetSingleEdit)
 	rs.AddLocalFunc("initiate_transaction", ussdHandlers.InitiateTransaction)
+	rs.AddLocalFunc("quit_with_help", ussdHandlers.QuitWithHelp)
 
 	return ussdHandlers, nil
 }

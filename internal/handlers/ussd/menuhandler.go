@@ -569,6 +569,22 @@ func (h *Handlers) Quit(ctx context.Context, sym string, input []byte) (resource
 	return res, nil
 }
 
+
+// Quit displays the Thank you message and exits the menu
+func (h *Handlers) QuitWithHelp(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+
+	flag_account_authorized, _ := h.flagManager.GetFlag("flag_account_authorized")
+
+	code := codeFromCtx(ctx)
+	l := gotext.NewLocale(translationDir, code)
+	l.AddDomain("default")
+
+	res.Content = l.Get("For more help,please call: 0757628885")
+	res.FlagReset = append(res.FlagReset, flag_account_authorized)
+	return res, nil
+}
+
 // VerifyYob verifies the length of the given input
 func (h *Handlers) VerifyYob(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result

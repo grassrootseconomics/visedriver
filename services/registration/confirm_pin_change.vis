@@ -1,0 +1,7 @@
+LOAD verify_pin 0
+MOUT back 0
+HALT
+RELOAD verify_pin
+CATCH  create_pin_mismatch flag_pin_mismatch 1
+MOVE pin_reset_success
+INCMP _ 0

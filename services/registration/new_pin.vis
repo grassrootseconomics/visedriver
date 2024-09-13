@@ -1,3 +1,7 @@
+LOAD save_temporary_pin 0
 MOUT back 0
 HALT
+RELOAD save_temporary_pin
+CATCH invalid_pin flag_incorrect_pin 1
 INCMP _ 0
+MOVE confirm_pin_change 

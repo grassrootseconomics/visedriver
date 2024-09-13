@@ -43,14 +43,30 @@ func(rp *DefaultRequestParser) GetInput(rq any) ([]byte, error) {
 	return v, nil
 }
 
-type SessionHandler struct {
-	handlers.RequestHandler
+
+
+type SessionHandlerOption func(*SessionHandler)
+
+func WithAtOutput() SessionHandlerOption {
+	return func(sh *SessionHandler) {
+		sh.useAtOutput = true
+	}
 }
 
-func ToSessionHandler(h handlers.RequestHandler) *SessionHandler {
-	return &SessionHandler{
+type SessionHandler struct {
+	handlers.RequestHandler
+	useAtOutput bool
+}
+
+func ToSessionHandler(h handlers.RequestHandler, opts ...SessionHandlerOption) *SessionHandler {
+	sh := &SessionHandler{
 		RequestHandler: h,
+		useAtOutput: false,
 	}
+	for _, opt := range opts {
+		opt(sh)
+	}
+	return sh
 }
 
 func(f *SessionHandler) writeError(w http.ResponseWriter, code int, err error) {
@@ -108,7 +124,11 @@ func(f *SessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	w.WriteHeader(200)
 	w.Header().Set("Content-Type", "text/plain")
-	rqs, err = f.Output(rqs)
+	if f.useAtOutput {
+		rqs, err = f.AtOutput(rqs)
+	} else {
+		rqs, err = f.Output(rqs)
+	}
 	if err != nil {
 		f.writeError(w, 500, err)
 		return

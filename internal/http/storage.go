@@ -6,8 +6,8 @@ import (
 )
 
 type Storage struct {
-	Persister *persist.Persister
-	UserdataDb db.Db	
+	Persister  *persist.Persister
+	UserdataDb db.Db
 }
 
 type StorageProvider interface {
@@ -25,7 +25,7 @@ func NewSimpleStorageProvider(stateStore db.Db, userdataStore db.Db) StorageProv
 	pe = pe.WithFlush()
 	return &SimpleStorageProvider{
 		Storage: Storage{
-			Persister: pe,
+			Persister:  pe,
 			UserdataDb: userdataStore,
 		},
 	}

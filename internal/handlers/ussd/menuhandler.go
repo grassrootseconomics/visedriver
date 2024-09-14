@@ -28,8 +28,8 @@ var (
 	logg           = logging.NewVanilla().WithDomain("ussdmenuhandler")
 	scriptDir      = path.Join("services", "registration")
 	translationDir = path.Join(scriptDir, "locale")
-	validPin =  4
-	validYOB = 4
+	validPin       = 4
+	validYOB       = 4
 )
 
 type FSData struct {

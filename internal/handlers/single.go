@@ -34,6 +34,7 @@ type RequestSession struct {
 	Input []byte
 	Storage *storage.Storage
 	Writer io.Writer
+	Continue bool
 }
 
 type engineMaker func(cfg engine.Config, rs resource.Resource, pr *persist.Persister) engine.Engine

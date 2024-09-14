@@ -1,13 +1,13 @@
 package handlers
 
 import (
-	"git.defalsify.org/vise.git/engine"
-	"git.defalsify.org/vise.git/resource"
-	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/db"
+	"git.defalsify.org/vise.git/engine"
+	"git.defalsify.org/vise.git/persist"
+	"git.defalsify.org/vise.git/resource"
 
-	"git.grassecon.net/urdt/ussd/internal/storage"
 	"git.grassecon.net/urdt/ussd/internal/handlers/ussd"
+	"git.grassecon.net/urdt/ussd/internal/storage"
 )
 
 type BaseSessionHandler struct {
@@ -93,7 +93,7 @@ func(f *BaseSessionHandler) Process(rqs RequestSession) (RequestSession, error) 
 		return rqs, err
 	}
 
-	_ = r
+	rqs.Continue = r 
 	return rqs, nil
 }
 

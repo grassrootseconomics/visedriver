@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"path"
 	"strconv"
+	"strings"
 	"syscall"
 
 	"git.defalsify.org/vise.git/asm"
@@ -16,11 +17,11 @@ import (
 	fsdb "git.defalsify.org/vise.git/db/fs"
 	gdbmdb "git.defalsify.org/vise.git/db/gdbm"
 	"git.defalsify.org/vise.git/engine"
-	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/logging"
+	"git.defalsify.org/vise.git/resource"
 
-	"git.grassecon.net/urdt/ussd/internal/handlers/ussd"
 	"git.grassecon.net/urdt/ussd/internal/handlers"
+	"git.grassecon.net/urdt/ussd/internal/handlers/ussd"
 	httpserver "git.grassecon.net/urdt/ussd/internal/http"
 )
 
@@ -28,6 +29,45 @@ var (
 	logg = logging.NewVanilla()
 	scriptDir = path.Join("services", "registration")
 )
+
+type atRequestParser struct {}
+
+func(arp *atRequestParser) GetSessionId(rq any) (string, error) {
+	rqv, ok := rq.(*http.Request)
+	if !ok {
+		return "", handlers.ErrInvalidRequest
+	}
+	if err := rqv.ParseForm(); err != nil {
+		return "", fmt.Errorf("failed to parse form data: %v", err)
+	}
+
+	phoneNumber := rqv.FormValue("phoneNumber")
+	if phoneNumber == "" {
+		return "", fmt.Errorf("no phone number found")
+	}
+
+	return phoneNumber, nil
+}
+
+func(arp *atRequestParser) GetInput(rq any) ([]byte, error) {
+	rqv, ok := rq.(*http.Request)
+	if !ok {
+		return nil, handlers.ErrInvalidRequest
+	}
+	if err := rqv.ParseForm(); err != nil {
+		return nil, fmt.Errorf("failed to parse form data: %v", err)
+	}
+
+	text := rqv.FormValue("text")
+
+	parts := strings.Split(text, "*")
+	if len(parts) == 0 {
+		return nil, fmt.Errorf("no input found")
+	}
+
+	return []byte(parts[len(parts)-1]), nil
+}
+
 
 func getFlags(fp string, debug bool) (*asm.FlagParser, error) {
 	flagParser := asm.NewFlagParser().WithDebug()
@@ -190,9 +230,9 @@ func main() {
 	}
 	defer stateStore.Close()
 
-	rp := &httpserver.DefaultRequestParser{}
+	rp := &atRequestParser{}
 	bsh := handlers.NewBaseSessionHandler(cfg, rs, stateStore, userdataStore, rp, hl)
-	sh := httpserver.ToSessionHandler(bsh)
+	sh := httpserver.NewATSessionHandler(bsh)
 	s := &http.Server{
 		Addr: fmt.Sprintf("%s:%s", host, strconv.Itoa(int(port))),
 		Handler: sh,

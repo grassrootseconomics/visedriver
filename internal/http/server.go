@@ -1,42 +1,42 @@
 package http
 
 import (
-	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
-	"git.defalsify.org/vise.git/db"
-	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/logging"
-	"git.defalsify.org/vise.git/persist"
-	"git.defalsify.org/vise.git/resource"
 
-	"git.grassecon.net/urdt/ussd/internal/handlers/ussd"
+	"git.grassecon.net/urdt/ussd/internal/handlers"
 )
 
 var (
 	logg = logging.NewVanilla().WithDomain("httpserver")
 )
 
-type RequestParser interface {
-	GetSessionId(rq *http.Request) (string, error)
-	GetInput(rq *http.Request) ([]byte, error)
-}
-
 type DefaultRequestParser struct {
 }
 
-func(rp *DefaultRequestParser) GetSessionId(rq *http.Request) (string, error) {
-	v := rq.Header.Get("X-Vise-Session")
+
+func(rp *DefaultRequestParser) GetSessionId(rq any) (string, error) {
+	rqv, ok := rq.(*http.Request)
+	if !ok {
+		return "", handlers.ErrInvalidRequest
+	}
+	v := rqv.Header.Get("X-Vise-Session")
 	if v == "" {
-		return "", fmt.Errorf("no session found")
+		return "", handlers.ErrSessionMissing
 	}
 	return v, nil
 }
 
-func(rp *DefaultRequestParser) GetInput(rq *http.Request) ([]byte, error) {
-	defer rq.Body.Close()
-	v, err := ioutil.ReadAll(rq.Body)
+func(rp *DefaultRequestParser) GetInput(rq any) ([]byte, error) {
+	rqv, ok := rq.(*http.Request)
+	if !ok {
+		return nil, handlers.ErrInvalidRequest
+	}
+	defer rqv.Body.Close()
+	v, err := ioutil.ReadAll(rqv.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -44,107 +44,79 @@ func(rp *DefaultRequestParser) GetInput(rq *http.Request) ([]byte, error) {
 }
 
 type SessionHandler struct {
-	cfgTemplate engine.Config
-	rp RequestParser
-	rs resource.Resource
-	//first resource.EntryFunc
-	hn *ussd.Handlers
-	provider StorageProvider
+	handlers.RequestHandler
 }
 
-//func NewSessionHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp RequestParser, first resource.EntryFunc) *SessionHandler {
-func NewSessionHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp RequestParser, hn *ussd.Handlers) *SessionHandler {
+func ToSessionHandler(h handlers.RequestHandler) *SessionHandler {
 	return &SessionHandler{
-		cfgTemplate: cfg,
-		rs: rs,
-		//first: first,
-		hn: hn,
-		rp: rp,
-		provider: NewSimpleStorageProvider(stateDb, userdataDb),
+		RequestHandler: h,
 	}
 }
 
-func(f *SessionHandler) writeError(w http.ResponseWriter, code int, msg string, err error) {
-	w.Header().Set("X-Vise", msg + ": " + err.Error())
-	w.Header().Set("Content-Length", "0")
+func(f *SessionHandler) writeError(w http.ResponseWriter, code int, err error) {
+	s := err.Error()
+	w.Header().Set("Content-Length", strconv.Itoa(len(s)))
 	w.WriteHeader(code)
 	_, err = w.Write([]byte{})
 	if err != nil {
+		logg.Errorf("error writing error!!", "err", err, "olderr", s)
 		w.WriteHeader(500)
-		w.Header().Set("X-Vise", err.Error())
 	}
 	return 
 }
 
-func(f* SessionHandler) Shutdown() {
-	err := f.provider.Close()
-	if err != nil {
-		logg.Errorf("handler shutdown error", "err", err)
-	}
-}
-
 func(f *SessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	var r bool
-	sessionId, err := f.rp.GetSessionId(req)
-	if err != nil {
-		f.writeError(w, 400, "Session missing", err)
-		return
-	}
-	input, err := f.rp.GetInput(req)
-	if err != nil {
-		f.writeError(w, 400, "Input read fail", err)
-		return
-	}
-	ctx := req.Context()
-	cfg := f.cfgTemplate
-	cfg.SessionId = sessionId
+	var code int
+	var err error
+	var perr error
 
-	logg.InfoCtxf(ctx, "new request",  "session", cfg.SessionId, "input", input)
-
-	storage, err := f.provider.Get(cfg.SessionId)
-	if err != nil {
-		f.writeError(w, 500, "Storage retrieval fail", err)
-		return
-	}
-	f.hn = f.hn.WithPersister(storage.Persister)
-	defer f.provider.Put(cfg.SessionId, storage)
-	en := getEngine(cfg, f.rs, storage.Persister)
-	en = en.WithFirst(f.hn.Init)
-	if cfg.EngineDebug {
-		en = en.WithDebug(nil)
+	rqs := handlers.RequestSession{
+		Ctx: req.Context(),
+		Writer: w,
 	}
 
-	r, err = en.Init(ctx)
+	rp := f.GetRequestParser()
+	cfg := f.GetConfig()
+	cfg.SessionId, err = rp.GetSessionId(req)
 	if err != nil {
-		f.writeError(w, 500, "Engine init fail", err)
+		logg.ErrorCtxf(rqs.Ctx, "", "header processing error", err)
+		f.writeError(w, 400, err)
+	}
+	rqs.Config = cfg
+	rqs.Input, err = rp.GetInput(req)
+	if err != nil {
+		logg.ErrorCtxf(rqs.Ctx, "", "header processing error", err)
+		f.writeError(w, 400, err)
 		return
 	}
-	if r && len(input) > 0 {
-		r, err = en.Exec(ctx, input)
+
+	rqs, err = f.Process(rqs)
+	switch err {
+	case handlers.ErrStorage:
+		code = 500
+	case handlers.ErrEngineInit:
+		code = 500
+	case handlers.ErrEngineExec:
+		code = 500
+	default:
+		code = 200
 	}
-	if err != nil {
-		f.writeError(w, 500, "Engine exec fail", err)
+
+	if code != 200 {
+		f.writeError(w, 500, err)
 		return
 	}
 
 	w.WriteHeader(200)
 	w.Header().Set("Content-Type", "text/plain")
-	_, err = en.WriteResult(ctx, w)
+	rqs, err = f.Output(rqs)
+	rqs, perr = f.Reset(rqs)
 	if err != nil {
-		f.writeError(w, 500, "Write result fail", err)
+		f.writeError(w, 500, err)
 		return
 	}
-	err = en.Finish()
-	if err != nil {
-		f.writeError(w, 500, "Engine finish fail", err)
+	if perr != nil {
+		f.writeError(w, 500, perr)
 		return
 	}
-
-	_ = r
-}
-
-func getEngine(cfg engine.Config, rs resource.Resource, pr *persist.Persister) *engine.DefaultEngine {
-	en := engine.NewEngine(cfg, rs)
-	en = en.WithPersister(pr)
-	return en
 }

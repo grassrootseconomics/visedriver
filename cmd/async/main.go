@@ -4,11 +4,9 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"net/http"
 	"os"
 	"os/signal"
 	"path"
-	"strconv"
 	"syscall"
 
 	"git.defalsify.org/vise.git/asm"
@@ -21,13 +19,25 @@ import (
 
 	"git.grassecon.net/urdt/ussd/internal/handlers/ussd"
 	"git.grassecon.net/urdt/ussd/internal/handlers"
-	httpserver "git.grassecon.net/urdt/ussd/internal/http"
 )
 
 var (
 	logg = logging.NewVanilla()
 	scriptDir = path.Join("services", "registration")
 )
+
+type asyncRequestParser struct {
+	sessionId string
+	input []byte
+}
+
+func(p *asyncRequestParser) GetSessionId(r any) (string, error) {
+	return p.sessionId, nil
+}
+
+func(p *asyncRequestParser) GetInput(r any) ([]byte, error) {
+	return p.input, nil
+}
 
 func getFlags(fp string, debug bool) (*asm.FlagParser, error) {
 	flagParser := asm.NewFlagParser().WithDebug()
@@ -115,6 +125,7 @@ func getResource(resourceDir string, ctx context.Context) (resource.Resource, er
 
 
 func main() {
+	var sessionId string
 	var dbDir string
 	var resourceDir string
 	var size uint
@@ -122,6 +133,7 @@ func main() {
 	var stateDebug bool
 	var host string
 	var port uint
+	flag.StringVar(&sessionId, "session-id", "075xx2123", "session id")
 	flag.StringVar(&dbDir, "dbdir", ".state", "database dir to read from")
 	flag.StringVar(&resourceDir, "resourcedir", path.Join("services", "registration"), "resource dir")
 	flag.BoolVar(&engineDebug, "engine-debug", false, "use engine debug output")
@@ -131,7 +143,7 @@ func main() {
 	flag.UintVar(&port, "p", 7123, "http port")
 	flag.Parse()
 
-	logg.Infof("start command", "dbdir", dbDir, "resourcedir", resourceDir,  "outputsize", size)
+	logg.Infof("start command", "dbdir", dbDir, "resourcedir", resourceDir,  "outputsize", size, "sessionId", sessionId)
 
 	ctx := context.Background()
 	pfp := path.Join(scriptDir, "pp.csv")
@@ -190,14 +202,16 @@ func main() {
 	}
 	defer stateStore.Close()
 
-	rp := &httpserver.DefaultRequestParser{}
-	bsh := handlers.NewBaseSessionHandler(cfg, rs, stateStore, userdataStore, rp, hl)
-	sh := httpserver.ToSessionHandler(bsh)
-	s := &http.Server{
-		Addr: fmt.Sprintf("%s:%s", host, strconv.Itoa(int(port))),
-		Handler: sh,
+	rp := &asyncRequestParser{
+		sessionId: sessionId,
 	}
-	s.RegisterOnShutdown(sh.Shutdown)
+	sh := handlers.NewBaseSessionHandler(cfg, rs, stateStore, userdataStore, rp, hl)
+	cfg.SessionId = sessionId
+	rqs := handlers.RequestSession{
+		Ctx: ctx,
+		Writer: os.Stdout,
+		Config: cfg,
+	}
 
 	cint := make(chan os.Signal)
 	cterm := make(chan os.Signal)
@@ -208,10 +222,30 @@ func main() {
 		case _ = <-cint:
 		case _ = <-cterm:
 		}
-		s.Shutdown(ctx)
+		sh.Shutdown()
 	}()
-	err = s.ListenAndServe()
-	if err != nil {
-		logg.Infof("Server closed with error", "err", err)
+
+	for true {
+		rqs, err = sh.Process(rqs)
+		if err != nil {
+			fmt.Errorf("error in process: %v", err)
+			os.Exit(1)
+		}
+		rqs, err = sh.Output(rqs)
+		if err != nil {
+			fmt.Errorf("error in output: %v", err)
+			os.Exit(1)
+		}
+		rqs, err = sh.Reset(rqs)
+		if err != nil {
+			fmt.Errorf("error in reset: %v", err)
+			os.Exit(1)
+		}
+		fmt.Println("")
+		_, err = fmt.Scanln(&rqs.Input)
+		if err != nil {
+		fmt.Errorf("error in input: %v", err)
+			os.Exit(1)
+		}
 	}
 }

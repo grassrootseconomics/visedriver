@@ -60,7 +60,7 @@ func (ash *ATSessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 
 	w.WriteHeader(200)
 	w.Header().Set("Content-Type", "text/plain")
-	rqs, err = ash.ATOutput(rqs)
+	rqs, err = ash.Output(rqs)
 	if err != nil {
 		ash.writeError(w, 500, err)
 		return
@@ -73,7 +73,7 @@ func (ash *ATSessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	}
 }
 
-func (ash *ATSessionHandler) ATOutput(rqs handlers.RequestSession) (handlers.RequestSession, error) {
+func (ash *ATSessionHandler) Output(rqs handlers.RequestSession) (handlers.RequestSession, error) {
 	var err error
 	var prefix string
 

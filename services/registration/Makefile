@@ -1,10 +1,11 @@
 # Variables to match files in the current directory
 INPUTS = $(wildcard ./*.vis)
 TXTS = $(wildcard ./*.txt.orig)
+VISE_PATH := ../../go-vise
 
 # Rule to build .bin files from .vis files
 %.vis:
-	go run  ../../go-vise/dev/asm/main.go -f pp.csv $(basename $@).vis > $(basename $@).bin
+	go run  $(VISE_PATH)/dev/asm/main.go -f pp.csv $(basename $@).vis > $(basename $@).bin
 	@echo "Built $(basename $@).bin from $(basename $@).vis"
 
 # Rule to copy .orig files to .txt

@@ -28,6 +28,8 @@ var (
 	logg           = logging.NewVanilla().WithDomain("ussdmenuhandler")
 	scriptDir      = path.Join("services", "registration")
 	translationDir = path.Join(scriptDir, "locale")
+	validPin =  4
+	validYOB = 4
 )
 
 type FSData struct {
@@ -372,9 +374,6 @@ func (h *Handlers) SaveFamilyname(ctx context.Context, sym string, input []byte)
 		if err != nil {
 			return res, err
 		}
-		if err != nil {
-			return res, nil
-		}
 	} else {
 		return res, fmt.Errorf("a family name cannot be less than one character")
 	}
@@ -391,7 +390,7 @@ func (h *Handlers) SaveYob(ctx context.Context, sym string, input []byte) (resou
 		return res, fmt.Errorf("missing session")
 	}
 
-	if len(input) == 4 {
+	if len(input) == validPin {
 		yob := string(input)
 		store := h.userdataStore
 		err = store.WriteEntry(ctx, sessionId, utils.DATA_YOB, []byte(yob))
@@ -531,7 +530,7 @@ func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (res
 	if err != nil {
 		return res, err
 	}
-	if len(input) == 4 {
+	if len(input) == validPin {
 		if bytes.Equal(input, AccountPin) {
 			if h.st.MatchFlag(flag_account_authorized, false) {
 				res.FlagReset = append(res.FlagReset, flag_incorrect_pin)
@@ -645,7 +644,7 @@ func (h *Handlers) VerifyYob(ctx context.Context, sym string, input []byte) (res
 		return res, nil
 	}
 
-	if len(date) == 4 {
+	if len(date) == validYOB {
 		res.FlagReset = append(res.FlagReset, flag_incorrect_date_format)
 	} else {
 		res.FlagSet = append(res.FlagSet, flag_incorrect_date_format)

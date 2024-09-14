@@ -1,9 +1,0 @@
-LOAD authorize_account 6
-MOUT back 0
-HALT
-RELOAD authorize_account
-CATCH incorrect_pin flag_incorrect_pin 1
-MOVE new_pin
-INCMP _ 0
-
-

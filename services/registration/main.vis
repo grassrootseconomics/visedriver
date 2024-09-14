@@ -10,6 +10,6 @@ HALT
 INCMP send 1
 INCMP quit 2
 INCMP my_account 3
-INCMP quit 4
+INCMP help 4
 INCMP quit 9
 INCMP . *

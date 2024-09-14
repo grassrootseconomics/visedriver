@@ -74,6 +74,7 @@ func getHandler(appFlags *asm.FlagParser, rs *resource.DbResource, pe *persist.P
 	rs.AddLocalFunc("save_temporary_pin", ussdHandlers.SaveTemporaryPin)
 	rs.AddLocalFunc("verify_new_pin", ussdHandlers.VerifyNewPin)
 	rs.AddLocalFunc("confirm_pin_change", ussdHandlers.ConfirmPinChange)
+	rs.AddLocalFunc("quit_with_help",ussdHandlers.QuitWithHelp)
 
 	return ussdHandlers, nil
 }

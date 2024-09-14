@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"io"
-
 	"git.defalsify.org/vise.git/db"
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/persist"
@@ -86,25 +84,6 @@ func(f *BaseSessionHandler) Process(rqs RequestSession) (RequestSession, error) 
 
 func(f *BaseSessionHandler) Output(rqs RequestSession) (RequestSession,  error) {
 	var err error
-	_, err = rqs.Engine.WriteResult(rqs.Ctx, rqs.Writer)
-	return rqs, err
-}
-
-func (f *BaseSessionHandler) AtOutput(rqs RequestSession) (RequestSession, error) {
-	var err error
-	var prefix string
-
-	if rqs.Continue {
-		prefix = "CON "
-	} else {
-		prefix = "END "
-	}
-
-	_, err = io.WriteString(rqs.Writer, prefix)
-	if err != nil {
-		return rqs, err
-	}
-
 	_, err = rqs.Engine.WriteResult(rqs.Ctx, rqs.Writer)
 	return rqs, err
 }

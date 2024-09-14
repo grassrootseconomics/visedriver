@@ -232,7 +232,7 @@ func main() {
 
 	rp := &atRequestParser{}
 	bsh := handlers.NewBaseSessionHandler(cfg, rs, stateStore, userdataStore, rp, hl)
-	sh := httpserver.ToSessionHandler(bsh, httpserver.WithAtOutput())
+	sh := httpserver.NewATSessionHandler(bsh)
 	s := &http.Server{
 		Addr: fmt.Sprintf("%s:%s", host, strconv.Itoa(int(port))),
 		Handler: sh,

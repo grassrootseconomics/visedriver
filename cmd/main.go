@@ -71,6 +71,9 @@ func getHandler(appFlags *asm.FlagParser, rs *resource.DbResource, pe *persist.P
 	rs.AddLocalFunc("reset_incorrect_date_format", ussdHandlers.ResetIncorrectYob)
 	rs.AddLocalFunc("set_reset_single_edit", ussdHandlers.SetResetSingleEdit)
 	rs.AddLocalFunc("initiate_transaction", ussdHandlers.InitiateTransaction)
+	rs.AddLocalFunc("save_temporary_pin", ussdHandlers.SaveTemporaryPin)
+	rs.AddLocalFunc("verify_new_pin", ussdHandlers.VerifyNewPin)
+	rs.AddLocalFunc("confirm_pin_change", ussdHandlers.ConfirmPinChange)
 
 	return ussdHandlers, nil
 }

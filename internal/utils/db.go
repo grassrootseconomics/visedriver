@@ -22,6 +22,7 @@ const (
 	DATA_OFFERINGS
 	DATA_RECIPIENT
 	DATA_AMOUNT
+	DATA_TEMPORARY_PIN
 )
 
 func typToBytes(typ DataTyp) []byte {

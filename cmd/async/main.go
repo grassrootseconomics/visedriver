@@ -86,6 +86,7 @@ func getHandler(appFlags *asm.FlagParser, rs *resource.DbResource, userdataStore
 	rs.AddLocalFunc("reset_incorrect_date_format", ussdHandlers.ResetIncorrectYob)
 	rs.AddLocalFunc("set_reset_single_edit", ussdHandlers.SetResetSingleEdit)
 	rs.AddLocalFunc("initiate_transaction", ussdHandlers.InitiateTransaction)
+	rs.AddLocalFunc("set_new_language", ussdHandlers.SetNewLanguage)
 
 	return ussdHandlers, nil
 }

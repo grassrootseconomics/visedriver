@@ -1045,3 +1045,22 @@ func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte)
 
 	return res, nil
 }
+
+// SetNewLanguage sets the new language based on user input
+func (h *Handlers) SetNewLanguage(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+
+	inputStr := string(input)
+
+	switch inputStr {
+	case "0":
+		res.FlagSet = append(res.FlagSet, state.FLAG_LANG)
+		res.Content = "eng"
+	case "1":
+		res.FlagSet = append(res.FlagSet, state.FLAG_LANG)
+		res.Content = "swa"
+	default:
+	}
+
+	return res, nil
+}

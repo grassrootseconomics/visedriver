@@ -216,6 +216,74 @@ func (h *Handlers) SavePin(ctx context.Context, sym string, input []byte) (resou
 	return res, nil
 }
 
+func (h *Handlers) VerifyNewPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	res := resource.Result{}
+	_, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+	flag_valid_pin, _ := h.flagManager.GetFlag("flag_valid_pin")
+	pinInput := string(input)
+	// Validate that the PIN is a 4-digit number
+	if isValidPIN(pinInput) {
+		res.FlagSet = append(res.FlagSet, flag_valid_pin)
+	} else {
+		res.FlagReset = append(res.FlagReset, flag_valid_pin)
+	}
+
+	return res, nil
+}
+
+func (h *Handlers) SaveTemporaryPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	var err error
+
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+	flag_incorrect_pin, _ := h.flagManager.GetFlag("flag_incorrect_pin")
+
+	accountPIN := string(input)
+
+	// Validate that the PIN is a 4-digit number
+	if !isValidPIN(accountPIN) {
+		res.FlagSet = append(res.FlagSet, flag_incorrect_pin)
+		return res, nil
+	}
+	store := h.userdataStore
+	err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_PIN, []byte(accountPIN))
+	if err != nil {
+		return res, err
+	}
+	return res, nil
+}
+
+func (h *Handlers) ConfirmPinChange(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+	flag_pin_mismatch, _ := h.flagManager.GetFlag("flag_pin_mismatch")
+
+	store := h.userdataStore
+	temporaryPin, err := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_PIN)
+	if err != nil {
+		return res, err
+	}
+	if bytes.Equal(temporaryPin, input) {
+		res.FlagReset = append(res.FlagReset, flag_pin_mismatch)
+	} else {
+		res.FlagSet = append(res.FlagSet, flag_pin_mismatch)
+	}
+	err = store.WriteEntry(ctx, sessionId, utils.DATA_ACCOUNT_PIN, []byte(temporaryPin))
+	if err != nil {
+		return res, err
+	}
+	return res, nil
+}
+
 // SetResetSingleEdit sets and resets  flags to allow gradual editing of profile information.
 func (h *Handlers) SetResetSingleEdit(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
@@ -321,9 +389,6 @@ func (h *Handlers) SaveFamilyname(ctx context.Context, sym string, input []byte)
 		err = store.WriteEntry(ctx, sessionId, utils.DATA_FAMILY_NAME, []byte(familyName))
 		if err != nil {
 			return res, err
-		}
-		if err != nil {
-			return res, nil
 		}
 	} else {
 		return res, fmt.Errorf("a family name cannot be less than one character")
@@ -481,27 +546,23 @@ func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (res
 	if err != nil {
 		return res, err
 	}
-
-	if err == nil {
-		if len(input) == 4 {
-			if bytes.Equal(input, AccountPin) {
-				if h.st.MatchFlag(flag_account_authorized, false) {
-					res.FlagReset = append(res.FlagReset, flag_incorrect_pin)
-					res.FlagSet = append(res.FlagSet, flag_allow_update, flag_account_authorized)
-				} else {
-					res.FlagSet = append(res.FlagSet, flag_allow_update)
-					res.FlagReset = append(res.FlagReset, flag_account_authorized)
-				}
+	if len(input) == 4 {
+		if bytes.Equal(input, AccountPin) {
+			if h.st.MatchFlag(flag_account_authorized, false) {
+				res.FlagReset = append(res.FlagReset, flag_incorrect_pin)
+				res.FlagSet = append(res.FlagSet, flag_allow_update, flag_account_authorized)
 			} else {
-				res.FlagSet = append(res.FlagSet, flag_incorrect_pin)
+				res.FlagSet = append(res.FlagSet, flag_allow_update)
 				res.FlagReset = append(res.FlagReset, flag_account_authorized)
-				return res, nil
 			}
+		} else {
+			res.FlagSet = append(res.FlagSet, flag_incorrect_pin)
+			res.FlagReset = append(res.FlagReset, flag_account_authorized)
+			return res, nil
 		}
 	} else {
 		return res, nil
 	}
-
 	return res, nil
 }
 

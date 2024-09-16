@@ -1,0 +1,9 @@
+LOAD reset_incorrect 0
+CATCH incorrect_pin flag_incorrect_pin 1
+CATCH pin_entry flag_account_authorized 0
+MOUT english 0
+MOUT kiswahili 1
+HALT
+INCMP language_changed 0
+INCMP language_changed 1
+INCMP . *

@@ -4,7 +4,7 @@ CATCH pin_reset_mismatch  flag_pin_mismatch 1
 MOUT back 0
 MOUT quit 9
 HALT
-INCMP _ 0
+INCMP main 0
 INCMP quit 9
 
 

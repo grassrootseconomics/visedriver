@@ -539,63 +539,55 @@ func TestSetLanguage(t *testing.T) {
 	// Define test cases
 	tests := []struct {
 		name                string
-		input               []byte
-		expectedFlags       []uint32
+		execPath            []string
 		expectedResult      resource.Result
-		flagManagerResponse uint32
-		flagManagerError    error
 	}{
 		{
-			name:          "English language",
-			input:         []byte("0"),
-			expectedFlags: []uint32{state.FLAG_LANG, 123},
+			name:     "Set Default Language (English)",
+			execPath: []string{"set_default"},
 			expectedResult: resource.Result{
 				FlagSet: []uint32{state.FLAG_LANG, 8},
 				Content: "eng",
 			},
-			flagManagerResponse: 123,
-			flagManagerError:    nil,
 		},
 		{
-			name:          "Swahili language",
-			input:         []byte("1"),
-			expectedFlags: []uint32{state.FLAG_LANG, 123},
+			name:     "Set Swahili Language",
+			execPath: []string{"set_swa"},
 			expectedResult: resource.Result{
 				FlagSet: []uint32{state.FLAG_LANG, 8},
 				Content: "swa",
 			},
-			flagManagerResponse: 123,
-			flagManagerError:    nil,
 		},
 		{
-			name:          "Unhandled Input",
-			input:         []byte("3"),
-			expectedFlags: []uint32{123},
+			name:     "Unhandled path",
+			execPath: []string{""},
 			expectedResult: resource.Result{
 				FlagSet: []uint32{8},
 			},
-			flagManagerResponse: 123,
-			flagManagerError:    nil,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			mockState := state.NewState(16)
+			// Set the ExecPath
+			mockState.ExecPath = tt.execPath
 
 			// Create the Handlers instance with the mock flag manager
 			h := &Handlers{
 				flagManager: fm.parser,
+				st:          mockState,
 			}
 
 			// Call the method
-			res, err := h.SetLanguage(context.Background(), "set_language", tt.input)
+			res, err := h.SetLanguage(context.Background(), "set_language", nil)
 
 			if err != nil {
 				t.Error(err)
 			}
 
 			// Assert that the Result FlagSet has the required flags after language switch
-			assert.Equal(t, res, tt.expectedResult, "Flags should be equal to account created")
+			assert.Equal(t, res, tt.expectedResult, "Result should match expected result")
 
 		})
 	}

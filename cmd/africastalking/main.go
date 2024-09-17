@@ -84,7 +84,7 @@ func getHandler(appFlags *asm.FlagParser, rs *resource.DbResource, userdataStore
 	if err != nil {
 		return nil, err
 	}
-	rs.AddLocalFunc("select_language", ussdHandlers.SetLanguage)
+	rs.AddLocalFunc("set_language", ussdHandlers.SetLanguage)
 	rs.AddLocalFunc("create_account", ussdHandlers.CreateAccount)
 	rs.AddLocalFunc("save_pin", ussdHandlers.SavePin)
 	rs.AddLocalFunc("verify_pin", ussdHandlers.VerifyPin)
@@ -116,7 +116,6 @@ func getHandler(appFlags *asm.FlagParser, rs *resource.DbResource, userdataStore
 	rs.AddLocalFunc("reset_incorrect_date_format", ussdHandlers.ResetIncorrectYob)
 	rs.AddLocalFunc("set_reset_single_edit", ussdHandlers.SetResetSingleEdit)
 	rs.AddLocalFunc("initiate_transaction", ussdHandlers.InitiateTransaction)
-	rs.AddLocalFunc("set_new_language", ussdHandlers.SetNewLanguage)
 
 	return ussdHandlers, nil
 }

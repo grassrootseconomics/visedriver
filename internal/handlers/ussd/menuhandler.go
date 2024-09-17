@@ -121,15 +121,15 @@ func (h *Handlers) Init(ctx context.Context, sym string, input []byte) (resource
 // SetLanguage sets the language across the menu
 func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
-	var err error
 
-	inputStr := string(input)
-	switch inputStr {
-	case "0":
-		res.FlagSet = []uint32{state.FLAG_LANG}
+	sym, _ = h.st.Where()
+
+	switch sym {
+	case "set_default":
+		res.FlagSet = append(res.FlagSet, state.FLAG_LANG)
 		res.Content = "eng"
-	case "1":
-		res.FlagSet = []uint32{state.FLAG_LANG}
+	case "set_swa":
+		res.FlagSet = append(res.FlagSet, state.FLAG_LANG)
 		res.Content = "swa"
 	default:
 	}
@@ -1042,25 +1042,6 @@ func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte)
 		"Name: %s\nGender: %s\nAge: %s\nLocation: %s\nYou provide: %s\n",
 		name, gender, age, location, offerings,
 	)
-
-	return res, nil
-}
-
-// SetNewLanguage sets the new language based on user input
-func (h *Handlers) SetNewLanguage(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	var res resource.Result
-
-	inputStr := string(input)
-
-	switch inputStr {
-	case "0":
-		res.FlagSet = append(res.FlagSet, state.FLAG_LANG)
-		res.Content = "eng"
-	case "1":
-		res.FlagSet = append(res.FlagSet, state.FLAG_LANG)
-		res.Content = "swa"
-	default:
-	}
 
 	return res, nil
 }

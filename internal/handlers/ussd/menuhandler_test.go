@@ -1696,3 +1696,148 @@ func TestGetProfile(t *testing.T) {
 		})
 	}
 }
+
+func TestVerifyNewPin(t *testing.T) {
+	sessionId := "session123"
+
+	fm, _ := NewFlagManager(flagsPath)
+
+	flag_valid_pin, _ := fm.parser.GetFlag("flag_valid_pin")
+	mockDataStore := new(mocks.MockUserDataStore)
+	mockCreateAccountService := new(mocks.MockAccountService)
+	h := &Handlers{
+		userdataStore:  mockDataStore,
+		flagManager:    fm.parser,
+		accountService: mockCreateAccountService,
+	}
+	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
+
+	tests := []struct {
+		name           string
+		input          []byte
+		expectedResult resource.Result
+	}{
+		{
+			name:  "Test with valid pin",
+			input: []byte("1234"),
+			expectedResult: resource.Result{
+				FlagSet: []uint32{flag_valid_pin},
+			},
+		},
+		{
+			name:  "Test with invalid pin",
+			input: []byte("123"),
+			expectedResult: resource.Result{
+				FlagReset: []uint32{flag_valid_pin},
+			},
+		},
+		{
+			name:  "Test with invalid pin",
+			input: []byte("12345"),
+			expectedResult: resource.Result{
+				FlagReset: []uint32{flag_valid_pin},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			//Call the function under test
+			res, _ := h.VerifyNewPin(ctx, "verify_new_pin", tt.input)
+
+			// Assert that expectations were met
+			mockDataStore.AssertExpectations(t)
+
+			//Assert that the result set to content is what was expected
+			assert.Equal(t, res, tt.expectedResult, "Result should contain flags set according to user input")
+
+		})
+	}
+
+}
+
+func TestSaveTemporaryPIn(t *testing.T) {
+
+	fm, err := NewFlagManager(flagsPath)
+
+	if err != nil {
+		t.Logf(err.Error())
+	}
+
+	// Create a new instance of UserDataStore
+	mockStore := new(mocks.MockUserDataStore)
+
+	// Define test data
+	sessionId := "session123"
+	PIN := "1234"
+	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
+
+	// Set up the expected behavior of the mock
+	mockStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_PIN, []byte(PIN)).Return(nil)
+
+	// Create the Handlers instance with the mock store
+	h := &Handlers{
+		userdataStore: mockStore,
+		flagManager:   fm.parser,
+	}
+
+	// Call the method
+	res, err := h.SaveTemporaryPin(ctx, "save_temporary_pin", []byte(PIN))
+
+	// Assert results
+	assert.NoError(t, err)
+	assert.Equal(t, resource.Result{}, res)
+
+	// Assert all expectations were met
+	mockStore.AssertExpectations(t)
+}
+
+func TestConfirmPin(t *testing.T) {
+	sessionId := "session123"
+
+	fm, _ := NewFlagManager(flagsPath)
+	flag_pin_mismatch, _ := fm.parser.GetFlag("flag_pin_mismatch")
+	mockDataStore := new(mocks.MockUserDataStore)
+	mockCreateAccountService := new(mocks.MockAccountService)
+	h := &Handlers{
+		userdataStore:  mockDataStore,
+		flagManager:    fm.parser,
+		accountService: mockCreateAccountService,
+	}
+	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
+
+	tests := []struct {
+		name           string
+		input          []byte
+		temporarypin   []byte
+		expectedResult resource.Result
+	}{
+		{
+			name:         "Test with correct pin confirmation",
+			input:        []byte("1234"),
+			temporarypin: []byte("1234"),
+			expectedResult: resource.Result{
+				FlagReset: []uint32{flag_pin_mismatch},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Set up the expected behavior of the mock
+			mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_ACCOUNT_PIN, []byte(tt.temporarypin)).Return(nil)
+
+			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_PIN).Return(tt.temporarypin, nil)
+
+			//Call the function under test
+			res, _ := h.ConfirmPinChange(ctx, "confirm_pin_change", tt.temporarypin)
+
+			// Assert that expectations were met
+			mockDataStore.AssertExpectations(t)
+
+			//Assert that the result set to content is what was expected
+			assert.Equal(t, res, tt.expectedResult, "Result should contain flags set according to user input")
+
+		})
+	}
+
+}

@@ -42,16 +42,14 @@ func (ash *ATSessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	rqs, err = ash.Process(rqs)
+	rqs, err = ash.Process(rqs) 
 	switch err {
-	case handlers.ErrStorage:
-		code = 500
-	case handlers.ErrEngineInit:
-		code = 500
-	case handlers.ErrEngineExec:
+	case nil: // set code to 200 if no err
+		code = 200
+	case handlers.ErrStorage, handlers.ErrEngineInit, handlers.ErrEngineExec, handlers.ErrEngineType:
 		code = 500
 	default:
-		code = 200
+		code = 500
 	}
 
 	if code != 200 {

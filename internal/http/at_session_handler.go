@@ -32,6 +32,7 @@ func (ash *ATSessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	if err != nil {
 		logg.ErrorCtxf(rqs.Ctx, "", "header processing error", err)
 		ash.writeError(w, 400, err)
+		return
 	}
 	rqs.Config = cfg
 	rqs.Input, err = rp.GetInput(req)

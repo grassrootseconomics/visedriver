@@ -123,12 +123,12 @@ func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (r
 	var res resource.Result
 
 	sym, _ = h.st.Where()
-
-	switch sym {
-	case "set_default":
+	code := strings.Split(sym, "_")[1]
+	switch code {
+	case "default":
 		res.FlagSet = append(res.FlagSet, state.FLAG_LANG)
 		res.Content = "eng"
-	case "set_swa":
+	case "swa":
 		res.FlagSet = append(res.FlagSet, state.FLAG_LANG)
 		res.Content = "swa"
 	default:
@@ -644,7 +644,6 @@ func (h *Handlers) QuitWithHelp(ctx context.Context, sym string, input []byte) (
 	res.FlagReset = append(res.FlagReset, flag_account_authorized)
 	return res, nil
 }
-
 
 // VerifyYob verifies the length of the given input
 func (h *Handlers) VerifyYob(ctx context.Context, sym string, input []byte) (resource.Result, error) {

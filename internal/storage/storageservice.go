@@ -13,14 +13,6 @@ import (
 	"git.defalsify.org/vise.git/resource"
 )
 
-func ensureDbDir(dbDir string) error {
-	err := os.MkdirAll(dbDir, 0700)
-	if err != nil {
-		return fmt.Errorf("state dir create exited with error: %v\n", err)
-	}
-	return nil
-}
-
 type StorageService interface {
 	GetPersister(dbDir string, ctx context.Context) (*persist.Persister, error)
 	GetUserdataDb(dbDir string, ctx context.Context) db.Db

@@ -75,7 +75,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	lhs, err := handlers.NewLocalHandlerService(pfp, true, dbResource, pe, userdatastore, cfg, rs)
+	lhs, err := handlers.NewLocalHandlerService(pfp, true, dbResource, cfg, rs)
+	lhs.WithDataStore(&userdatastore)
+	lhs.WithPersister(pe)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())

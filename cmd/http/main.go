@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"syscall"
 
-	"git.defalsify.org/vise.git/asm"
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/resource"
@@ -25,23 +24,6 @@ var (
 	logg      = logging.NewVanilla()
 	scriptDir = path.Join("services", "registration")
 )
-
-func getFlags(fp string, debug bool) (*asm.FlagParser, error) {
-	flagParser := asm.NewFlagParser().WithDebug()
-	_, err := flagParser.Load(fp)
-	if err != nil {
-		return nil, err
-	}
-	return flagParser, nil
-}
-
-func ensureDbDir(dbDir string) error {
-	err := os.MkdirAll(dbDir, 0700)
-	if err != nil {
-		return fmt.Errorf("state dir create exited with error: %v\n", err)
-	}
-	return nil
-}
 
 func main() {
 	var dbDir string
@@ -64,11 +46,6 @@ func main() {
 
 	ctx := context.Background()
 	pfp := path.Join(scriptDir, "pp.csv")
-	flagParser, err := getFlags(pfp, true)
-
-	if err != nil {
-		os.Exit(1)
-	}
 
 	cfg := engine.Config{
 		Root:       "root",
@@ -107,12 +84,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	lhs := handlers.LocalHandlerService{
-		Parser:        flagParser,
-		DbRs:          dbResource,
-		UserdataStore: userdataStore,
-		Cfg:           cfg,
-		Rs:            rs,
+	lhs, err := handlers.NewLocalHandlerService(pfp, true, dbResource, cfg, rs)
+	lhs.WithDataStore(&userdataStore)
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
 	}
 
 	hl, err := lhs.GetHandler()

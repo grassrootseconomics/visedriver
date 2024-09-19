@@ -12,7 +12,6 @@ import (
 	"strings"
 	"syscall"
 
-	"git.defalsify.org/vise.git/asm"
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/resource"
@@ -65,15 +64,6 @@ func (arp *atRequestParser) GetInput(rq any) ([]byte, error) {
 	return []byte(parts[len(parts)-1]), nil
 }
 
-func getFlags(fp string, debug bool) (*asm.FlagParser, error) {
-	flagParser := asm.NewFlagParser().WithDebug()
-	_, err := flagParser.Load(fp)
-	if err != nil {
-		return nil, err
-	}
-	return flagParser, nil
-}
-
 func main() {
 	var dbDir string
 	var resourceDir string
@@ -95,11 +85,6 @@ func main() {
 
 	ctx := context.Background()
 	pfp := path.Join(scriptDir, "pp.csv")
-	flagParser, err := getFlags(pfp, true)
-
-	if err != nil {
-		os.Exit(1)
-	}
 
 	cfg := engine.Config{
 		Root:       "root",
@@ -138,13 +123,9 @@ func main() {
 	if !ok {
 		os.Exit(1)
 	}
-	lhs := handlers.LocalHandlerService{
-		Parser:        flagParser,
-		DbRs:          dbResource,
-		UserdataStore: userdataStore,
-		Cfg:           cfg,
-		Rs:            rs,
-	}
+
+	lhs, err := handlers.NewLocalHandlerService(pfp, true, dbResource, cfg, rs)
+	lhs.WithDataStore(&userdataStore)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())

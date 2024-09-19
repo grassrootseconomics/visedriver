@@ -26,28 +26,34 @@ type LocalHandlerService struct {
 	Parser        *asm.FlagParser
 	DbRs          *resource.DbResource
 	Pe            *persist.Persister
-	UserdataStore db.Db
+	UserdataStore *db.Db
 	Cfg           engine.Config
 	Rs            resource.Resource
 }
 
-func NewLocalHandlerService(fp string, debug bool, dbResource *resource.DbResource, Pe *persist.Persister, userDataStore db.Db, cfg engine.Config, rs resource.Resource) (*LocalHandlerService, error) {
+func NewLocalHandlerService(fp string, debug bool, dbResource *resource.DbResource, cfg engine.Config, rs resource.Resource) (*LocalHandlerService, error) {
 	parser, err := getParser(fp, debug)
 	if err != nil {
 		return nil, err
 	}
 	return &LocalHandlerService{
-		Parser:        parser,
-		DbRs:          dbResource,
-		Pe:            Pe,
-		UserdataStore: userDataStore,
-		Cfg:           cfg,
-		Rs:            rs,
+		Parser: parser,
+		DbRs:   dbResource,
+		Cfg:    cfg,
+		Rs:     rs,
 	}, nil
 }
 
+func (localHandlerService *LocalHandlerService) WithPersister(Pe *persist.Persister) {
+	localHandlerService.Pe = Pe
+}
+
+func (localHandlerService *LocalHandlerService) WithDataStore(db *db.Db) {
+	localHandlerService.UserdataStore = db
+}
+
 func (localHandlerService *LocalHandlerService) GetHandler() (*ussd.Handlers, error) {
-	ussdHandlers, err := ussd.NewHandlers(localHandlerService.Parser, localHandlerService.UserdataStore)
+	ussdHandlers, err := ussd.NewHandlers(localHandlerService.Parser, *localHandlerService.UserdataStore)
 	if err != nil {
 		return nil, err
 	}

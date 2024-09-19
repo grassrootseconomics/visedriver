@@ -45,6 +45,12 @@ func main() {
 
 	menuStorageService := storage.MenuStorageService{}
 
+	err := menuStorageService.EnsureDbDir(dbDir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+
 	rs, err := menuStorageService.GetResource(scriptDir, ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())

@@ -31,10 +31,6 @@ type StorageService interface {
 type MenuStorageService struct{}
 
 func (menuStorageService *MenuStorageService) GetPersister(dbDir string, ctx context.Context) (*persist.Persister, error) {
-	err := ensureDbDir(dbDir)
-	if err != nil {
-		return nil, err
-	}
 	store := gdbmdb.NewGdbmDb()
 	storeFile := path.Join(dbDir, "state.gdbm")
 	store.Connect(ctx, storeFile)

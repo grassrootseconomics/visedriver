@@ -11,7 +11,7 @@ import (
 	"git.defalsify.org/vise.git/db"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/state"
-	"git.grassecon.net/urdt/ussd/internal/handlers/ussd/mocks"
+	"git.grassecon.net/urdt/ussd/internal/mocks"
 	"git.grassecon.net/urdt/ussd/internal/models"
 	"git.grassecon.net/urdt/ussd/internal/utils"
 	"github.com/alecthomas/assert/v2"

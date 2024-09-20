@@ -71,19 +71,7 @@ func(f *BaseSessionHandler) Process(rqs RequestSession) (RequestSession, error) 
 	}
 	rqs.Engine = en
 
-	r, err = rqs.Engine.Init(rqs.Ctx)
-	if err != nil {
-		perr := f.provider.Put(rqs.Config.SessionId, rqs.Storage)
-		rqs.Storage = nil
-		if perr != nil {
-			logg.ErrorCtxf(rqs.Ctx, "", "storage put error", perr)
-		}
-		return rqs, err
-	}
-
-	if r && len(rqs.Input) > 0 {
-		r, err = rqs.Engine.Exec(rqs.Ctx, rqs.Input)
-	}
+	r, err = rqs.Engine.Exec(rqs.Ctx, rqs.Input)
 	if err != nil {
 		perr := f.provider.Put(rqs.Config.SessionId, rqs.Storage)
 		rqs.Storage = nil
@@ -99,7 +87,7 @@ func(f *BaseSessionHandler) Process(rqs RequestSession) (RequestSession, error) 
 
 func(f *BaseSessionHandler) Output(rqs RequestSession) (RequestSession,  error) {
 	var err error
-	_, err = rqs.Engine.WriteResult(rqs.Ctx, rqs.Writer)
+	_, err = rqs.Engine.Flush(rqs.Ctx, rqs.Writer)
 	return rqs, err
 }
 

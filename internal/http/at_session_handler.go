@@ -87,6 +87,6 @@ func (ash *ATSessionHandler) Output(rqs handlers.RequestSession) (handlers.Reque
 		return rqs, err
 	}
 
-	_, err = rqs.Engine.WriteResult(rqs.Ctx, rqs.Writer)
+	_, err = rqs.Engine.Flush(rqs.Ctx, rqs.Writer)
 	return rqs, err
 }

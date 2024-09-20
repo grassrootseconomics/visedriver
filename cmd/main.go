@@ -96,13 +96,7 @@ func main() {
 		en = en.WithDebug(nil)
 	}
 
-	_, err = en.Init(ctx)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "engine init exited with error: %v\n", err)
-		os.Exit(1)
-	}
-
-	err = engine.Loop(ctx, en, os.Stdin, os.Stdout)
+	err = engine.Loop(ctx, en, os.Stdin, os.Stdout, nil)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "loop exited with error: %v\n", err)
 		os.Exit(1)

@@ -37,8 +37,6 @@ type RequestSession struct {
 	Continue bool
 }
 
-type engineMaker func(cfg engine.Config, rs resource.Resource, pr *persist.Persister) engine.Engine
-
 // TODO: seems like can remove this.
 type RequestParser interface {
 	GetSessionId(rq any) (string, error)

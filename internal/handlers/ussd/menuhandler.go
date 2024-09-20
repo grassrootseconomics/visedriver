@@ -119,15 +119,12 @@ func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (r
 
 	sym, _ = h.st.Where()
 	code := strings.Split(sym, "_")[1]
-	switch code {
-	case "default":
-		res.FlagSet = append(res.FlagSet, state.FLAG_LANG)
-		res.Content = "eng"
-	case "swa":
-		res.FlagSet = append(res.FlagSet, state.FLAG_LANG)
-		res.Content = "swa"
-	default:
+
+	if !utils.IsValidISO639(code) {
+		return res, nil
 	}
+	res.FlagSet = append(res.FlagSet, state.FLAG_LANG)
+	res.Content = code
 
 	languageSetFlag, err := h.flagManager.GetFlag("flag_language_set")
 	if err != nil {
@@ -442,16 +439,29 @@ func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (re
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-
+	code := codeFromCtx(ctx)
 	if len(input) > 0 {
 		gender := string(input)
 		switch gender {
 		case "1":
-			gender = "Male"
+			if code == "swa" {
+				gender = "Mwanaume"
+			} else {
+				gender = "Male"
+			}
 		case "2":
-			gender = "Female"
+			if code == "swa" {
+				gender = "Mwanamke"
+			} else {
+				gender = "Female"
+			}
 		case "3":
-			gender = "Unspecified"
+			if code == "swa" {
+				gender = "Haijabainishwa"
+			} else {
+				gender = "Unspecified"
+			}
+
 		}
 		store := h.userdataStore
 		err = store.WriteEntry(ctx, sessionId, utils.DATA_GENDER, []byte(gender))
@@ -987,13 +997,20 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 // GetProfileInfo retrieves and formats the profile information of a user from a Gdbm backed storage.
 func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
+	var defaultValue string
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
 
+	code := h.st.Language.Code
+
 	// Default value when an entry is not found
-	defaultValue := "Not Provided"
+	if code == "swa" {
+		defaultValue = "Haipo"
+	} else {
+		defaultValue = "Not Provided"
+	}
 
 	// Helper function to handle nil byte slices and convert them to string
 	getEntryOrDefault := func(entry []byte, err error) string {
@@ -1030,12 +1047,22 @@ func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte)
 			return res, fmt.Errorf("invalid year of birth: %v", err)
 		}
 	}
-
-	// Format the result
-	res.Content = fmt.Sprintf(
-		"Name: %s\nGender: %s\nAge: %s\nLocation: %s\nYou provide: %s\n",
-		name, gender, age, location, offerings,
-	)
-
+	switch code {
+	case "eng":
+		res.Content = fmt.Sprintf(
+			"Name: %s\nGender: %s\nAge: %s\nLocation: %s\nYou provide: %s\n",
+			name, gender, age, location, offerings,
+		)
+	case "swa":
+		res.Content = fmt.Sprintf(
+			"Jina: %s\nJinsia: %s\nUmri: %s\nEneo: %s\nUnauza: %s\n",
+			name, gender, age, location, offerings,
+		)
+	default:
+		res.Content = fmt.Sprintf(
+			"Name: %s\nGender: %s\nAge: %s\nLocation: %s\nYou provide: %s\n",
+			name, gender, age, location, offerings,
+		)
+	}
 	return res, nil
 }

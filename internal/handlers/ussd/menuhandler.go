@@ -117,8 +117,8 @@ func (h *Handlers) Init(ctx context.Context, sym string, input []byte) (resource
 func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 
-	sym, _ = h.st.Where()
-	code := strings.Split(sym, "_")[1]
+	symbol, _ := h.st.Where()
+	code := strings.Split(symbol, "_")[1]
 
 	if !utils.IsValidISO639(code) {
 		return res, nil
@@ -279,26 +279,8 @@ func (h *Handlers) ConfirmPinChange(ctx context.Context, sym string, input []byt
 // SetResetSingleEdit sets and resets  flags to allow gradual editing of profile information.
 func (h *Handlers) SetResetSingleEdit(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
-
-	menuOption := string(input)
-
-	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
 	flag_single_edit, _ := h.flagManager.GetFlag("flag_single_edit")
-
-	switch menuOption {
-	case "2":
-		res.FlagReset = append(res.FlagReset, flag_allow_update)
-		res.FlagSet = append(res.FlagSet, flag_single_edit)
-	case "3":
-		res.FlagReset = append(res.FlagReset, flag_allow_update)
-		res.FlagSet = append(res.FlagSet, flag_single_edit)
-	case "4":
-		res.FlagReset = append(res.FlagReset, flag_allow_update)
-		res.FlagSet = append(res.FlagSet, flag_single_edit)
-	default:
-		res.FlagReset = append(res.FlagReset, flag_single_edit)
-	}
-
+	res.FlagReset = append(res.FlagReset, flag_single_edit)
 	return res, nil
 }
 
@@ -374,7 +356,6 @@ func (h *Handlers) SaveFamilyname(ctx context.Context, sym string, input []byte)
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-
 	if len(input) > 0 {
 		familyName := string(input)
 		store := h.userdataStore
@@ -397,7 +378,15 @@ func (h *Handlers) SaveYob(ctx context.Context, sym string, input []byte) (resou
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
+	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+	flag_single_edit, _ := h.flagManager.GetFlag("flag_single_edit")
+	execPath := utils.GetSingleEditExecutionPath("save_yob")
+	isSingleEdit := utils.MatchNavigationPath(execPath, h.st.ExecPath)
 
+	if isSingleEdit {
+		res.FlagReset = append(res.FlagReset, flag_allow_update)
+		res.FlagSet = append(res.FlagSet, flag_single_edit)
+	}
 	if len(input) == 4 {
 		yob := string(input)
 		store := h.userdataStore
@@ -417,6 +406,16 @@ func (h *Handlers) SaveLocation(ctx context.Context, sym string, input []byte) (
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
 		return res, fmt.Errorf("missing session")
+	}
+
+	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+	flag_single_edit, _ := h.flagManager.GetFlag("flag_single_edit")
+	execPath := utils.GetSingleEditExecutionPath("save_location")
+	isSingleEdit := utils.MatchNavigationPath(execPath, h.st.ExecPath)
+
+	if isSingleEdit {
+		res.FlagReset = append(res.FlagReset, flag_allow_update)
+		res.FlagSet = append(res.FlagSet, flag_single_edit)
 	}
 
 	if len(input) > 0 {
@@ -439,6 +438,15 @@ func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (re
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
+	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+	flag_single_edit, _ := h.flagManager.GetFlag("flag_single_edit")
+	execPath := utils.GetSingleEditExecutionPath("select_gender")
+	isSingleEdit := utils.MatchNavigationPath(execPath, h.st.ExecPath)
+	if isSingleEdit {
+		res.FlagReset = append(res.FlagReset, flag_allow_update)
+		res.FlagSet = append(res.FlagSet, flag_single_edit)
+	}
+
 	code := codeFromCtx(ctx)
 	if len(input) > 0 {
 		gender := string(input)

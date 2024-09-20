@@ -87,7 +87,7 @@ func(f *BaseSessionHandler) Process(rqs RequestSession) (RequestSession, error) 
 
 func(f *BaseSessionHandler) Output(rqs RequestSession) (RequestSession,  error) {
 	var err error
-	_, err = rqs.Engine.WriteResult(rqs.Ctx, rqs.Writer)
+	_, err = rqs.Engine.Flush(rqs.Ctx, rqs.Writer)
 	return rqs, err
 }
 

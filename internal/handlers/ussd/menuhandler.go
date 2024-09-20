@@ -29,11 +29,6 @@ var (
 	translationDir = path.Join(scriptDir, "locale")
 )
 
-type FSData struct {
-	Path string
-	St   *state.State
-}
-
 // FlagManager handles centralized flag management
 type FlagManager struct {
 	parser *asm.FlagParser

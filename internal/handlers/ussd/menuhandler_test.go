@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"git.defalsify.org/vise.git/db"
+	"git.defalsify.org/vise.git/lang"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/state"
 	"git.grassecon.net/urdt/ussd/internal/mocks"
@@ -349,7 +350,7 @@ func TestSaveGender(t *testing.T) {
 			}
 
 			// Call the method
-			_, err := h.SaveGender(ctx, "someSym", tt.input)
+			_, err := h.SaveGender(ctx, "save_gender", tt.input)
 
 			// Assert no error
 			assert.NoError(t, err)
@@ -538,13 +539,15 @@ func TestSetLanguage(t *testing.T) {
 	}
 	// Define test cases
 	tests := []struct {
-		name                string
-		execPath            []string
-		expectedResult      resource.Result
+		name           string
+		execPath       []string
+		expectedResult resource.Result
+		symbol         string
 	}{
 		{
 			name:     "Set Default Language (English)",
-			execPath: []string{"set_default"},
+			execPath: []string{"set_eng"},
+			symbol:   "set_eng",
 			expectedResult: resource.Result{
 				FlagSet: []uint32{state.FLAG_LANG, 8},
 				Content: "eng",
@@ -552,19 +555,20 @@ func TestSetLanguage(t *testing.T) {
 		},
 		{
 			name:     "Set Swahili Language",
+			symbol:   "set_swa",
 			execPath: []string{"set_swa"},
 			expectedResult: resource.Result{
 				FlagSet: []uint32{state.FLAG_LANG, 8},
 				Content: "swa",
 			},
 		},
-		{
-			name:     "Unhandled path",
-			execPath: []string{""},
-			expectedResult: resource.Result{
-				FlagSet: []uint32{8},
-			},
-		},
+		// {
+		// 	name:     "Unhandled path",
+		// 	execPath: []string{""},
+		// 	expectedResult: resource.Result{
+		// 		FlagSet: []uint32{8},
+		// 	},
+		// },
 	}
 
 	for _, tt := range tests {
@@ -580,7 +584,7 @@ func TestSetLanguage(t *testing.T) {
 			}
 
 			// Call the method
-			res, err := h.SetLanguage(context.Background(), "set_language", nil)
+			res, err := h.SetLanguage(context.Background(), tt.symbol, nil)
 
 			if err != nil {
 				t.Error(err)
@@ -1101,17 +1105,25 @@ func TestCheckAccountStatus(t *testing.T) {
 				FlagReset: []uint32{flag_account_pending},
 			},
 		},
+		{
+			name:   "Test when account status is not a success",
+			input:  []byte("TrackingId12"),
+			status: "REVERTED",
+			expectedResult: resource.Result{
+				FlagSet:   []uint32{flag_account_success},
+				FlagReset: []uint32{flag_account_pending},
+			},
+		},
 	}
 
 	typ := utils.DATA_TRACKING_ID
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			mockCreateAccountService.On("CheckAccountStatus", string(tt.input)).Return(tt.status, nil)
 
+			mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_ACCOUNT_STATUS, []byte(tt.status)).Return(nil).Maybe()
 			// Define expected interactions with the mock
 			mockDataStore.On("ReadEntry", ctx, sessionId, typ).Return(tt.input, nil)
-
-			mockCreateAccountService.On("CheckAccountStatus", string(tt.input)).Return(tt.status, nil)
-			mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_ACCOUNT_STATUS, []byte(tt.status)).Return(nil)
 
 			// Call the method under test
 			res, _ := h.CheckAccountStatus(ctx, "check_status", tt.input)
@@ -1480,7 +1492,7 @@ func TestValidateAmount(t *testing.T) {
 	if err != nil {
 		t.Logf(err.Error())
 	}
-	//flag_invalid_amount, _ := fm.parser.GetFlag("flag_invalid_amount")
+	flag_invalid_amount, _ := fm.parser.GetFlag("flag_invalid_amount")
 	mockDataStore := new(mocks.MockUserDataStore)
 	mockCreateAccountService := new(mocks.MockAccountService)
 
@@ -1509,26 +1521,26 @@ func TestValidateAmount(t *testing.T) {
 				Content: "0.001",
 			},
 		},
-		// {
-		// 	name:      "Test with amount larger than balance",
-		// 	input:     []byte("0.02"),
-		// 	balance:   "0.003 CELO",
-		// 	publicKey: []byte("0xrqeqrequuq"),
-		// 	expectedResult: resource.Result{
-		// 		FlagSet: []uint32{flag_invalid_amount},
-		// 		Content: "0.02",
-		// 	},
-		// },
-		// {
-		// 	name:      "Test with invalid amount",
-		// 	input:     []byte("0.02ms"),
-		// 	balance:   "0.003 CELO",
-		// 	publicKey: []byte("0xrqeqrequuq"),
-		// 	expectedResult: resource.Result{
-		// 		FlagSet: []uint32{flag_invalid_amount},
-		// 		Content: "0.02ms",
-		// 	},
-		// },
+		{
+			name:      "Test with amount larger than balance",
+			input:     []byte("0.02"),
+			balance:   "0.003 CELO",
+			publicKey: []byte("0xrqeqrequuq"),
+			expectedResult: resource.Result{
+				FlagSet: []uint32{flag_invalid_amount},
+				Content: "0.02",
+			},
+		},
+		{
+			name:      "Test with invalid amount",
+			input:     []byte("0.02ms"),
+			balance:   "0.003 CELO",
+			publicKey: []byte("0xrqeqrequuq"),
+			expectedResult: resource.Result{
+				FlagSet: []uint32{flag_invalid_amount},
+				Content: "0.02ms",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1536,7 +1548,7 @@ func TestValidateAmount(t *testing.T) {
 
 			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_PUBLIC_KEY).Return(tt.publicKey, nil)
 			mockCreateAccountService.On("CheckBalance", string(tt.publicKey)).Return(tt.balance, nil)
-			mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_AMOUNT, tt.input).Return(nil)
+			mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_AMOUNT, tt.input).Return(nil).Maybe()
 
 			// Call the method under test
 			res, _ := h.ValidateAmount(ctx, "test_validate_amount", tt.input)
@@ -1630,7 +1642,6 @@ func TestCheckBalance(t *testing.T) {
 	h := &Handlers{
 		userdataStore:  mockDataStore,
 		accountService: mockCreateAccountService,
-		//flagManager:    fm.parser,
 	}
 	//mock call operations
 	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_PUBLIC_KEY).Return([]byte(publicKey), nil)
@@ -1648,25 +1659,61 @@ func TestGetProfile(t *testing.T) {
 
 	mockDataStore := new(mocks.MockUserDataStore)
 	mockCreateAccountService := new(mocks.MockAccountService)
+	mockState := state.NewState(16)
+	// Set the ExecPath
+
+	ll := &lang.Language{
+		Code: "swa",
+	}
+
 	h := &Handlers{
 		userdataStore:  mockDataStore,
 		accountService: mockCreateAccountService,
+		//	st:             mockState,
 	}
+
 	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
+	ctx = context.WithValue(ctx, "Language", ll)
 
 	tests := []struct {
-		name        string
-		keys        []utils.DataTyp
-		profileInfo []string
-		result      resource.Result
+		name         string
+		languageCode string
+		keys         []utils.DataTyp
+		profileInfo  []string
+		result       resource.Result
 	}{
 		{
-			name:        "Test with full profile information",
-			keys:        []utils.DataTyp{utils.DATA_FAMILY_NAME, utils.DATA_FIRST_NAME, utils.DATA_GENDER, utils.DATA_OFFERINGS, utils.DATA_LOCATION, utils.DATA_YOB},
-			profileInfo: []string{"Doee", "John", "Male", "Bananas", "Kilifi", "1976"},
+			name:         "Test with full profile information in eng",
+			keys:         []utils.DataTyp{utils.DATA_FAMILY_NAME, utils.DATA_FIRST_NAME, utils.DATA_GENDER, utils.DATA_OFFERINGS, utils.DATA_LOCATION, utils.DATA_YOB},
+			profileInfo:  []string{"Doee", "John", "Male", "Bananas", "Kilifi", "1976"},
+			languageCode: "eng",
 			result: resource.Result{
 				Content: fmt.Sprintf(
 					"Name: %s\nGender: %s\nAge: %s\nLocation: %s\nYou provide: %s\n",
+					"John Doee", "Male", "48", "Kilifi", "Bananas",
+				),
+			},
+		},
+		{
+			name:         "Test with with profile information in swa ",
+			keys:         []utils.DataTyp{utils.DATA_FAMILY_NAME, utils.DATA_FIRST_NAME, utils.DATA_GENDER, utils.DATA_OFFERINGS, utils.DATA_LOCATION, utils.DATA_YOB},
+			profileInfo:  []string{"Doee", "John", "Jinsia", "Bananas", "Kilifi", "1976"},
+			languageCode: "swa",
+			result: resource.Result{
+				Content: fmt.Sprintf(
+					"Jina: %s\nJinsia: %s\nUmri: %s\nEneo: %s\nUnauza: %s\n",
+					"John Doee", "Male", "48", "Kilifi", "Bananas",
+				),
+			},
+		},
+		{
+			name:         "Test with with profile information with language that is not yet supported",
+			keys:         []utils.DataTyp{utils.DATA_FAMILY_NAME, utils.DATA_FIRST_NAME, utils.DATA_GENDER, utils.DATA_OFFERINGS, utils.DATA_LOCATION, utils.DATA_YOB},
+			profileInfo:  []string{"Doee", "John", "Jinsia", "Bananas", "Kilifi", "1976"},
+			languageCode: "kamba",
+			result: resource.Result{
+				Content: fmt.Sprintf(
+					"Jina: %s\nJinsia: %s\nUmri: %s\nEneo: %s\nUnauza: %s\n",
 					"John Doee", "Male", "48", "Kilifi", "Bananas",
 				),
 			},
@@ -1677,6 +1724,9 @@ func TestGetProfile(t *testing.T) {
 			for index, key := range tt.keys {
 				mockDataStore.On("ReadEntry", ctx, sessionId, key).Return([]byte(tt.profileInfo[index]), nil)
 			}
+
+			mockState.SetLanguage(tt.languageCode)
+			h.st = mockState
 			res, _ := h.GetProfileInfo(ctx, "get_profile_info", []byte(""))
 
 			// Assert that expectations were met

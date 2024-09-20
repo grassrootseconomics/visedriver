@@ -96,7 +96,7 @@ func main() {
 		en = en.WithDebug(nil)
 	}
 
-	_, err = en.Init(ctx)
+	_, err = en.Exec(ctx, []byte{})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "engine init exited with error: %v\n", err)
 		os.Exit(1)

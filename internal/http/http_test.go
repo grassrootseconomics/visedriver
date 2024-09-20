@@ -69,7 +69,7 @@ func TestATSessionHandler_ServeHTTP(t *testing.T) {
 				mh.GetRequestParserFunc = func() handlers.RequestParser { return mrp }
 				mh.OutputFunc = func(rs handlers.RequestSession) (handlers.RequestSession, error) { return rs, nil }
 				mh.ResetFunc = func(rs handlers.RequestSession) (handlers.RequestSession, error) { return rs, nil }
-				me.WriteResultFunc = func(context.Context, io.Writer) (int, error) { return 0, nil }
+				me.FlushFunc = func(context.Context, io.Writer) (int, error) { return 0, nil }
 			},
 			formData: url.Values{
 				"phoneNumber": []string{"+1234567890"},
@@ -178,7 +178,7 @@ func TestATSessionHandler_Output(t *testing.T) {
 			input: handlers.RequestSession{
 				Continue: true,
 				Engine: &httpmocks.MockEngine{
-					WriteResultFunc: func(context.Context, io.Writer) (int, error) {
+					FlushFunc: func(context.Context, io.Writer) (int, error) {
 						return 0, nil
 					},
 				},
@@ -192,7 +192,7 @@ func TestATSessionHandler_Output(t *testing.T) {
 			input: handlers.RequestSession{
 				Continue: false,
 				Engine: &httpmocks.MockEngine{
-					WriteResultFunc: func(context.Context, io.Writer) (int, error) {
+					FlushFunc: func(context.Context, io.Writer) (int, error) {
 						return 0, nil
 					},
 				},
@@ -202,11 +202,11 @@ func TestATSessionHandler_Output(t *testing.T) {
 			expectedError:  false,
 		},
 		{
-			name: "WriteResult error",
+			name: "Flush error",
 			input: handlers.RequestSession{
 				Continue: true,
 				Engine: &httpmocks.MockEngine{
-					WriteResultFunc: func(context.Context, io.Writer) (int, error) {
+					FlushFunc: func(context.Context, io.Writer) (int, error) {
 						return 0, errors.New("write error")
 					},
 				},

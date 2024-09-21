@@ -154,6 +154,7 @@ func serve(ctx context.Context, sessionId string, ch ssh.NewChannel, mss *storag
 	return nil
 }
 
+// adapted example from crypto/ssh package, NewServerConn doc
 func sshRun(ctx context.Context, mss *storage.MenuStorageService, lhs *handlers.LocalHandlerService) {
 	running := true
 

@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"encoding/hex"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -16,55 +18,75 @@ import (
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/resource"
+	"git.defalsify.org/vise.git/state"
 	gdbmdb "git.defalsify.org/vise.git/db/gdbm"
 
 	"git.grassecon.net/urdt/ussd/internal/handlers"
 	"git.grassecon.net/urdt/ussd/internal/storage"
-	"git.grassecon.net/urdt/ussd/internal/handlers/ussd"
 )
 
 var (
 	wg sync.WaitGroup
-	auth map[string]string
 	keyStore db.Db
 	logg      = logging.NewVanilla()
 	scriptDir = path.Join("services", "registration")
 )
 
 type auther struct {
-	SessionId string
 	Ctx context.Context
+	auth map[string]string
+}
+
+func NewAuther(ctx context.Context) *auther {
+	return &auther{
+		Ctx: ctx,
+		auth: make(map[string]string),
+	}
 }
 
 func(a *auther) Check(conn ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.Permissions, error) {
+	keyStore.SetLanguage(nil)
 	keyStore.SetPrefix(storage.DATATYPE_CUSTOM)
 	k := append([]byte{0x01}, pubKey.Marshal()...)
 	v, err := keyStore.Get(a.Ctx, k)
 	if err != nil {
 		return nil, err
 	}
-	a.SessionId = string(v)
-	fmt.Fprintf(os.Stderr, "connect: %s\n", a.SessionId)
+	ka := hex.EncodeToString(conn.SessionID())
+	va := string(v)
+	a.auth[ka] = va 
+	fmt.Fprintf(os.Stderr, "connect: %s -> %s\n", ka, v)
 	return nil, nil
 }
 
-func populateAuth() {
-	auth = make(map[string]string)
-	pubKey, _, _, rest, err := ssh.ParseAuthorizedKey([]byte("ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCu5rYCxMBsVAL1TEkMQgmElAYEZj5zYDdyHjUxZ6qzHBOZD9GAzdxx9GyQDx2vdYm3329tLH/69ky1YA3nUz8SnJGBD6hC5XrqwN6zo9R9oOHAKTwiPGhey2NTVmheP+9XNHukBnOlkkWOQlpDDvMbWOztaZOWDaA8OIeP0t6qzFqLyelyg65lxzM3BKd7bCmmfzl/64BcP1MotAmB9DUxmY0Wb4Q2hYZfNYBx50Z4xthTgKV+Xoo8CbTduKotIz6hluQGvWdtxlCJQEiZ2f4RYY87JSA6/BAH2fhxuLHMXRpzocJNqARqCWpdcTGSg7bzxbKvTFH9OU4wZtr9ie40OR4zsc1lOBZL0rnp8GLkG8ZmeBQrgEDlmR9TTlz4okgtL+c5TCS37rjZYVjmtGwihws0EL9+wyv2dSQibirklC4wK5eWHKXl5vab19qzw/qRLdoRBK40DxbRKggxA7gqSsKrmrf+z7CuLIz/kxF+169FBLbh1MfBOGdx1awm6aU= lash@furioso"))
-	if err != nil {
-		panic(err)
+func(a *auther) FromConn(c *ssh.ServerConn) (string, error) {
+	if c == nil {
+		return "", errors.New("nil server conn")
 	}
-	auth[string(pubKey.Marshal())] = "+25113243546"
-	_ = rest
+	if c.Conn == nil {
+		return "", errors.New("nil underlying conn")
+	}
+	return a.Get(c.Conn.SessionID())
 }
 
-func serve(ch ssh.NewChannel) {
+
+func(a *auther) Get(k []byte) (string, error) {
+	ka := hex.EncodeToString(k)
+	v, ok := a.auth[ka]
+	if !ok {
+		return "", errors.New("not found")
+	}
+	return v, nil
+}
+
+// TODO: where should the session id be uniquely embedded
+func serve(ctx context.Context, sessionId string, ch ssh.NewChannel, mss *storage.MenuStorageService, lhs *handlers.LocalHandlerService) error {
 	if ch == nil {
-		return
+		return errors.New("nil channel")
 	}
 	if ch.ChannelType() != "session" {
 		ch.Reject(ssh.UnknownChannelType, "that is not the channel you are looking for")
-		return
+		return errors.New("not a session")
 	}
 	channel, requests, err := ch.Accept()
 	if err != nil {
@@ -80,19 +102,65 @@ func serve(ch ssh.NewChannel) {
 		_ = requests
 	}(requests)
 
-	n, err := channel.Write([]byte("foobarbaz\n"))
+	pe, err := mss.GetPersister(ctx)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("cannot get persister: %v", err)
 	}
-	log.Printf("wrote %d", n)
+	lhs.SetPersister(pe)
+	lhs.Cfg.SessionId = sessionId
+
+	hl, err := lhs.GetHandler()
+	if err != nil {
+		return fmt.Errorf("cannot get handler: %v", err)
+	}
+
+	en := lhs.GetEngine()
+	en = en.WithFirst(hl.Init)
+	en = en.WithDebug(nil)
+	defer en.Finish()
+
+	cont, err := en.Exec(ctx, []byte{})
+	if err != nil {
+		return fmt.Errorf("initial engine exec err: %v", err)
+	}
+
+	var input [state.INPUT_LIMIT]byte
+	for cont {
+		c, err := en.Flush(ctx, channel)
+		if err != nil {
+			return fmt.Errorf("flush err: %v", err)
+		}
+		_, err = channel.Write([]byte{0x0a})
+		if err != nil {
+			return fmt.Errorf("newline err: %v", err)
+		}
+		c, err = channel.Read(input[:])
+		if err != nil {
+			return fmt.Errorf("read input fail: %v", err)
+		}
+		logg.TraceCtxf(ctx, "input read", "c", c, "input", input[:c-1])
+		cont, err = en.Exec(ctx, input[:c-1])
+		if err != nil {
+			return fmt.Errorf("engine exec err: %v", err)
+		}
+		logg.TraceCtxf(ctx, "exec cont", "cont", cont, "en", en)
+		_ = c
+	}
+	c, err := en.Flush(ctx, channel)
+	if err != nil {
+		return fmt.Errorf("last flush err: %v", err)
+	}
+	_ = c
+	return nil
 }
 
-func sshRun(ctx context.Context, hl *ussd.Handlers) {
+func sshRun(ctx context.Context, mss *storage.MenuStorageService, lhs *handlers.LocalHandlerService) {
 	running := true
 
 	defer wg.Wait()
 
-	auth := auther{Ctx: ctx}
+	// TODO: must set ServerConn.Conn.SessionId to phone sessionid
+	auth := NewAuther(ctx)
 	cfg := ssh.ServerConfig{
 		PublicKeyCallback: auth.Check,
 	}
@@ -118,23 +186,31 @@ func sshRun(ctx context.Context, hl *ussd.Handlers) {
 			panic(err)
 		}
 
+
 		go func(conn net.Conn) {
 			defer conn.Close()
 			for true {
 				srvConn, nC, rC, err := ssh.NewServerConn(conn, &cfg)
 				if err != nil {
-					log.Printf("rejected client: %v", err)
+					logg.InfoCtxf(ctx, "rejected client", "err", err)
+					return
 				}
-				log.Printf("haveconn %v", srvConn)
+				logg.DebugCtxf(ctx, "ssh client connected", "conn", srvConn)
 
 				wg.Add(1)
 				go func() {
 					ssh.DiscardRequests(rC)
 					wg.Done()
 				}()
-
+				
+				sessionId, err := auth.FromConn(srvConn)
+				if err != nil {
+					logg.ErrorCtxf(ctx, "Cannot find authentication")
+					return
+				}
 				for ch := range nC {
-					serve(ch)
+					err = serve(ctx, sessionId, ch, mss, lhs)
+					logg.ErrorCtxf(ctx, "ssh server finish", "err", err)
 				}
 			}
 		}(conn)
@@ -149,7 +225,6 @@ func sshLoadKeys(ctx context.Context, dbDir string) error {
 	if err != nil {
 		return err
 	}
-	//auth[string(pubKey.Marshal())] = "+25113243546"
 	k := append([]byte{0x01}, pubKey.Marshal()...)
 	keyStore.SetPrefix(storage.DATATYPE_CUSTOM)
 	return keyStore.Put(ctx, k, []byte("+25113243546"))
@@ -189,52 +264,37 @@ func main() {
 		cfg.EngineDebug = true
 	}
 
-	menuStorageService := storage.MenuStorageService{}
-	rs, err := menuStorageService.GetResource(scriptDir, ctx)
+	mss := storage.NewMenuStorageService(dbDir, resourceDir)
+	rs, err := mss.GetResource(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 
-	err = menuStorageService.EnsureDbDir(dbDir)
+	err = mss.EnsureDbDir()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
-
-	userdataStore := menuStorageService.GetUserdataDb(dbDir, ctx)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
-		os.Exit(1)
-	}
-	defer userdataStore.Close()
 
 	dbResource, ok := rs.(*resource.DbResource)
 	if !ok {
 		os.Exit(1)
 	}
-
-	lhs, err := handlers.NewLocalHandlerService(pfp, true, dbResource, cfg, rs)
-	lhs.WithDataStore(&userdataStore)
-
+	userdataStore := mss.GetUserdataDb(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 
-	hl, err := lhs.GetHandler()
+	lhs, err := handlers.NewLocalHandlerService(pfp, engineDebug, dbResource, cfg, rs)
+	lhs.SetDataStore(&userdataStore)
+	
+	err = sshLoadKeys(ctx, dbDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 
-	stateStore, err := menuStorageService.GetStateStore(dbDir, ctx)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
-		os.Exit(1)
-	}
-	defer stateStore.Close()
-
-	sshLoadKeys(ctx, dbDir)
-	sshRun(ctx, hl)
+	sshRun(ctx, mss, lhs)
 }

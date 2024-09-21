@@ -14,33 +14,42 @@ import (
 )
 
 type StorageService interface {
-	GetPersister(dbDir string, ctx context.Context) (*persist.Persister, error)
-	GetUserdataDb(dbDir string, ctx context.Context) db.Db
-	GetResource(resourceDir string, ctx context.Context) (resource.Resource, error)
-	EnsureDbDir(dbDir string) error
+	GetPersister(ctx context.Context) (*persist.Persister, error)
+	GetUserdataDb(ctx context.Context) db.Db
+	GetResource(ctx context.Context) (resource.Resource, error)
+	EnsureDbDir() error
 }
 
-type MenuStorageService struct{}
+type MenuStorageService struct{
+	dbDir string
+	resourceDir string
+}
 
-func (menuStorageService *MenuStorageService) GetPersister(dbDir string, ctx context.Context) (*persist.Persister, error) {
+func NewMenuStorageService(dbDir string, resourceDir string) *MenuStorageService {
+	return &MenuStorageService{
+		dbDir: dbDir,
+		resourceDir: resourceDir,
+	}
+}
+
+func (ms *MenuStorageService) GetPersister(ctx context.Context) (*persist.Persister, error) {
 	store := gdbmdb.NewGdbmDb()
-	storeFile := path.Join(dbDir, "state.gdbm")
+	storeFile := path.Join(ms.dbDir, "state.gdbm")
 	store.Connect(ctx, storeFile)
 	pr := persist.NewPersister(store)
 	return pr, nil
 }
 
-func (menuStorageService *MenuStorageService) GetUserdataDb(dbDir string, ctx context.Context) db.Db {
+func (ms *MenuStorageService) GetUserdataDb(ctx context.Context) db.Db {
 	store := gdbmdb.NewGdbmDb()
-	storeFile := path.Join(dbDir, "userdata.gdbm")
+	storeFile := path.Join(ms.dbDir, "userdata.gdbm")
 	store.Connect(ctx, storeFile)
-
 	return store
 }
 
-func (menuStorageService *MenuStorageService) GetResource(resourceDir string, ctx context.Context) (resource.Resource, error) {
+func (ms *MenuStorageService) GetResource(ctx context.Context) (resource.Resource, error) {
 	store := fsdb.NewFsDb()
-	err := store.Connect(ctx, resourceDir)
+	err := store.Connect(ctx, ms.resourceDir)
 	if err != nil {
 		return nil, err
 	}
@@ -48,15 +57,15 @@ func (menuStorageService *MenuStorageService) GetResource(resourceDir string, ct
 	return rfs, nil
 }
 
-func (menuStorageService *MenuStorageService) GetStateStore(dbDir string, ctx context.Context) (db.Db, error) {
+func (ms *MenuStorageService) GetStateStore(ctx context.Context) (db.Db, error) {
 	store := gdbmdb.NewGdbmDb()
-	storeFile := path.Join(dbDir, "state.gdbm")
+	storeFile := path.Join(ms.dbDir, "state.gdbm")
 	store.Connect(ctx, storeFile)
 	return store, nil
 }
 
-func (menuStorageService *MenuStorageService) EnsureDbDir(dbDir string) error {
-	err := os.MkdirAll(dbDir, 0700)
+func (ms *MenuStorageService) EnsureDbDir() error {
+	err := os.MkdirAll(ms.dbDir, 0700)
 	if err != nil {
 		return fmt.Errorf("state dir create exited with error: %v\n", err)
 	}

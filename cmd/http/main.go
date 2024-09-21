@@ -59,20 +59,21 @@ func main() {
 		cfg.EngineDebug = true
 	}
 
-	menuStorageService := storage.MenuStorageService{}
-	rs, err := menuStorageService.GetResource(scriptDir, ctx)
+	resourceDir := scriptDir
+	menuStorageService := storage.NewMenuStorageService(dbDir, resourceDir)
+	rs, err := menuStorageService.GetResource(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 
-	err = menuStorageService.EnsureDbDir(dbDir)
+	err = menuStorageService.EnsureDbDir()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 
-	userdataStore := menuStorageService.GetUserdataDb(dbDir, ctx)
+	userdataStore := menuStorageService.GetUserdataDb(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)

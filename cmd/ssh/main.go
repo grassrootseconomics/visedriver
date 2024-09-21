@@ -6,7 +6,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log"
 	"net"
 	"path"
 	"os"
@@ -79,8 +78,8 @@ func(a *auther) Get(k []byte) (string, error) {
 	return v, nil
 }
 
-// TODO: where should the session id be uniquely embedded
-func serve(ctx context.Context, sessionId string, ch ssh.NewChannel, mss *storage.MenuStorageService, lhs *handlers.LocalHandlerService) error {
+//func serve(ctx context.Context, sessionId string, ch ssh.NewChannel, mss *storage.MenuStorageService, lhs *handlers.LocalHandlerService) error {
+func serve(ctx context.Context, sessionId string, ch ssh.NewChannel, en engine.Engine) error {
 	if ch == nil {
 		return errors.New("nil channel")
 	}
@@ -101,23 +100,6 @@ func serve(ctx context.Context, sessionId string, ch ssh.NewChannel, mss *storag
 		}
 		_ = requests
 	}(requests)
-
-	pe, err := mss.GetPersister(ctx)
-	if err != nil {
-		return fmt.Errorf("cannot get persister: %v", err)
-	}
-	lhs.SetPersister(pe)
-	lhs.Cfg.SessionId = sessionId
-
-	hl, err := lhs.GetHandler()
-	if err != nil {
-		return fmt.Errorf("cannot get handler: %v", err)
-	}
-
-	en := lhs.GetEngine()
-	en = en.WithFirst(hl.Init)
-	en = en.WithDebug(nil)
-	defer en.Finish()
 
 	cont, err := en.Exec(ctx, []byte{})
 	if err != nil {
@@ -154,8 +136,75 @@ func serve(ctx context.Context, sessionId string, ch ssh.NewChannel, mss *storag
 	return nil
 }
 
+type sshRunner struct {
+	Ctx context.Context
+	Cfg engine.Config
+	FlagFile string
+	DbDir string
+	ResourceDir string
+	Debug bool
+}
+
+func(s *sshRunner) GetEngine(sessionId string) (engine.Engine, func(), error) {
+	ctx := s.Ctx
+	menuStorageService := storage.NewMenuStorageService(s.DbDir, s.ResourceDir)
+
+	err := menuStorageService.EnsureDbDir()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	rs, err := menuStorageService.GetResource(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	pe, err := menuStorageService.GetPersister(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	userdatastore, err := menuStorageService.GetUserdataDb(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	dbResource, ok := rs.(*resource.DbResource)
+	if !ok {
+		return nil, nil, err
+	}
+
+	lhs, err := handlers.NewLocalHandlerService(s.FlagFile, true, dbResource, s.Cfg, rs)
+	lhs.SetDataStore(&userdatastore)
+	lhs.SetPersister(pe)
+	lhs.Cfg.SessionId = sessionId
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	hl, err := lhs.GetHandler()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	en := lhs.GetEngine()
+	en = en.WithFirst(hl.Init)
+	if s.Debug {
+		en = en.WithDebug(nil)
+	}
+	// TODO: this is getting very hacky!
+	closer := func() {
+		err := menuStorageService.Close()
+		if err != nil {
+			logg.ErrorCtxf(ctx, "menu storage service cleanup fail", "err", err)
+		}
+	}
+	return en, closer, nil
+}
+
 // adapted example from crypto/ssh package, NewServerConn doc
-func sshRun(ctx context.Context, mss *storage.MenuStorageService, lhs *handlers.LocalHandlerService) {
+func(s *sshRunner) Run(ctx context.Context) {//, mss *storage.MenuStorageService, lhs *handlers.LocalHandlerService) {
 	running := true
 
 	defer wg.Wait()
@@ -168,11 +217,11 @@ func sshRun(ctx context.Context, mss *storage.MenuStorageService, lhs *handlers.
 
 	privateBytes, err := os.ReadFile("/home/lash/.ssh/id_rsa_tmp")
 	if err != nil {
-		log.Fatal("Failed to load private key: ", err)
+		logg.ErrorCtxf(ctx, "Failed to load private key", "err", err)
 	}
 	private, err := ssh.ParsePrivateKey(privateBytes)
 	if err != nil {
-		log.Fatal("Failed to parse private key: ", err)
+		logg.ErrorCtxf(ctx, "Failed to parse private key", "err", err)
 	}
 	cfg.AddHostKey(private)
 
@@ -209,14 +258,27 @@ func sshRun(ctx context.Context, mss *storage.MenuStorageService, lhs *handlers.
 					logg.ErrorCtxf(ctx, "Cannot find authentication")
 					return
 				}
+				en, closer, err := s.GetEngine(sessionId)
+				if err != nil {
+					logg.ErrorCtxf(ctx, "engine won't start", "err", err)
+					return
+				}
+				defer func() {
+					err := en.Finish()
+					if err != nil {
+						logg.ErrorCtxf(ctx, "engine won't stop", "err", err)
+					}
+					closer()
+				}()
 				for ch := range nC {
-					err = serve(ctx, sessionId, ch, mss, lhs)
+					err = serve(ctx, sessionId, ch, en)
 					logg.ErrorCtxf(ctx, "ssh server finish", "err", err)
 				}
 			}
 		}(conn)
 	}
 }
+
 
 func sshLoadKeys(ctx context.Context, dbDir string) error {
 	keyStoreFile := path.Join(dbDir, "ssh_authorized_keys.gdbm")
@@ -264,38 +326,19 @@ func main() {
 	if engineDebug {
 		cfg.EngineDebug = true
 	}
-
-	mss := storage.NewMenuStorageService(dbDir, resourceDir)
-	rs, err := mss.GetResource(ctx)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
-		os.Exit(1)
-	}
-
-	err = mss.EnsureDbDir()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
-		os.Exit(1)
-	}
-
-	dbResource, ok := rs.(*resource.DbResource)
-	if !ok {
-		os.Exit(1)
-	}
-	userdataStore := mss.GetUserdataDb(ctx)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
-		os.Exit(1)
-	}
-
-	lhs, err := handlers.NewLocalHandlerService(pfp, engineDebug, dbResource, cfg, rs)
-	lhs.SetDataStore(&userdataStore)
 	
-	err = sshLoadKeys(ctx, dbDir)
+	err := sshLoadKeys(ctx, dbDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 
-	sshRun(ctx, mss, lhs)
+	runner := &sshRunner{
+		Cfg: cfg,
+		Debug: engineDebug,
+		FlagFile: pfp,
+		DbDir: dbDir,
+		ResourceDir: resourceDir,
+	}
+	runner.Run(ctx)
 }

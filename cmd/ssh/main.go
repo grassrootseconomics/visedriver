@@ -142,6 +142,9 @@ type sshRunner struct {
 	DbDir string
 	ResourceDir string
 	Debug bool
+	KeyFile string
+	Host string
+	Port uint
 }
 
 func(s *sshRunner) GetEngine(sessionId string) (engine.Engine, func(), error) {
@@ -203,18 +206,18 @@ func(s *sshRunner) GetEngine(sessionId string) (engine.Engine, func(), error) {
 }
 
 // adapted example from crypto/ssh package, NewServerConn doc
-func(s *sshRunner) Run(ctx context.Context) {//, mss *storage.MenuStorageService, lhs *handlers.LocalHandlerService) {
+func(s *sshRunner) Run(ctx context.Context) {
 	running := true
 
+	// TODO: waitgroup should probably not be global
 	defer wg.Wait()
 
-	// TODO: must set ServerConn.Conn.SessionId to phone sessionid
 	auth := NewAuther(ctx)
 	cfg := ssh.ServerConfig{
 		PublicKeyCallback: auth.Check,
 	}
 
-	privateBytes, err := os.ReadFile("/home/lash/.ssh/id_rsa_tmp")
+	privateBytes, err := os.ReadFile(s.KeyFile)
 	if err != nil {
 		logg.ErrorCtxf(ctx, "Failed to load private key", "err", err)
 	}
@@ -224,7 +227,7 @@ func(s *sshRunner) Run(ctx context.Context) {//, mss *storage.MenuStorageService
 	}
 	cfg.AddHostKey(private)
 
-	lst, err := net.Listen("tcp", "0.0.0.0:2022")
+	lst, err := net.Listen("tcp", fmt.Sprintf("%s:%d", s.Host, s.Port))
 	if err != nil {
 		panic(err)
 	}
@@ -278,7 +281,7 @@ func(s *sshRunner) Run(ctx context.Context) {//, mss *storage.MenuStorageService
 	}
 }
 
-
+// TODO: This is test code, move to external tool for adding and removing keys
 func sshLoadKeys(ctx context.Context, dbDir string) error {
 	keyStoreFile := path.Join(dbDir, "ssh_authorized_keys.gdbm")
 	keyStore = storage.NewThreadGdbmDb()
@@ -309,10 +312,17 @@ func main() {
 	flag.BoolVar(&stateDebug, "state-debug", false, "use engine debug output")
 	flag.UintVar(&size, "s", 160, "max size of output")
 	flag.StringVar(&host, "h", "127.0.0.1", "http host")
-	flag.UintVar(&port, "p", 7123, "http port")
+	flag.UintVar(&port, "p", 7122, "http port")
 	flag.Parse()
 
-	logg.Infof("start command", "dbdir", dbDir, "resourcedir", resourceDir, "outputsize", size)
+	sshKeyFile := flag.Arg(0)
+	_, err := os.Stat(sshKeyFile)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "cannot open ssh server private key file: %v\n", err)
+		os.Exit(1)
+	}
+
+	logg.Infof("start command", "dbdir", dbDir, "resourcedir", resourceDir, "outputsize", size, "keyfile", sshKeyFile, "host", host, "port", port)
 
 	ctx := context.Background()
 	pfp := path.Join(scriptDir, "pp.csv")
@@ -329,7 +339,7 @@ func main() {
 		cfg.EngineDebug = true
 	}
 	
-	err := sshLoadKeys(ctx, dbDir)
+	err = sshLoadKeys(ctx, dbDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
@@ -341,6 +351,9 @@ func main() {
 		FlagFile: pfp,
 		DbDir: dbDir,
 		ResourceDir: resourceDir,
+		KeyFile: sshKeyFile,
+		Host: host,
+		Port: port,
 	}
 	runner.Run(ctx)
 }

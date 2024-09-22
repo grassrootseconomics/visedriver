@@ -8,7 +8,6 @@ import (
 
 	"git.defalsify.org/vise.git/db"
 	fsdb "git.defalsify.org/vise.git/db/fs"
-	gdbmdb "git.defalsify.org/vise.git/db/gdbm"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/logging"
@@ -41,7 +40,7 @@ func NewMenuStorageService(dbDir string, resourceDir string) *MenuStorageService
 }
 
 func (ms *MenuStorageService) GetPersister(ctx context.Context) (*persist.Persister, error) {
-	ms.stateStore = gdbmdb.NewGdbmDb()
+	ms.stateStore = NewThreadGdbmDb()
 	storeFile := path.Join(ms.dbDir, "state.gdbm")
 	err := ms.stateStore.Connect(ctx, storeFile)
 	if err != nil {
@@ -53,7 +52,7 @@ func (ms *MenuStorageService) GetPersister(ctx context.Context) (*persist.Persis
 }
 
 func (ms *MenuStorageService) GetUserdataDb(ctx context.Context) (db.Db, error) {
-	ms.userDataStore = gdbmdb.NewGdbmDb()
+	ms.userDataStore = NewThreadGdbmDb()
 	storeFile := path.Join(ms.dbDir, "userdata.gdbm")
 	err := ms.userDataStore.Connect(ctx, storeFile)
 	if err != nil {
@@ -76,7 +75,7 @@ func (ms *MenuStorageService) GetStateStore(ctx context.Context) (db.Db, error) 
 	if ms.stateStore != nil {
 		panic("set up store when already exists")
 	}
-	ms.stateStore = gdbmdb.NewGdbmDb()
+	ms.stateStore = NewThreadGdbmDb()
 	storeFile := path.Join(ms.dbDir, "state.gdbm")
 	err := ms.stateStore.Connect(ctx, storeFile)
 	if err != nil {

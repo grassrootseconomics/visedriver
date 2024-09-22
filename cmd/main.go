@@ -64,7 +64,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	userdatastore := menuStorageService.GetUserdataDb(ctx)
+	userdatastore, err := menuStorageService.GetUserdataDb(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)

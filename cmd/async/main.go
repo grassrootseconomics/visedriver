@@ -71,7 +71,6 @@ func main() {
 		cfg.EngineDebug = true
 	}
 
-	resourceDir := scriptDir
 	menuStorageService := storage.NewMenuStorageService(dbDir, resourceDir)
 	rs, err := menuStorageService.GetResource(ctx)
 	if err != nil {
@@ -85,7 +84,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	userdataStore := menuStorageService.GetUserdataDb(ctx)
+	userdataStore, err := menuStorageService.GetUserdataDb(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
@@ -98,7 +97,7 @@ func main() {
 	}
 
 	lhs, err := handlers.NewLocalHandlerService(pfp, true, dbResource, cfg, rs)
-	lhs.WithDataStore(&userdataStore)
+	lhs.SetDataStore(&userdataStore)
 
 	hl, err := lhs.GetHandler()
 	if err != nil {

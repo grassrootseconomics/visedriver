@@ -30,5 +30,5 @@ go run -v -tags logtrace ./cmd/ssh/main.go -h <host> -p <port> [--dbdir <dbpath>
 ## Connect to the server
 
 ```
-ssh -T -p <port> -i <client_publickey_filepath> <host>
+ssh [-v] -T -p <port> -i <client_publickey_filepath> <host>
 ```

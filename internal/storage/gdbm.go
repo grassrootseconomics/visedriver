@@ -14,7 +14,6 @@ var (
 
 type ThreadGdbmDb struct {
 	db db.Db
-	registered bool
 	connStr string
 }
 
@@ -30,6 +29,7 @@ func(tdb *ThreadGdbmDb) Connect(ctx context.Context, connStr string) error {
 	_, ok = dbC[connStr]
 	if ok {
 		logg.WarnCtxf(ctx, "already registered thread gdbm, skipping", "connStr", connStr)
+		return nil
 	}
 	gdb := gdbmdb.NewGdbmDb()
 	err := gdb.Connect(ctx, connStr)
@@ -39,7 +39,6 @@ func(tdb *ThreadGdbmDb) Connect(ctx context.Context, connStr string) error {
 	dbC[connStr] = make(chan db.Db, 1)
 	dbC[connStr]<- gdb
 	tdb.connStr = connStr
-	tdb.registered = true
 	return nil
 }
 

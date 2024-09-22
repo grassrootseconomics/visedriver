@@ -11,7 +11,6 @@ import (
 
 	"golang.org/x/crypto/ssh"
 
-	"git.defalsify.org/vise.git/db"
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/resource"
@@ -27,11 +26,11 @@ var (
 
 type auther struct {
 	Ctx context.Context
-	keyStore db.Db
+	keyStore *SshKeyStore
 	auth map[string]string
 }
 
-func NewAuther(ctx context.Context, keyStore db.Db) *auther {
+func NewAuther(ctx context.Context, keyStore *SshKeyStore) *auther {
 	return &auther{
 		Ctx: ctx,
 		keyStore: keyStore,
@@ -40,17 +39,13 @@ func NewAuther(ctx context.Context, keyStore db.Db) *auther {
 }
 
 func(a *auther) Check(conn ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.Permissions, error) {
-	a.keyStore.SetLanguage(nil)
-	a.keyStore.SetPrefix(storage.DATATYPE_CUSTOM)
-	k := append([]byte{0x01}, pubKey.Marshal()...)
-	v, err := a.keyStore.Get(a.Ctx, k)
+	va, err := a.keyStore.Get(a.Ctx, pubKey)
 	if err != nil {
 		return nil, err
 	}
 	ka := hex.EncodeToString(conn.SessionID())
-	va := string(v)
 	a.auth[ka] = va 
-	fmt.Fprintf(os.Stderr, "connect: %s -> %s\n", ka, v)
+	fmt.Fprintf(os.Stderr, "connect: %s -> %s\n", ka, va)
 	return nil, nil
 }
 
@@ -142,6 +137,11 @@ type SshRunner struct {
 	Host string
 	Port uint
 	wg sync.WaitGroup
+	lst net.Listener
+}
+
+func(s *SshRunner) Stop() error {
+	return s.lst.Close()
 }
 
 func(s *SshRunner) GetEngine(sessionId string) (engine.Engine, func(), error) {
@@ -203,7 +203,7 @@ func(s *SshRunner) GetEngine(sessionId string) (engine.Engine, func(), error) {
 }
 
 // adapted example from crypto/ssh package, NewServerConn doc
-func(s *SshRunner) Run(ctx context.Context, keyStore db.Db) {
+func(s *SshRunner) Run(ctx context.Context, keyStore *SshKeyStore) {
 	running := true
 
 	// TODO: waitgroup should probably not be global
@@ -224,17 +224,18 @@ func(s *SshRunner) Run(ctx context.Context, keyStore db.Db) {
 	}
 	cfg.AddHostKey(private)
 
-	lst, err := net.Listen("tcp", fmt.Sprintf("%s:%d", s.Host, s.Port))
+	s.lst, err = net.Listen("tcp", fmt.Sprintf("%s:%d", s.Host, s.Port))
 	if err != nil {
 		panic(err)
 	}
 
 	for running {
-		conn, err := lst.Accept()
+		conn, err := s.lst.Accept()
 		if err != nil {
-			panic(err)
+			logg.ErrorCtxf(ctx, "ssh accept error", "err", err)
+			running = false
+			continue
 		}
-
 
 		go func(conn net.Conn) {
 			defer conn.Close()

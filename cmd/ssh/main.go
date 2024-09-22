@@ -6,13 +6,14 @@ import (
 	"fmt"
 	"path"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 
 	"git.defalsify.org/vise.git/db"
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/logging"
 
-	"git.grassecon.net/urdt/ussd/internal/storage"
 	"git.grassecon.net/urdt/ussd/internal/ssh"
 )
 
@@ -47,9 +48,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	ctx := context.Background()
+	logg.WarnCtxf(ctx, "!!!!! WARNING WARNING WARNING")
+	logg.WarnCtxf(ctx, "!!!!! =======================")
+	logg.WarnCtxf(ctx, "!!!!! This is not a production ready server!")
+	logg.WarnCtxf(ctx, "!!!!! Do not expose to internet and only use with tunnel!")
+	logg.WarnCtxf(ctx, "!!!!! (See ssh -L <...>)")
+
 	logg.Infof("start command", "dbdir", dbDir, "resourcedir", resourceDir, "outputsize", size, "keyfile", sshKeyFile, "host", host, "port", port)
 
-	ctx := context.Background()
 	pfp := path.Join(scriptDir, "pp.csv")
 
 	cfg := engine.Config{
@@ -64,19 +71,23 @@ func main() {
 		cfg.EngineDebug = true
 	}
 
-	keyStoreFile := path.Join(dbDir, "ssh_authorized_keys.gdbm")
-	authKeyStore := storage.NewThreadGdbmDb()
-	err = authKeyStore.Connect(ctx, keyStoreFile)
+	authKeyStore, err := ssh.NewSshKeyStore(ctx, dbDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "keystore file open error: %v", err)
 		os.Exit(1)
 	}
-	defer func() {
-		err := authKeyStore.Close()
+	defer func () {
+		logg.TraceCtxf(ctx, "shutdown auth key store reached")
+		err = authKeyStore.Close()
 		if err != nil {
 			logg.ErrorCtxf(ctx, "keystore close error", "err", err)
 		}
 	}()
+
+	cint := make(chan os.Signal)
+	cterm := make(chan os.Signal)
+	signal.Notify(cint, os.Interrupt, syscall.SIGINT)
+	signal.Notify(cterm, os.Interrupt, syscall.SIGTERM)
 
 	runner := &ssh.SshRunner{
 		Cfg: cfg,
@@ -88,5 +99,17 @@ func main() {
 		Host: host,
 		Port: port,
 	}
+	go func() {
+		select {
+		case _ = <-cint:
+		case _ = <-cterm:
+		}
+		logg.TraceCtxf(ctx, "shutdown runner reached")
+		err := runner.Stop()
+		if err != nil {
+			logg.ErrorCtxf(ctx, "runner stop error", "err", err)
+		}
+		
+	}()
 	runner.Run(ctx, authKeyStore)
 }

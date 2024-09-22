@@ -30,6 +30,7 @@ func(tdb *ThreadGdbmDb) Connect(ctx context.Context, connStr string) error {
 	_, ok = dbC[connStr]
 	if ok {
 		logg.WarnCtxf(ctx, "already registered thread gdbm, skipping", "connStr", connStr)
+		return nil
 	}
 	gdb := gdbmdb.NewGdbmDb()
 	err := gdb.Connect(ctx, connStr)

@@ -3,6 +3,7 @@ package ssh
 import (
 	"context"
 	"encoding/hex"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"net"
@@ -222,6 +223,9 @@ func(s *SshRunner) Run(ctx context.Context, keyStore *SshKeyStore) {
 	if err != nil {
 		logg.ErrorCtxf(ctx, "Failed to parse private key", "err", err)
 	}
+	srvPub := private.PublicKey()
+	srvPubStr := base64.StdEncoding.EncodeToString(srvPub.Marshal())
+	logg.InfoCtxf(ctx, "have server key", "type", srvPub.Type(), "public", srvPubStr)
 	cfg.AddHostKey(private)
 
 	s.lst, err = net.Listen("tcp", fmt.Sprintf("%s:%d", s.Host, s.Port))

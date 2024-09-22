@@ -18,7 +18,6 @@ import (
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/state"
-	gdbmdb "git.defalsify.org/vise.git/db/gdbm"
 
 	"git.grassecon.net/urdt/ussd/internal/handlers"
 	"git.grassecon.net/urdt/ussd/internal/storage"
@@ -282,8 +281,11 @@ func(s *sshRunner) Run(ctx context.Context) {//, mss *storage.MenuStorageService
 
 func sshLoadKeys(ctx context.Context, dbDir string) error {
 	keyStoreFile := path.Join(dbDir, "ssh_authorized_keys.gdbm")
-	keyStore = gdbmdb.NewGdbmDb()
-	keyStore.Connect(ctx, keyStoreFile)
+	keyStore = storage.NewThreadGdbmDb()
+	err := keyStore.Connect(ctx, keyStoreFile)
+	if err != nil {
+		return err
+	}
 	pubKey, _, _, _, err := ssh.ParseAuthorizedKey([]byte("ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCu5rYCxMBsVAL1TEkMQgmElAYEZj5zYDdyHjUxZ6qzHBOZD9GAzdxx9GyQDx2vdYm3329tLH/69ky1YA3nUz8SnJGBD6hC5XrqwN6zo9R9oOHAKTwiPGhey2NTVmheP+9XNHukBnOlkkWOQlpDDvMbWOztaZOWDaA8OIeP0t6qzFqLyelyg65lxzM3BKd7bCmmfzl/64BcP1MotAmB9DUxmY0Wb4Q2hYZfNYBx50Z4xthTgKV+Xoo8CbTduKotIz6hluQGvWdtxlCJQEiZ2f4RYY87JSA6/BAH2fhxuLHMXRpzocJNqARqCWpdcTGSg7bzxbKvTFH9OU4wZtr9ie40OR4zsc1lOBZL0rnp8GLkG8ZmeBQrgEDlmR9TTlz4okgtL+c5TCS37rjZYVjmtGwihws0EL9+wyv2dSQibirklC4wK5eWHKXl5vab19qzw/qRLdoRBK40DxbRKggxA7gqSsKrmrf+z7CuLIz/kxF+169FBLbh1MfBOGdx1awm6aU= lash@furioso"))
 	if err != nil {
 		return err

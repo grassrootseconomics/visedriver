@@ -5,5 +5,5 @@ MOUT back 0
 HALT
 INCMP _ 0
 LOAD save_location 0
-CATCH pin_entry flag_single_edit 1
+CATCH pin_entry flag_single_edit 0
 INCMP enter_offerings *

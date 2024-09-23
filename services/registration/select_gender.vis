@@ -6,7 +6,7 @@ MOUT unspecified 3
 MOUT back 0
 HALT
 LOAD save_gender 0
-CATCH pin_entry flag_single_edit 1
+CATCH pin_entry flag_single_edit 0
 INCMP _ 0
 INCMP enter_yob 1
 INCMP enter_yob 2

@@ -1,9 +1,10 @@
-LOAD save_gender 0
-CATCH update_success flag_allow_update 1
+CATCH incorrect_pin flag_incorrect_pin 1
+CATCH profile_update_success flag_allow_update 1
+LOAD save_yob 0
 MOUT back 0
 HALT
+LOAD verify_yob 0
+CATCH incorrect_date_format flag_incorrect_date_format 1
+RELOAD save_yob
 INCMP _ 0
-LOAD verify_yob 8
-LOAD save_yob 0
-CATCH pin_entry flag_single_edit 1
-INCMP enter_location *
+INCMP pin_entry *

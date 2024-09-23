@@ -298,8 +298,6 @@ func (h *Handlers) VerifyPin(ctx context.Context, sym string, input []byte) (res
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-
-	//AccountPin, _ := utils.ReadEntry(ctx, h.userdataStore, sessionId, utils.DATA_ACCOUNT_PIN)
 	store := h.userdataStore
 	AccountPin, err := store.ReadEntry(ctx, sessionId, utils.DATA_ACCOUNT_PIN)
 	if err != nil {
@@ -335,6 +333,12 @@ func (h *Handlers) SaveFirstname(ctx context.Context, sym string, input []byte) 
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
+
+	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+	flag_single_edit, _ := h.flagManager.GetFlag("flag_single_edit")
+
+	res.FlagReset = append(res.FlagReset, flag_allow_update)
+	res.FlagSet = append(res.FlagSet, flag_single_edit)
 
 	if len(input) > 0 {
 		firstName := string(input)
@@ -378,15 +382,6 @@ func (h *Handlers) SaveYob(ctx context.Context, sym string, input []byte) (resou
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
-	flag_single_edit, _ := h.flagManager.GetFlag("flag_single_edit")
-	execPath := utils.GetSingleEditExecutionPath("save_yob")
-	isSingleEdit := utils.MatchNavigationPath(execPath, h.st.ExecPath)
-
-	if isSingleEdit {
-		res.FlagReset = append(res.FlagReset, flag_allow_update)
-		res.FlagSet = append(res.FlagSet, flag_single_edit)
-	}
 	if len(input) == 4 {
 		yob := string(input)
 		store := h.userdataStore
@@ -407,17 +402,6 @@ func (h *Handlers) SaveLocation(ctx context.Context, sym string, input []byte) (
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-
-	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
-	flag_single_edit, _ := h.flagManager.GetFlag("flag_single_edit")
-	execPath := utils.GetSingleEditExecutionPath("save_location")
-	isSingleEdit := utils.MatchNavigationPath(execPath, h.st.ExecPath)
-
-	if isSingleEdit {
-		res.FlagReset = append(res.FlagReset, flag_allow_update)
-		res.FlagSet = append(res.FlagSet, flag_single_edit)
-	}
-
 	if len(input) > 0 {
 		location := string(input)
 		store := h.userdataStore
@@ -438,15 +422,6 @@ func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (re
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
-	flag_single_edit, _ := h.flagManager.GetFlag("flag_single_edit")
-	execPath := utils.GetSingleEditExecutionPath("select_gender")
-	isSingleEdit := utils.MatchNavigationPath(execPath, h.st.ExecPath)
-	if isSingleEdit {
-		res.FlagReset = append(res.FlagReset, flag_allow_update)
-		res.FlagSet = append(res.FlagSet, flag_single_edit)
-	}
-
 	code := codeFromCtx(ctx)
 	if len(input) > 0 {
 		gender := string(input)

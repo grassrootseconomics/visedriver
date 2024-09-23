@@ -1,4 +1,5 @@
-MAP validate_amount
+RELOAD get_amount
+MAP get_amount
 RELOAD get_recipient
 MAP get_recipient
 RELOAD get_sender

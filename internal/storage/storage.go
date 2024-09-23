@@ -5,6 +5,10 @@ import (
 	"git.defalsify.org/vise.git/persist"
 )
 
+const (
+	DATATYPE_CUSTOM = 128 
+)
+
 type Storage struct {
 	Persister *persist.Persister
 	UserdataDb db.Db	

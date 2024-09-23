@@ -1,13 +1,13 @@
-LOAD save_familyname 0
-CATCH update_success flag_allow_update 1
+CATCH incorrect_pin flag_incorrect_pin 1
+CATCH profile_update_success flag_allow_update 1
+LOAD save_gender 0
 MOUT male 1
 MOUT female 2
 MOUT unspecified 3
 MOUT back 0
 HALT
-LOAD save_gender 0
-CATCH pin_entry flag_single_edit 1
+RELOAD save_gender
 INCMP _ 0
-INCMP enter_yob 1
-INCMP enter_yob 2
-INCMP enter_yob 3
+INCMP pin_entry *
+
+

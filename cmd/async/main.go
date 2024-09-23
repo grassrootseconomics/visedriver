@@ -138,22 +138,26 @@ func main() {
 	for true {
 		rqs, err = sh.Process(rqs)
 		if err != nil {
+			logg.ErrorCtxf(ctx, "error in process: %v", "err", err)
 			fmt.Errorf("error in process: %v", err)
 			os.Exit(1)
 		}
 		rqs, err = sh.Output(rqs)
 		if err != nil {
+			logg.ErrorCtxf(ctx, "error in output: %v", "err", err)
 			fmt.Errorf("error in output: %v", err)
 			os.Exit(1)
 		}
 		rqs, err = sh.Reset(rqs)
 		if err != nil {
+			logg.ErrorCtxf(ctx, "error in reset: %v", "err", err)
 			fmt.Errorf("error in reset: %v", err)
 			os.Exit(1)
 		}
 		fmt.Println("")
 		_, err = fmt.Scanln(&rqs.Input)
 		if err != nil {
+			logg.ErrorCtxf(ctx, "error in input", "err", err)
 			fmt.Errorf("error in input: %v", err)
 			os.Exit(1)
 		}

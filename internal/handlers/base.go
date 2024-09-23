@@ -46,7 +46,7 @@ func(f *BaseSessionHandler) Process(rqs RequestSession) (RequestSession, error) 
 	var err error
 	var ok bool
 	
-	logg.InfoCtxf(rqs.Ctx, "new request",  rqs)
+	logg.InfoCtxf(rqs.Ctx, "new request", "data", rqs)
 
 	rqs.Storage, err = f.provider.Get(rqs.Config.SessionId)
 	if err != nil {

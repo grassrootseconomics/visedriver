@@ -44,62 +44,63 @@ func NewLocalHandlerService(fp string, debug bool, dbResource *resource.DbResour
 	}, nil
 }
 
-func (localHandlerService *LocalHandlerService) WithPersister(Pe *persist.Persister) {
-	localHandlerService.Pe = Pe
+func (ls *LocalHandlerService) SetPersister(Pe *persist.Persister) {
+	ls.Pe = Pe
 }
 
-func (localHandlerService *LocalHandlerService) WithDataStore(db *db.Db) {
-	localHandlerService.UserdataStore = db
+func (ls *LocalHandlerService) SetDataStore(db *db.Db) {
+	ls.UserdataStore = db
 }
 
-func (localHandlerService *LocalHandlerService) GetHandler() (*ussd.Handlers, error) {
-	ussdHandlers, err := ussd.NewHandlers(localHandlerService.Parser, *localHandlerService.UserdataStore)
+func (ls *LocalHandlerService) GetHandler() (*ussd.Handlers, error) {
+	ussdHandlers, err := ussd.NewHandlers(ls.Parser, *ls.UserdataStore)
 	if err != nil {
 		return nil, err
 	}
-	ussdHandlers = ussdHandlers.WithPersister(localHandlerService.Pe)
-	localHandlerService.DbRs.AddLocalFunc("set_language", ussdHandlers.SetLanguage)
-	localHandlerService.DbRs.AddLocalFunc("create_account", ussdHandlers.CreateAccount)
-	localHandlerService.DbRs.AddLocalFunc("save_pin", ussdHandlers.SavePin)
-	localHandlerService.DbRs.AddLocalFunc("verify_pin", ussdHandlers.VerifyPin)
-	localHandlerService.DbRs.AddLocalFunc("check_identifier", ussdHandlers.CheckIdentifier)
-	localHandlerService.DbRs.AddLocalFunc("check_account_status", ussdHandlers.CheckAccountStatus)
-	localHandlerService.DbRs.AddLocalFunc("authorize_account", ussdHandlers.Authorize)
-	localHandlerService.DbRs.AddLocalFunc("quit", ussdHandlers.Quit)
-	localHandlerService.DbRs.AddLocalFunc("check_balance", ussdHandlers.CheckBalance)
-	localHandlerService.DbRs.AddLocalFunc("validate_recipient", ussdHandlers.ValidateRecipient)
-	localHandlerService.DbRs.AddLocalFunc("transaction_reset", ussdHandlers.TransactionReset)
-	localHandlerService.DbRs.AddLocalFunc("max_amount", ussdHandlers.MaxAmount)
-	localHandlerService.DbRs.AddLocalFunc("validate_amount", ussdHandlers.ValidateAmount)
-	localHandlerService.DbRs.AddLocalFunc("reset_transaction_amount", ussdHandlers.ResetTransactionAmount)
-	localHandlerService.DbRs.AddLocalFunc("get_recipient", ussdHandlers.GetRecipient)
-	localHandlerService.DbRs.AddLocalFunc("get_sender", ussdHandlers.GetSender)
-	localHandlerService.DbRs.AddLocalFunc("get_amount", ussdHandlers.GetAmount)
-	localHandlerService.DbRs.AddLocalFunc("reset_incorrect", ussdHandlers.ResetIncorrectPin)
-	localHandlerService.DbRs.AddLocalFunc("save_firstname", ussdHandlers.SaveFirstname)
-	localHandlerService.DbRs.AddLocalFunc("save_familyname", ussdHandlers.SaveFamilyname)
-	localHandlerService.DbRs.AddLocalFunc("save_gender", ussdHandlers.SaveGender)
-	localHandlerService.DbRs.AddLocalFunc("save_location", ussdHandlers.SaveLocation)
-	localHandlerService.DbRs.AddLocalFunc("save_yob", ussdHandlers.SaveYob)
-	localHandlerService.DbRs.AddLocalFunc("save_offerings", ussdHandlers.SaveOfferings)
-	localHandlerService.DbRs.AddLocalFunc("quit_with_balance", ussdHandlers.QuitWithBalance)
-	localHandlerService.DbRs.AddLocalFunc("reset_account_authorized", ussdHandlers.ResetAccountAuthorized)
-	localHandlerService.DbRs.AddLocalFunc("reset_allow_update", ussdHandlers.ResetAllowUpdate)
-	localHandlerService.DbRs.AddLocalFunc("get_profile_info", ussdHandlers.GetProfileInfo)
-	localHandlerService.DbRs.AddLocalFunc("verify_yob", ussdHandlers.VerifyYob)
-	localHandlerService.DbRs.AddLocalFunc("reset_incorrect_date_format", ussdHandlers.ResetIncorrectYob)
-	localHandlerService.DbRs.AddLocalFunc("set_reset_single_edit", ussdHandlers.SetResetSingleEdit)
-	localHandlerService.DbRs.AddLocalFunc("initiate_transaction", ussdHandlers.InitiateTransaction)
-	localHandlerService.DbRs.AddLocalFunc("save_temporary_pin", ussdHandlers.SaveTemporaryPin)
-	localHandlerService.DbRs.AddLocalFunc("verify_new_pin", ussdHandlers.VerifyNewPin)
-	localHandlerService.DbRs.AddLocalFunc("confirm_pin_change", ussdHandlers.ConfirmPinChange)
-	localHandlerService.DbRs.AddLocalFunc("quit_with_help", ussdHandlers.QuitWithHelp)
+	ussdHandlers = ussdHandlers.WithPersister(ls.Pe)
+	ls.DbRs.AddLocalFunc("set_language", ussdHandlers.SetLanguage)
+	ls.DbRs.AddLocalFunc("create_account", ussdHandlers.CreateAccount)
+	ls.DbRs.AddLocalFunc("save_pin", ussdHandlers.SavePin)
+	ls.DbRs.AddLocalFunc("verify_pin", ussdHandlers.VerifyPin)
+	ls.DbRs.AddLocalFunc("check_identifier", ussdHandlers.CheckIdentifier)
+	ls.DbRs.AddLocalFunc("check_account_status", ussdHandlers.CheckAccountStatus)
+	ls.DbRs.AddLocalFunc("authorize_account", ussdHandlers.Authorize)
+	ls.DbRs.AddLocalFunc("quit", ussdHandlers.Quit)
+	ls.DbRs.AddLocalFunc("check_balance", ussdHandlers.CheckBalance)
+	ls.DbRs.AddLocalFunc("validate_recipient", ussdHandlers.ValidateRecipient)
+	ls.DbRs.AddLocalFunc("transaction_reset", ussdHandlers.TransactionReset)
+	ls.DbRs.AddLocalFunc("max_amount", ussdHandlers.MaxAmount)
+	ls.DbRs.AddLocalFunc("validate_amount", ussdHandlers.ValidateAmount)
+	ls.DbRs.AddLocalFunc("reset_transaction_amount", ussdHandlers.ResetTransactionAmount)
+	ls.DbRs.AddLocalFunc("get_recipient", ussdHandlers.GetRecipient)
+	ls.DbRs.AddLocalFunc("get_sender", ussdHandlers.GetSender)
+	ls.DbRs.AddLocalFunc("get_amount", ussdHandlers.GetAmount)
+	ls.DbRs.AddLocalFunc("reset_incorrect", ussdHandlers.ResetIncorrectPin)
+	ls.DbRs.AddLocalFunc("save_firstname", ussdHandlers.SaveFirstname)
+	ls.DbRs.AddLocalFunc("save_familyname", ussdHandlers.SaveFamilyname)
+	ls.DbRs.AddLocalFunc("save_gender", ussdHandlers.SaveGender)
+	ls.DbRs.AddLocalFunc("save_location", ussdHandlers.SaveLocation)
+	ls.DbRs.AddLocalFunc("save_yob", ussdHandlers.SaveYob)
+	ls.DbRs.AddLocalFunc("save_offerings", ussdHandlers.SaveOfferings)
+	ls.DbRs.AddLocalFunc("quit_with_balance", ussdHandlers.QuitWithBalance)
+	ls.DbRs.AddLocalFunc("reset_account_authorized", ussdHandlers.ResetAccountAuthorized)
+	ls.DbRs.AddLocalFunc("reset_allow_update", ussdHandlers.ResetAllowUpdate)
+	ls.DbRs.AddLocalFunc("get_profile_info", ussdHandlers.GetProfileInfo)
+	ls.DbRs.AddLocalFunc("verify_yob", ussdHandlers.VerifyYob)
+	ls.DbRs.AddLocalFunc("reset_incorrect_date_format", ussdHandlers.ResetIncorrectYob)
+	ls.DbRs.AddLocalFunc("set_reset_single_edit", ussdHandlers.SetResetSingleEdit)
+	ls.DbRs.AddLocalFunc("initiate_transaction", ussdHandlers.InitiateTransaction)
+	ls.DbRs.AddLocalFunc("save_temporary_pin", ussdHandlers.SaveTemporaryPin)
+	ls.DbRs.AddLocalFunc("verify_new_pin", ussdHandlers.VerifyNewPin)
+	ls.DbRs.AddLocalFunc("confirm_pin_change", ussdHandlers.ConfirmPinChange)
+	ls.DbRs.AddLocalFunc("quit_with_help", ussdHandlers.QuitWithHelp)
 
 	return ussdHandlers, nil
 }
 
-func (localHandlerService *LocalHandlerService) GetEngine() *engine.DefaultEngine {
-	en := engine.NewEngine(localHandlerService.Cfg, localHandlerService.Rs)
-	en = en.WithPersister(localHandlerService.Pe)
+// TODO: enable setting of sessionId on engine init time
+func (ls *LocalHandlerService) GetEngine() *engine.DefaultEngine {
+	en := engine.NewEngine(ls.Cfg, ls.Rs)
+	en = en.WithPersister(ls.Pe)
 	return en
 }

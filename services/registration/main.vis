@@ -1,3 +1,4 @@
+LOAD reset_account_authorized 0
 LOAD check_balance 64
 RELOAD check_balance
 MAP check_balance

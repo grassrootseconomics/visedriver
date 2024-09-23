@@ -356,7 +356,6 @@ func (h *Handlers) SaveFirstname(ctx context.Context, sym string, input []byte) 
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-
 	if len(input) > 0 {
 		firstName := string(input)
 		store := h.userdataStore
@@ -639,7 +638,6 @@ func (h *Handlers) QuitWithHelp(ctx context.Context, sym string, input []byte) (
 	res.FlagReset = append(res.FlagReset, flag_account_authorized)
 	return res, nil
 }
-
 
 // VerifyYob verifies the length of the given input
 func (h *Handlers) VerifyYob(ctx context.Context, sym string, input []byte) (resource.Result, error) {

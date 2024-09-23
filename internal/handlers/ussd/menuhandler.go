@@ -279,7 +279,10 @@ func (h *Handlers) ConfirmPinChange(ctx context.Context, sym string, input []byt
 // SetResetSingleEdit sets and resets  flags to allow gradual editing of profile information.
 func (h *Handlers) SetResetSingleEdit(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
-	flag_single_edit, _ := h.flagManager.GetFlag("flag_single_edit")
+	flag_single_edit, err := h.flagManager.GetFlag("flag_single_edit")
+	if err != nil {
+		return res, err
+	}
 	res.FlagReset = append(res.FlagReset, flag_single_edit)
 	return res, nil
 }

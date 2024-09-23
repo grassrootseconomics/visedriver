@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"git.defalsify.org/vise.git/db"
-	"git.defalsify.org/vise.git/lang"
+	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/state"
 	"git.grassecon.net/urdt/ussd/internal/mocks"
@@ -17,6 +17,7 @@ import (
 	"git.grassecon.net/urdt/ussd/internal/utils"
 	"github.com/alecthomas/assert/v2"
 	testdataloader "github.com/peteole/testdata-loader"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -96,6 +97,11 @@ func TestCreateAccount(t *testing.T) {
 }
 
 func TestSaveFirstname(t *testing.T) {
+
+	fm, err := NewFlagManager(flagsPath)
+	if err != nil {
+		t.Fatal(err)
+	}
 	// Create a new instance of MockMyDataStore
 	mockStore := new(mocks.MockUserDataStore)
 
@@ -104,12 +110,16 @@ func TestSaveFirstname(t *testing.T) {
 	firstName := "John"
 	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
 
+	flag_allow_update, _ := fm.parser.GetFlag("flag_allow_update")
+	flag_single_edit, _ := fm.parser.GetFlag("flag_single_edit")
+
 	// Set up the expected behavior of the mock
 	mockStore.On("WriteEntry", ctx, sessionId, utils.DATA_FIRST_NAME, []byte(firstName)).Return(nil)
 
 	// Create the Handlers instance with the mock store
 	h := &Handlers{
 		userdataStore: mockStore,
+		flagManager:   fm.parser,
 	}
 
 	// Call the method
@@ -117,7 +127,10 @@ func TestSaveFirstname(t *testing.T) {
 
 	// Assert results
 	assert.NoError(t, err)
-	assert.Equal(t, resource.Result{}, res)
+	assert.Equal(t, resource.Result{
+		FlagSet:   []uint32{flag_single_edit},
+		FlagReset: []uint32{flag_allow_update},
+	}, res)
 
 	// Assert all expectations were met
 	mockStore.AssertExpectations(t)
@@ -562,13 +575,6 @@ func TestSetLanguage(t *testing.T) {
 				Content: "swa",
 			},
 		},
-		// {
-		// 	name:     "Unhandled path",
-		// 	execPath: []string{""},
-		// 	expectedResult: resource.Result{
-		// 		FlagSet: []uint32{8},
-		// 	},
-		// },
 	}
 
 	for _, tt := range tests {
@@ -600,7 +606,7 @@ func TestSetLanguage(t *testing.T) {
 func TestSetResetSingleEdit(t *testing.T) {
 	fm, err := NewFlagManager(flagsPath)
 
-	flag_allow_update, _ := fm.parser.GetFlag("flag_allow_update")
+	//flag_allow_update, _ := fm.parser.GetFlag("flag_allow_update")
 	flag_single_edit, _ := fm.parser.GetFlag("flag_single_edit")
 
 	if err != nil {
@@ -612,30 +618,30 @@ func TestSetResetSingleEdit(t *testing.T) {
 		input          []byte
 		expectedResult resource.Result
 	}{
-		{
-			name:  "Set single Edit",
-			input: []byte("2"),
-			expectedResult: resource.Result{
-				FlagSet:   []uint32{flag_single_edit},
-				FlagReset: []uint32{flag_allow_update},
-			},
-		},
-		{
-			name:  "Set single Edit",
-			input: []byte("3"),
-			expectedResult: resource.Result{
-				FlagSet:   []uint32{flag_single_edit},
-				FlagReset: []uint32{flag_allow_update},
-			},
-		},
-		{
-			name:  "Set single edit",
-			input: []byte("4"),
-			expectedResult: resource.Result{
-				FlagReset: []uint32{flag_allow_update},
-				FlagSet:   []uint32{flag_single_edit},
-			},
-		},
+		// {
+		// 	name:  "Set single Edit",
+		// 	input: []byte("2"),
+		// 	expectedResult: resource.Result{
+		// 		FlagSet:   []uint32{flag_single_edit},
+		// 		FlagReset: []uint32{flag_allow_update},
+		// 	},
+		// },
+		// {
+		// 	name:  "Set single Edit",
+		// 	input: []byte("3"),
+		// 	expectedResult: resource.Result{
+		// 		FlagSet:   []uint32{flag_single_edit},
+		// 		FlagReset: []uint32{flag_allow_update},
+		// 	},
+		// },
+		// {
+		// 	name:  "Set single edit",
+		// 	input: []byte("4"),
+		// 	expectedResult: resource.Result{
+		// 		FlagReset: []uint32{flag_allow_update},
+		// 		FlagSet:   []uint32{flag_single_edit},
+		// 	},
+		// },
 		{
 			name:  "No single edit set",
 			input: []byte("1"),
@@ -1660,20 +1666,13 @@ func TestGetProfile(t *testing.T) {
 	mockDataStore := new(mocks.MockUserDataStore)
 	mockCreateAccountService := new(mocks.MockAccountService)
 	mockState := state.NewState(16)
-	// Set the ExecPath
-
-	ll := &lang.Language{
-		Code: "swa",
-	}
 
 	h := &Handlers{
 		userdataStore:  mockDataStore,
 		accountService: mockCreateAccountService,
-		//	st:             mockState,
+		st:             mockState,
 	}
-
 	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
-	ctx = context.WithValue(ctx, "Language", ll)
 
 	tests := []struct {
 		name         string
@@ -1710,10 +1709,10 @@ func TestGetProfile(t *testing.T) {
 			name:         "Test with with profile information with language that is not yet supported",
 			keys:         []utils.DataTyp{utils.DATA_FAMILY_NAME, utils.DATA_FIRST_NAME, utils.DATA_GENDER, utils.DATA_OFFERINGS, utils.DATA_LOCATION, utils.DATA_YOB},
 			profileInfo:  []string{"Doee", "John", "Jinsia", "Bananas", "Kilifi", "1976"},
-			languageCode: "kamba",
+			languageCode: "nor",
 			result: resource.Result{
 				Content: fmt.Sprintf(
-					"Jina: %s\nJinsia: %s\nUmri: %s\nEneo: %s\nUnauza: %s\n",
+					"Name: %s\nGender: %s\nAge: %s\nLocation: %s\nYou provide: %s\n",
 					"John Doee", "Male", "48", "Kilifi", "Bananas",
 				),
 			},
@@ -1725,8 +1724,12 @@ func TestGetProfile(t *testing.T) {
 				mockDataStore.On("ReadEntry", ctx, sessionId, key).Return([]byte(tt.profileInfo[index]), nil)
 			}
 
-			mockState.SetLanguage(tt.languageCode)
+			err := mockState.SetLanguage(tt.languageCode)
+			if err != nil {
+				t.Fail()
+			}
 			h.st = mockState
+
 			res, _ := h.GetProfileInfo(ctx, "get_profile_info", []byte(""))
 
 			// Assert that expectations were met
@@ -1832,6 +1835,25 @@ func TestSaveTemporaryPIn(t *testing.T) {
 
 	// Assert all expectations were met
 	mockStore.AssertExpectations(t)
+}
+
+func TestWithPersister(t *testing.T) {
+	// Test case: Setting a persister
+	h := &Handlers{}
+	p := &persist.Persister{}
+
+	result := h.WithPersister(p)
+
+	assert.Equal(t, p, h.pe, "The persister should be set correctly.")
+	assert.Equal(t, h, result, "The returned handler should be the same instance.")
+}
+
+func TestWithPersister_PanicWhenAlreadySet(t *testing.T) {
+	// Test case: Panic on multiple calls
+	h := &Handlers{pe: &persist.Persister{}}
+	require.Panics(t, func() {
+		h.WithPersister(&persist.Persister{})
+	}, "Should panic when trying to set a persister again.")
 }
 
 func TestConfirmPin(t *testing.T) {

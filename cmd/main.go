@@ -23,10 +23,10 @@ func main() {
 	var dbDir string
 	var size uint
 	var sessionId string
-	var debug bool
+	var engineDebug bool
 	flag.StringVar(&sessionId, "session-id", "075xx2123", "session id")
 	flag.StringVar(&dbDir, "dbdir", ".state", "database dir to read from")
-	flag.BoolVar(&debug, "d", false, "use engine debug output")
+	flag.BoolVar(&engineDebug, "d", false, "use engine debug output")
 	flag.UintVar(&size, "s", 160, "max size of output")
 	flag.Parse()
 
@@ -93,7 +93,7 @@ func main() {
 
 	en := lhs.GetEngine()
 	en = en.WithFirst(hl.Init)
-	if debug {
+	if engineDebug {
 		en = en.WithDebug(nil)
 	}
 

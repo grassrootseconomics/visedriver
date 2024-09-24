@@ -88,7 +88,6 @@ func (localHandlerService *LocalHandlerService) GetHandler() (*ussd.Handlers, er
 	localHandlerService.DbRs.AddLocalFunc("get_profile_info", ussdHandlers.GetProfileInfo)
 	localHandlerService.DbRs.AddLocalFunc("verify_yob", ussdHandlers.VerifyYob)
 	localHandlerService.DbRs.AddLocalFunc("reset_incorrect_date_format", ussdHandlers.ResetIncorrectYob)
-	localHandlerService.DbRs.AddLocalFunc("set_reset_single_edit", ussdHandlers.SetResetSingleEdit)
 	localHandlerService.DbRs.AddLocalFunc("initiate_transaction", ussdHandlers.InitiateTransaction)
 	localHandlerService.DbRs.AddLocalFunc("save_temporary_pin", ussdHandlers.SaveTemporaryPin)
 	localHandlerService.DbRs.AddLocalFunc("verify_new_pin", ussdHandlers.VerifyNewPin)

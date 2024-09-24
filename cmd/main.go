@@ -24,11 +24,9 @@ func main() {
 	var size uint
 	var sessionId string
 	var engineDebug bool
-	var stateDebug bool
 	flag.StringVar(&sessionId, "session-id", "075xx2123", "session id")
 	flag.StringVar(&dbDir, "dbdir", ".state", "database dir to read from")
-	flag.BoolVar(&engineDebug, "engine-debug", false, "use engine debug output")
-	flag.BoolVar(&stateDebug, "state-debug", false, "use engine debug output")
+	flag.BoolVar(&engineDebug, "d", false, "use engine debug output")
 	flag.UintVar(&size, "s", 160, "max size of output")
 	flag.Parse()
 
@@ -43,10 +41,6 @@ func main() {
 		SessionId:  sessionId,
 		OutputSize: uint32(size),
 		FlagCount:  uint32(16),
-	}
-
-	if stateDebug {
-		cfg.StateDebug = true
 	}
 
 	resourceDir := scriptDir

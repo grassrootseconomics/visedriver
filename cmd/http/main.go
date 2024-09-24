@@ -30,13 +30,11 @@ func main() {
 	var resourceDir string
 	var size uint
 	var engineDebug bool
-	var stateDebug bool
 	var host string
 	var port uint
 	flag.StringVar(&dbDir, "dbdir", ".state", "database dir to read from")
 	flag.StringVar(&resourceDir, "resourcedir", path.Join("services", "registration"), "resource dir")
-	flag.BoolVar(&engineDebug, "engine-debug", false, "use engine debug output")
-	flag.BoolVar(&stateDebug, "state-debug", false, "use engine debug output")
+	flag.BoolVar(&engineDebug, "d", false, "use engine debug output")
 	flag.UintVar(&size, "s", 160, "max size of output")
 	flag.StringVar(&host, "h", "127.0.0.1", "http host")
 	flag.UintVar(&port, "p", 7123, "http port")
@@ -52,9 +50,7 @@ func main() {
 		OutputSize: uint32(size),
 		FlagCount:  uint32(16),
 	}
-	if stateDebug {
-		cfg.StateDebug = true
-	}
+
 	if engineDebug {
 		cfg.EngineDebug = true
 	}

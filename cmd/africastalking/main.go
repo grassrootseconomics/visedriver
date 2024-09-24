@@ -98,21 +98,20 @@ func main() {
 		cfg.EngineDebug = true
 	}
 
-	menuStorageService := storage.MenuStorageService{}
-
-	rs, err := menuStorageService.GetResource(scriptDir, ctx)
+	menuStorageService := storage.NewMenuStorageService(dbDir, resourceDir)
+	rs, err := menuStorageService.GetResource(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 
-	err = menuStorageService.EnsureDbDir(dbDir)
+	err = menuStorageService.EnsureDbDir()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 
-	userdataStore := menuStorageService.GetUserdataDb(dbDir, ctx)
+	userdataStore, err := menuStorageService.GetUserdataDb(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
@@ -125,7 +124,7 @@ func main() {
 	}
 
 	lhs, err := handlers.NewLocalHandlerService(pfp, true, dbResource, cfg, rs)
-	lhs.WithDataStore(&userdataStore)
+	lhs.SetDataStore(&userdataStore)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
@@ -138,7 +137,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	stateStore, err := menuStorageService.GetStateStore(dbDir, ctx)
+	stateStore, err := menuStorageService.GetStateStore(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)

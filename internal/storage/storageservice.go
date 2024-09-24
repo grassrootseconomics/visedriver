@@ -8,57 +8,96 @@ import (
 
 	"git.defalsify.org/vise.git/db"
 	fsdb "git.defalsify.org/vise.git/db/fs"
-	gdbmdb "git.defalsify.org/vise.git/db/gdbm"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
+	"git.defalsify.org/vise.git/logging"
 )
 
+var (
+	logg = logging.NewVanilla().WithDomain("storage")
+)	
+
 type StorageService interface {
-	GetPersister(dbDir string, ctx context.Context) (*persist.Persister, error)
-	GetUserdataDb(dbDir string, ctx context.Context) db.Db
-	GetResource(resourceDir string, ctx context.Context) (resource.Resource, error)
-	EnsureDbDir(dbDir string) error
+	GetPersister(ctx context.Context) (*persist.Persister, error)
+	GetUserdataDb(ctx context.Context) db.Db
+	GetResource(ctx context.Context) (resource.Resource, error)
+	EnsureDbDir() error
 }
 
-type MenuStorageService struct{}
-
-func (menuStorageService *MenuStorageService) GetPersister(dbDir string, ctx context.Context) (*persist.Persister, error) {
-	store := gdbmdb.NewGdbmDb()
-	storeFile := path.Join(dbDir, "state.gdbm")
-	store.Connect(ctx, storeFile)
-	pr := persist.NewPersister(store)
-	return pr, nil
+type MenuStorageService struct{
+	dbDir string
+	resourceDir string
+	resourceStore db.Db
+	stateStore db.Db
+	userDataStore db.Db
 }
 
-func (menuStorageService *MenuStorageService) GetUserdataDb(dbDir string, ctx context.Context) db.Db {
-	store := gdbmdb.NewGdbmDb()
-	storeFile := path.Join(dbDir, "userdata.gdbm")
-	store.Connect(ctx, storeFile)
-
-	return store
+func NewMenuStorageService(dbDir string, resourceDir string) *MenuStorageService {
+	return &MenuStorageService{
+		dbDir: dbDir,
+		resourceDir: resourceDir,
+	}
 }
 
-func (menuStorageService *MenuStorageService) GetResource(resourceDir string, ctx context.Context) (resource.Resource, error) {
-	store := fsdb.NewFsDb()
-	err := store.Connect(ctx, resourceDir)
+func (ms *MenuStorageService) GetPersister(ctx context.Context) (*persist.Persister, error) {
+	ms.stateStore = NewThreadGdbmDb()
+	storeFile := path.Join(ms.dbDir, "state.gdbm")
+	err := ms.stateStore.Connect(ctx, storeFile)
 	if err != nil {
 		return nil, err
 	}
-	rfs := resource.NewDbResource(store)
+	pr := persist.NewPersister(ms.stateStore)
+	logg.TraceCtxf(ctx, "menu storage service", "persist", pr, "store", ms.stateStore)
+	return pr, nil
+}
+
+func (ms *MenuStorageService) GetUserdataDb(ctx context.Context) (db.Db, error) {
+	ms.userDataStore = NewThreadGdbmDb()
+	storeFile := path.Join(ms.dbDir, "userdata.gdbm")
+	err := ms.userDataStore.Connect(ctx, storeFile)
+	if err != nil {
+		return nil, err
+	}
+	return ms.userDataStore, nil
+}
+
+func (ms *MenuStorageService) GetResource(ctx context.Context) (resource.Resource, error) {
+	ms.resourceStore = fsdb.NewFsDb()
+	err := ms.resourceStore.Connect(ctx, ms.resourceDir)
+	if err != nil {
+		return nil, err
+	}
+	rfs := resource.NewDbResource(ms.resourceStore)
 	return rfs, nil
 }
 
-func (menuStorageService *MenuStorageService) GetStateStore(dbDir string, ctx context.Context) (db.Db, error) {
-	store := gdbmdb.NewGdbmDb()
-	storeFile := path.Join(dbDir, "state.gdbm")
-	store.Connect(ctx, storeFile)
-	return store, nil
+func (ms *MenuStorageService) GetStateStore(ctx context.Context) (db.Db, error) {
+	if ms.stateStore != nil {
+		panic("set up store when already exists")
+	}
+	ms.stateStore = NewThreadGdbmDb()
+	storeFile := path.Join(ms.dbDir, "state.gdbm")
+	err := ms.stateStore.Connect(ctx, storeFile)
+	if err != nil {
+		return nil, err
+	}
+	return ms.stateStore, nil
 }
 
-func (menuStorageService *MenuStorageService) EnsureDbDir(dbDir string) error {
-	err := os.MkdirAll(dbDir, 0700)
+func (ms *MenuStorageService) EnsureDbDir() error {
+	err := os.MkdirAll(ms.dbDir, 0700)
 	if err != nil {
 		return fmt.Errorf("state dir create exited with error: %v\n", err)
+	}
+	return nil
+}
+
+func (ms *MenuStorageService) Close() error {
+	errA := ms.stateStore.Close()
+	errB := ms.userDataStore.Close()
+	errC := ms.resourceStore.Close()
+	if errA != nil || errB != nil || errC != nil {
+		return fmt.Errorf("%v %v %v", errA, errB, errC)
 	}
 	return nil
 }

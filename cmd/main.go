@@ -43,27 +43,28 @@ func main() {
 		FlagCount:  uint32(16),
 	}
 
-	menuStorageService := storage.MenuStorageService{}
+	resourceDir := scriptDir
+	menuStorageService := storage.NewMenuStorageService(dbDir, resourceDir)
 
-	err := menuStorageService.EnsureDbDir(dbDir)
+	err := menuStorageService.EnsureDbDir()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 
-	rs, err := menuStorageService.GetResource(scriptDir, ctx)
+	rs, err := menuStorageService.GetResource(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 
-	pe, err := menuStorageService.GetPersister(dbDir, ctx)
+	pe, err := menuStorageService.GetPersister(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 
-	userdatastore := menuStorageService.GetUserdataDb(dbDir, ctx)
+	userdatastore, err := menuStorageService.GetUserdataDb(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
@@ -76,8 +77,8 @@ func main() {
 	}
 
 	lhs, err := handlers.NewLocalHandlerService(pfp, true, dbResource, cfg, rs)
-	lhs.WithDataStore(&userdatastore)
-	lhs.WithPersister(pe)
+	lhs.SetDataStore(&userdatastore)
+	lhs.SetPersister(pe)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())

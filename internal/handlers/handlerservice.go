@@ -44,16 +44,16 @@ func NewLocalHandlerService(fp string, debug bool, dbResource *resource.DbResour
 	}, nil
 }
 
-func (localHandlerService *LocalHandlerService) WithPersister(Pe *persist.Persister) {
-	localHandlerService.Pe = Pe
+func (ls *LocalHandlerService) SetPersister(Pe *persist.Persister) {
+	ls.Pe = Pe
 }
 
-func (localHandlerService *LocalHandlerService) WithDataStore(db *db.Db) {
-	localHandlerService.UserdataStore = db
+func (ls *LocalHandlerService) SetDataStore(db *db.Db) {
+	ls.UserdataStore = db
 }
 
-func (localHandlerService *LocalHandlerService) GetHandler() (*ussd.Handlers, error) {
-	ussdHandlers, err := ussd.NewHandlers(localHandlerService.Parser, *localHandlerService.UserdataStore)
+func (ls *LocalHandlerService) GetHandler() (*ussd.Handlers, error) {
+	ussdHandlers, err := ussd.NewHandlers(ls.Parser, *ls.UserdataStore)
 	if err != nil {
 		return nil, err
 	}
@@ -97,8 +97,9 @@ func (localHandlerService *LocalHandlerService) GetHandler() (*ussd.Handlers, er
 	return ussdHandlers, nil
 }
 
-func (localHandlerService *LocalHandlerService) GetEngine() *engine.DefaultEngine {
-	en := engine.NewEngine(localHandlerService.Cfg, localHandlerService.Rs)
-	en = en.WithPersister(localHandlerService.Pe)
+// TODO: enable setting of sessionId on engine init time
+func (ls *LocalHandlerService) GetEngine() *engine.DefaultEngine {
+	en := engine.NewEngine(ls.Cfg, ls.Rs)
+	en = en.WithPersister(ls.Pe)
 	return en
 }

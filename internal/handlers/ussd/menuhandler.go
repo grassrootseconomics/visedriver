@@ -281,7 +281,12 @@ func (h *Handlers) GetVoucherList(ctx context.Context,sym string,input []byte) (
 		"VSGAQ",
 		"QPWIQQ",
 	}
-	res.Content = strings.Join(vouchers,"\n")
+
+	var numberedVouchers []string
+	for i, voucher := range vouchers {
+		numberedVouchers = append(numberedVouchers, fmt.Sprintf("%d:%s", i+1, voucher))
+	}
+	res.Content = strings.Join(numberedVouchers,"\n")
 
 	return res,nil
 }

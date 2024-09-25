@@ -254,6 +254,38 @@ func (h *Handlers) SaveTemporaryPin(ctx context.Context, sym string, input []byt
 	return res, nil
 }
 
+
+func (h *Handlers) GetVoucherList(ctx context.Context,sym string,input []byte) (resource.Result,error){
+	var res resource.Result
+	vouchers := []string{
+		"SRF",
+		"CRF",
+		"VCF",
+		"VSAPA",
+		"FSTMP",
+		"FSAW",
+		"PTAQ",
+		"VCRXT",
+		"VSGAQ",
+		"QPWIQQ",
+		"FSTMP",
+		"FSAW",
+		"PTAQ",
+		"VCRXT",
+		"VSGAQ",
+		"QPWIQQ",
+		"FSTMP",
+		"FSAW",
+		"PTAQ",
+		"VCRXT",
+		"VSGAQ",
+		"QPWIQQ",
+	}
+	res.Content = strings.Join(vouchers,"\n")
+
+	return res,nil
+}
+
 func (h *Handlers) ConfirmPinChange(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	sessionId, ok := ctx.Value("SessionId").(string)

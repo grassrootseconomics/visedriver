@@ -8,7 +8,7 @@ MOUT help 4
 MOUT quit 9
 HALT
 INCMP send 1
-INCMP select_voucher 2
+INCMP my_vouchers 2
 INCMP my_account 3
 INCMP help 4
 INCMP quit 9

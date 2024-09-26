@@ -1440,7 +1440,7 @@ func TestValidateAmount(t *testing.T) {
 	if err != nil {
 		t.Logf(err.Error())
 	}
-	//flag_invalid_amount, _ := fm.parser.GetFlag("flag_invalid_amount")
+	flag_invalid_amount, _ := fm.parser.GetFlag("flag_invalid_amount")
 	mockDataStore := new(mocks.MockUserDataStore)
 	mockCreateAccountService := new(mocks.MockAccountService)
 
@@ -1469,26 +1469,26 @@ func TestValidateAmount(t *testing.T) {
 				Content: "0.001",
 			},
 		},
-		// {
-		// 	name:      "Test with amount larger than balance",
-		// 	input:     []byte("0.02"),
-		// 	balance:   "0.003 CELO",
-		// 	publicKey: []byte("0xrqeqrequuq"),
-		// 	expectedResult: resource.Result{
-		// 		FlagSet: []uint32{flag_invalid_amount},
-		// 		Content: "0.02",
-		// 	},
-		// },
-		// {
-		// 	name:      "Test with invalid amount",
-		// 	input:     []byte("0.02ms"),
-		// 	balance:   "0.003 CELO",
-		// 	publicKey: []byte("0xrqeqrequuq"),
-		// 	expectedResult: resource.Result{
-		// 		FlagSet: []uint32{flag_invalid_amount},
-		// 		Content: "0.02ms",
-		// 	},
-		// },
+		{
+			name:      "Test with amount larger than balance",
+			input:     []byte("0.02"),
+			balance:   "0.003 CELO",
+			publicKey: []byte("0xrqeqrequuq"),
+			expectedResult: resource.Result{
+				FlagSet: []uint32{flag_invalid_amount},
+				Content: "0.02",
+			},
+		},
+		{
+			name:      "Test with invalid amount",
+			input:     []byte("0.02ms"),
+			balance:   "0.003 CELO",
+			publicKey: []byte("0xrqeqrequuq"),
+			expectedResult: resource.Result{
+				FlagSet: []uint32{flag_invalid_amount},
+				Content: "0.02ms",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1496,7 +1496,7 @@ func TestValidateAmount(t *testing.T) {
 
 			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_PUBLIC_KEY).Return(tt.publicKey, nil)
 			mockCreateAccountService.On("CheckBalance", string(tt.publicKey)).Return(tt.balance, nil)
-			mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_AMOUNT, tt.input).Return(nil)
+			mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_AMOUNT, tt.input).Return(nil).Maybe()
 
 			// Call the method under test
 			res, _ := h.ValidateAmount(ctx, "test_validate_amount", tt.input)

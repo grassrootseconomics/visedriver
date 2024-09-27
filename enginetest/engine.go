@@ -26,8 +26,8 @@ func TestEngine(sessionId string) (engine.Engine,*persist.Persister){
 	cfg := engine.Config{
 		Root:       "root",
 		SessionId:  sessionId,
-		OutputSize: uint32(106),
-		FlagCount:  uint32(16),
+		OutputSize: uint32(160),
+		//FlagCount:  uint32(16),
 	}
 
 	dbDir := ".test_state"

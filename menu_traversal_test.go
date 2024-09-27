@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -30,8 +29,8 @@ type TestData struct {
 }
 
 func TestUserRegistration(t *testing.T) {
-	en, pe := enginetest.TestEngine("session1234112")
-	w := bytes.NewBuffer(nil)
+	en, pe := enginetest.TestEngine("session12341122")
+	//w := bytes.NewBuffer(nil)
 	file, err := os.Open("test_data.json")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
@@ -51,11 +50,9 @@ func TestUserRegistration(t *testing.T) {
 		inputBuilder.WriteString(strings.Join(testCase.Input, "\n") + "\n")
 	}
 	readers := bufio.NewReader(strings.NewReader(inputBuilder.String()))
-	engine.Loop(context.Background(), en, readers, w, nil)
+	engine.Loop(context.Background(), en, readers, os.Stdout, nil)
 	st := pe.GetState()
 	sym, _ := st.Where()
-	b := w.Bytes()
-    fmt.Println("Menu:",string(b))
 	fmt.Println("Rendering symbol:", sym)
 
 }

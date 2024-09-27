@@ -1,8 +1,9 @@
 {
     "user_registration": [
         {
-            "input": ["0", "0","1234","1234"],
+            "input": ["","0", "0","1234","1234"],
             "expected": "Registration successful"
+            
         }
     ],
     "pincheck": [

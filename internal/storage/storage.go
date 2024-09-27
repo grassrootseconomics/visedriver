@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	DATATYPE_CUSTOM = 128 
+	DATATYPE_EXTEND = 128 
 )
 
 type Storage struct {

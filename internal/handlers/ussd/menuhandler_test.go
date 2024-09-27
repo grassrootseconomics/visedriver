@@ -96,8 +96,6 @@ func TestCreateAccount(t *testing.T) {
 	mockDataStore.AssertExpectations(t)
 }
 
-
-        
 func TestWithPersister(t *testing.T) {
 	// Test case: Setting a persister
 	h := &Handlers{}
@@ -116,7 +114,6 @@ func TestWithPersister_PanicWhenAlreadySet(t *testing.T) {
 		h.WithPersister(&persist.Persister{})
 	}, "Should panic when trying to set a persister again.")
 }
-
 
 func TestSaveFirstname(t *testing.T) {
 	// Create a new instance of MockMyDataStore
@@ -341,25 +338,19 @@ func TestSaveGender(t *testing.T) {
 			expectCall:      true,
 		},
 		{
-			name:           "Valid Female Input",
-			input:          []byte("2"),
-			expectedGender: "female",
+			name:            "Valid Female Input",
+			input:           []byte("2"),
+			expectedGender:  "female",
 			executingSymbol: "set_female",
-			expectCall:     true,
+			expectCall:      true,
 		},
 		{
-			name:           "Valid Unspecified Input",
-			input:          []byte("3"),
+			name:            "Valid Unspecified Input",
+			input:           []byte("3"),
 			executingSymbol: "set_unspecified",
-			expectedGender: "unspecified",
-			expectCall:     true,
+			expectedGender:  "unspecified",
+			expectCall:      true,
 		},
-		// {
-		// 	name:           "Empty Input",
-		// 	input:          []byte(""),
-		// 	expectedGender: "",
-		// 	expectCall:     false,
-		// },
 	}
 
 	for _, tt := range tests {
@@ -588,13 +579,6 @@ func TestSetLanguage(t *testing.T) {
 				Content: "swa",
 			},
 		},
-		// {
-		// 	name:     "Unhandled path",
-		// 	execPath: []string{""},
-		// 	expectedResult: resource.Result{
-		// 		FlagSet: []uint32{8},
-		// 	},
-		// },
 	}
 
 	for _, tt := range tests {

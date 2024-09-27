@@ -1,13 +1,15 @@
 CATCH incorrect_pin flag_incorrect_pin 1
 CATCH profile_update_success flag_allow_update 1
-LOAD save_gender 0
 MOUT male 1
 MOUT female 2
 MOUT unspecified 3
 MOUT back 0
 HALT
-RELOAD save_gender
 INCMP _ 0
-INCMP pin_entry *
+INCMP set_male 1
+INCMP set_female 2
+INCMP set_unspecified 3
+
+
 
 

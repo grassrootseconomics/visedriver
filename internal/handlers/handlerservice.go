@@ -88,7 +88,6 @@ func (ls *LocalHandlerService) GetHandler() (*ussd.Handlers, error) {
 	ls.DbRs.AddLocalFunc("get_profile_info", ussdHandlers.GetProfileInfo)
 	ls.DbRs.AddLocalFunc("verify_yob", ussdHandlers.VerifyYob)
 	ls.DbRs.AddLocalFunc("reset_incorrect_date_format", ussdHandlers.ResetIncorrectYob)
-	ls.DbRs.AddLocalFunc("set_reset_single_edit", ussdHandlers.SetResetSingleEdit)
 	ls.DbRs.AddLocalFunc("initiate_transaction", ussdHandlers.InitiateTransaction)
 	ls.DbRs.AddLocalFunc("save_temporary_pin", ussdHandlers.SaveTemporaryPin)
 	ls.DbRs.AddLocalFunc("verify_new_pin", ussdHandlers.VerifyNewPin)

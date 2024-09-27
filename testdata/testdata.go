@@ -4,15 +4,14 @@ import (
 	"context"
 	"io/ioutil"
 	"os"
-    "path"
+	"path"
+
 	"git.defalsify.org/vise.git/db"
 	fsdb "git.defalsify.org/vise.git/db/fs"
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/vm"
 	testdataloader "github.com/peteole/testdata-loader"
 )
-
-
 
 func outNew(sym string, b []byte, tpl string, data map[string]string) error {
 	logg.Debugf("testdata out", "sym", sym)

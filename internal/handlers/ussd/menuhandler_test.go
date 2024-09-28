@@ -171,7 +171,7 @@ func TestSaveFamilyname(t *testing.T) {
 	mockStore.AssertExpectations(t)
 }
 
-func TestSavePin(t *testing.T) {
+func TestSaveTemporaryPIn(t *testing.T) {
 	fm, err := NewFlagManager(flagsPath)
 	mockStore := new(mocks.MockUserDataStore)
 	if err != nil {
@@ -213,10 +213,10 @@ func TestSavePin(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			// Set up the expected behavior of the mock
-			mockStore.On("WriteEntry", ctx, sessionId, utils.DATA_ACCOUNT_PIN, []byte(tt.input)).Return(nil)
+			mockStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_PIN, []byte(tt.input)).Return(nil)
 
 			// Call the method
-			res, err := h.SavePin(ctx, "save_pin", tt.input)
+			res, err := h.SaveTemporaryPin(ctx, "save_pin", tt.input)
 
 			if err != nil {
 				t.Error(err)
@@ -937,7 +937,7 @@ func TestVerifyYob(t *testing.T) {
 	}
 }
 
-func TestVerifyPin(t *testing.T) {
+func TestVerifyCreatePin(t *testing.T) {
 	fm, err := NewFlagManager(flagsPath)
 
 	if err != nil {
@@ -986,7 +986,7 @@ func TestVerifyPin(t *testing.T) {
 		},
 	}
 
-	typ := utils.DATA_ACCOUNT_PIN
+	typ := utils.DATA_TEMPORARY_PIN
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -994,8 +994,11 @@ func TestVerifyPin(t *testing.T) {
 			// Define expected interactions with the mock
 			mockDataStore.On("ReadEntry", ctx, sessionId, typ).Return([]byte(firstSetPin), nil)
 
+			// Set up the expected behavior of the mock
+			mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_ACCOUNT_PIN, []byte(firstSetPin)).Return(nil)
+
 			// Call the method under test
-			res, err := h.VerifyPin(ctx, "verify_pin", []byte(tt.input))
+			res, err := h.VerifyCreatePin(ctx, "verify_create_pin", []byte(tt.input))
 
 			// Assert that no errors occurred
 			assert.NoError(t, err)
@@ -1691,42 +1694,6 @@ func TestVerifyNewPin(t *testing.T) {
 		})
 	}
 
-}
-
-func TestSaveTemporaryPIn(t *testing.T) {
-
-	fm, err := NewFlagManager(flagsPath)
-
-	if err != nil {
-		t.Logf(err.Error())
-	}
-
-	// Create a new instance of UserDataStore
-	mockStore := new(mocks.MockUserDataStore)
-
-	// Define test data
-	sessionId := "session123"
-	PIN := "1234"
-	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
-
-	// Set up the expected behavior of the mock
-	mockStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_PIN, []byte(PIN)).Return(nil)
-
-	// Create the Handlers instance with the mock store
-	h := &Handlers{
-		userdataStore: mockStore,
-		flagManager:   fm.parser,
-	}
-
-	// Call the method
-	res, err := h.SaveTemporaryPin(ctx, "save_temporary_pin", []byte(PIN))
-
-	// Assert results
-	assert.NoError(t, err)
-	assert.Equal(t, resource.Result{}, res)
-
-	// Assert all expectations were met
-	mockStore.AssertExpectations(t)
 }
 
 func TestConfirmPin(t *testing.T) {

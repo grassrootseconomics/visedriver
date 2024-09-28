@@ -13,6 +13,7 @@ type AccountServiceInterface interface {
 	CheckBalance(publicKey string) (string, error)
 	CreateAccount() (*models.AccountResponse, error)
 	CheckAccountStatus(trackingId string) (string, error)
+	FetchVouchersFromAPI() ([]models.VoucherHolding, error)
 }
 
 type AccountService struct {
@@ -109,4 +110,32 @@ func (as *AccountService) CreateAccount() (*models.AccountResponse, error) {
 	}
 
 	return &accountResp, nil
+}
+
+// fetchVouchersFromAPI calls the API to get the list of vouchers belonging to the user
+func  (as *AccountService) FetchVouchersFromAPI() ([]models.VoucherHolding, error) {
+	// TODO replace with the actual request once ready
+	mockJSON := `[
+		{
+			"symbol": "MUMO",
+			"address": "0x078b3a26596218507781722A4e8825BFB9570Fba"
+		},
+		{
+			"symbol": "SRF",
+			"address": "0x45d747172e77d55575c197CbA9451bC2CD8F4958"
+		},
+		{
+			"symbol": "HALGAN",
+			"address": "0x12169Fb5931A599ad1283bb8311Dad54Feb51A28"
+		}
+	]`
+
+	// Unmarshal the JSON response
+	var holdings []models.VoucherHolding
+	err := json.Unmarshal([]byte(mockJSON), &holdings)
+	if err != nil {
+		return nil, err
+	}
+
+	return holdings, nil
 }

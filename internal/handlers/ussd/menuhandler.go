@@ -231,36 +231,23 @@ func (h *Handlers) SaveTemporaryPin(ctx context.Context, sym string, input []byt
 	return res, nil
 }
 
+// GetVoucherList fetches the list of vouchers and formats them
+// checks whether they are synced internally before calling the API
 func (h *Handlers) GetVoucherList(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
-	vouchers := []string{
-		"SRF",
-		"CRF",
-		"VCF",
-		"VSAPA",
-		"FSTMP",
-		"FSAW",
-		"PTAQ",
-		"VCRXT",
-		"VSGAQ",
-		"QPWIQQ",
-		"FSTMP",
-		"FSAW",
-		"PTAQ",
-		"VCRXT",
-		"VSGAQ",
-		"QPWIQQ",
-		"FSTMP",
-		"FSAW",
-		"PTAQ",
-		"VCRXT",
-		"VSGAQ",
-		"QPWIQQ",
+
+	// check if the vouchers exist internally and if not
+	// fetch from the API
+
+	// Fetch vouchers from API
+	vouchers, err := h.accountService.FetchVouchersFromAPI()
+	if err != nil {
+		return res, fmt.Errorf("error fetching vouchers: %w", err)
 	}
 
 	var numberedVouchers []string
 	for i, voucher := range vouchers {
-		numberedVouchers = append(numberedVouchers, fmt.Sprintf("%d:%s", i+1, voucher))
+		numberedVouchers = append(numberedVouchers, fmt.Sprintf("%d:%s", i+1, voucher.Symbol))
 	}
 	res.Content = strings.Join(numberedVouchers, "\n")
 

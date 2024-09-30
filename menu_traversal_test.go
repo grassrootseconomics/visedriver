@@ -16,29 +16,31 @@ var (
 func TestUserRegistration(t *testing.T) {
 	en, _ := enginetest.TestEngine("session1234112")
 	defer en.Finish()
-	//var err error
 	ctx := context.Background()
 	sessions := testData
 	for _, session := range sessions {
 		groups := driver.FilterGroupsByName(session.Groups, "account_creation_successful")
 		for _, group := range groups {
 			for _, step := range group.Steps {
-				//			for {
-				_, err := en.Exec(ctx, []byte(step.Input))
+
+				cont, err := en.Exec(ctx, []byte(step.Input))
 
 				if err != nil {
-					t.Fail()
+					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
+					return
+				}
+				if !cont {
+					break
 				}
 				w := bytes.NewBuffer(nil)
 				_, err = en.Flush(ctx, w)
 				if err != nil {
-					t.Fatal(err)
+					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
 				}
 				b := w.Bytes()
 				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}
-				//				}
 
 			}
 		}
@@ -55,7 +57,6 @@ func TestTerms(t *testing.T) {
 		groups := driver.FilterGroupsByName(session.Groups, "account_creation_accept_terms")
 		for _, group := range groups {
 			for _, step := range group.Steps {
-				//			for {
 				_, err := en.Exec(ctx, []byte(step.Input))
 				if err != nil {
 					t.Fail()
@@ -64,13 +65,12 @@ func TestTerms(t *testing.T) {
 				w := bytes.NewBuffer(nil)
 				_, err = en.Flush(ctx, w)
 				if err != nil {
-					t.Fatal(err)
+					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
 				}
 				b := w.Bytes()
 				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}
-				//			}
 
 			}
 		}

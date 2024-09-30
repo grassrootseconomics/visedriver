@@ -76,3 +76,65 @@ func TestTerms(t *testing.T) {
 		}
 	}
 }
+
+func TestAccountRegistrationRejectTerms(t *testing.T) {
+	en, _ := enginetest.TestEngine("session1234112")
+	defer en.Finish()
+	ctx := context.Background()
+	sessions := testData
+	for _, session := range sessions {
+		groups := driver.FilterGroupsByName(session.Groups, "account_creation_reject_terms")
+		for _, group := range groups {
+			for _, step := range group.Steps {
+				cont, err := en.Exec(ctx, []byte(step.Input))
+				if err != nil {
+					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
+					return
+				}
+				if !cont {
+					break
+				}
+				w := bytes.NewBuffer(nil)
+				if _, err := en.Flush(ctx, w); err != nil {
+					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
+				}
+
+				b := w.Bytes()
+				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
+					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
+				}
+			}
+		}
+	}
+}
+
+func TestAccountRegistrationInvalidPin(t *testing.T) {
+	en, _ := enginetest.TestEngine("session1234112")
+	defer en.Finish()
+	ctx := context.Background()
+	sessions := testData
+	for _, session := range sessions {
+		groups := driver.FilterGroupsByName(session.Groups, "account_creation_invalid_pin")
+		for _, group := range groups {
+			for _, step := range group.Steps {
+				cont, err := en.Exec(ctx, []byte(step.Input))
+				if err != nil {
+					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
+					return
+				}
+				if !cont {
+					break
+				}
+				w := bytes.NewBuffer(nil)
+				if _, err := en.Flush(ctx, w); err != nil {
+					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
+				}
+
+				b := w.Bytes()
+				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
+					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
+				}
+			}
+		}
+	}
+}

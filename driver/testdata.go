@@ -22,7 +22,7 @@ type Session struct {
 }
 
 func ReadData() []Session {
-	data, err := os.ReadFile("test_data_two.json")
+	data, err := os.ReadFile("test_data.json")
 	if err != nil {
 		log.Fatalf("Failed to read file: %v", err)
 	}

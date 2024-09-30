@@ -1,19 +1,50 @@
-{
-    "user_registration": [
-        {
-            "input": ["","0", "0","1234","1234"],
-            "expected": "Registration successful"
-            
-        }
-    ],
-    "pincheck": [
-        {
-            "input": ["1234"],
-            "expected": "PIN valid"
-        },
-        {
-            "input": ["5678"],
-            "expected": "PIN invalid"
-        }
-    ]
-}
+[
+    {
+        "name": "session one",
+        "groups": [
+            {
+                "name": "account_creation_successful",
+                "steps": [
+                    {
+                        "input": "",
+                       "expectedContent": "Welcome to Sarafu Network\nPlease select a language\n0:english\n1:kiswahili"
+                    },
+                    {
+                        "input": "0",
+                       "expectedContent": "Do you agree to terms and conditions?\n0:yes\n1:no"
+                    },
+                    {
+                        "input": "0",
+                       "expectedContent": "Please enter a new four number PIN for your account:\n0:Exit"
+                    },
+                    {
+                        "input": "1234",
+                       "expectedContent": "Enter your four number PIN again:"
+                    },
+                    {
+                        "input": "1234",
+                       "expectedContent": "Enter your four number PIN again:"
+                    }
+                ]
+            },
+            {
+                "name": "account_creation_accept_terms",
+                "steps": [
+                    {
+                        "input": "",
+                       "expectedContent": "Welcome to Sarafu Network\nPlease select a language\n0:english\n1:kiswahili"
+                    },
+                    {
+                        "input": "0",
+                       "expectedContent": "Do you agree to terms and conditions?\n0:yes\n1:no"
+                    },
+                    {
+                        "input": "0",
+                       "expectedContent": "Please enter a new four number PIN for your account:\n0:Exit"
+                    }
+                   
+                ]
+            }
+        ]
+    }
+]

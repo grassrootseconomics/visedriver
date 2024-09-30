@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"git.grassecon.net/urdt/ussd/driver"
-	"git.grassecon.net/urdt/ussd/enginetest"
+	"git.grassecon.net/urdt/ussd/engine"
 )
 
 var (

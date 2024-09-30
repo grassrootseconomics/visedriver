@@ -13,12 +13,13 @@ import (
 	"git.grassecon.net/urdt/ussd/internal/handlers"
 	"git.grassecon.net/urdt/ussd/internal/storage"
 )
+
 var (
 	logg      = logging.NewVanilla()
 	scriptDir = path.Join("services", "registration")
 )
 
-func TestEngine(sessionId string) (engine.Engine,*persist.Persister){
+func TestEngine(sessionId string) (engine.Engine, *persist.Persister) {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
 	pfp := path.Join(scriptDir, "pp.csv")
@@ -83,6 +84,6 @@ func TestEngine(sessionId string) (engine.Engine,*persist.Persister){
 	en = en.WithFirst(hl.Init)
 
 	//en = en.WithDebug(nil)
-	return en,pe
+	return en, pe
 
 }

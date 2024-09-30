@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"testing"
 
 	"git.grassecon.net/urdt/ussd/driver"
@@ -68,7 +67,6 @@ func TestTerms(t *testing.T) {
 					t.Fatal(err)
 				}
 				b := w.Bytes()
-				fmt.Println("valuehere:", string(b))
 				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}

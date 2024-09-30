@@ -81,6 +81,7 @@ func TestTerms(t *testing.T) {
 
 func TestAccountRegistrationRejectTerms(t *testing.T) {
 	en, _ := enginetest.TestEngine("session1234112")
+	defer en.Finish()
 	var err error
 	ctx := context.Background()
 	sessions := testData
@@ -108,6 +109,7 @@ func TestAccountRegistrationRejectTerms(t *testing.T) {
 
 func TestAccountRegistrationInvalidPin(t *testing.T) {
 	en, _ := enginetest.TestEngine("session1234112")
+	defer en.Finish()
 	var err error
 	ctx := context.Background()
 	sessions := testData

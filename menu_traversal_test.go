@@ -1,58 +1,70 @@
 package main
 
 import (
-	"bufio"
+	"bytes"
 	"context"
-	"encoding/json"
-	"fmt"
-	"os"
-	"strings"
 	"testing"
 
-	"git.defalsify.org/vise.git/engine"
-
+	"git.grassecon.net/urdt/ussd/driver"
 	"git.grassecon.net/urdt/ussd/enginetest"
 )
 
-type TestCase struct {
-	Input    []string `json:"input"`
-	Expected string   `json:"expected"`
-}
-
-type UserRegistration struct {
-	UserRegistration []TestCase `json:"user_registration"`
-}
-
-type TestData struct {
-	UserRegistration []TestCase `json:"user_registration"`
-	PinCheck         []TestCase `json:"pincheck"`
-}
+var (
+	testData = driver.ReadData()
+)
 
 func TestUserRegistration(t *testing.T) {
-	en, pe := enginetest.TestEngine("session12341122")
-	//w := bytes.NewBuffer(nil)
-	file, err := os.Open("test_data.json")
-	if err != nil {
-		fmt.Println("Error opening file:", err)
-		return
-	}
-	defer file.Close()
+	en, _ := enginetest.TestEngine("session1234112")
+	var err error
+	ctx := context.Background()
+	sessions := testData
+	for _, session := range sessions {
+		groups := driver.FilterGroupsByName(session.Groups, "account_creation_successful")
+		for _, group := range groups {
+			for _, step := range group.Steps {
+				cont, _ := en.Exec(ctx, []byte(step.Input))
+				if cont {
+					w := bytes.NewBuffer(nil)
+					_, err = en.Flush(ctx, w)
+					if err != nil {
+						t.Fatal(err)
+					}
+					b := w.Bytes()
+					if !bytes.Equal(b, []byte(step.ExpectedContent)) {
+						t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
+					}
 
-	var testData TestData
-	decoder := json.NewDecoder(file)
-	if err := decoder.Decode(&testData); err != nil {
-		fmt.Println("Error decoding JSON:", err)
-		return
+				}
+			}
+		}
 	}
+}
 
-	var inputBuilder strings.Builder
-	for _, testCase := range testData.UserRegistration {
-		inputBuilder.WriteString(strings.Join(testCase.Input, "\n") + "\n")
+func TestAcceptTerms(t *testing.T) {
+	en, _ := enginetest.TestEngine("session12341123")
+	var err error
+	ctx := context.Background()
+	sessions := testData
+
+	for _, session := range sessions {
+		groups := driver.FilterGroupsByName(session.Groups, "account_creation_accept_terms")
+		for _, group := range groups {
+			for _, step := range group.Steps {
+				cont, _ := en.Exec(ctx, []byte(step.Input))
+				if cont {
+					w := bytes.NewBuffer(nil)
+					_, err = en.Flush(ctx, w)
+					if err != nil {
+						t.Fatal(err)
+					}
+					b := w.Bytes()
+					if !bytes.Equal(b, []byte(step.ExpectedContent)) {
+						t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
+					}
+
+				}
+
+			}
+		}
 	}
-	readers := bufio.NewReader(strings.NewReader(inputBuilder.String()))
-	engine.Loop(context.Background(), en, readers, os.Stdout, nil)
-	st := pe.GetState()
-	sym, _ := st.Where()
-	fmt.Println("Rendering symbol:", sym)
-
 }

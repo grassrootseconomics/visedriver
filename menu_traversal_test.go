@@ -138,13 +138,13 @@ func TestAccountRegistrationInvalidPin(t *testing.T) {
 	}
 }
 
-func TestSendWithInvalidRecipient(t *testing.T) {
+func TestSendWithInvalidInputs(t *testing.T) {
 	en, fn := enginetest.TestEngine("session1234112")
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
 	for _, session := range sessions {
-		groups := driver.FilterGroupsByName(session.Groups, "send_with_invalid_recipient")
+		groups := driver.FilterGroupsByName(session.Groups, "send_with_invalid_inputs")
 		for _, group := range groups {
 			for _, step := range group.Steps {
 				cont, err := en.Exec(ctx, []byte(step.Input))

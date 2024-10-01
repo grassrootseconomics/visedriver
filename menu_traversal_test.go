@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"regexp"
 	"testing"
 
 	"git.grassecon.net/urdt/ussd/driver"
@@ -12,6 +13,17 @@ import (
 var (
 	testData = driver.ReadData()
 )
+
+// Extract the public key from the engine response
+func extractPublicKey(response []byte) string {
+	// Regex pattern to match the public key starting with 0x and 40 characters
+	re := regexp.MustCompile(`0x[a-fA-F0-9]{40}`)
+	match := re.Find(response)
+	if match != nil {
+		return string(match)
+	}
+	return ""
+}
 
 func TestUserRegistration(t *testing.T) {
 	en, fn := enginetest.TestEngine("session1234112")
@@ -108,7 +120,7 @@ func TestAccountRegistrationRejectTerms(t *testing.T) {
 }
 
 func TestAccountRegistrationInvalidPin(t *testing.T) {
-	en, fn := enginetest.TestEngine("session1234112")
+	en, fn := enginetest.TestEngine("session1234112_c")
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -161,8 +173,15 @@ func TestSendWithInvalidInputs(t *testing.T) {
 				}
 
 				b := w.Bytes()
-				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
-					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
+
+				// Extract the dynamic public key from the output
+				publicKey := extractPublicKey(b)
+
+				// Replace placeholder {public_key} with the actual dynamic public key
+				expectedContent := bytes.Replace([]byte(step.ExpectedContent), []byte("{public_key}"), []byte(publicKey), -1)
+
+				if !bytes.Equal(b, expectedContent) {
+					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", expectedContent, b)
 				}
 			}
 		}

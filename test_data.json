@@ -129,7 +129,7 @@
                     },
                     {
                         "input": "0.001",
-                       "expectedContent": "065656 will receive 0.001 from 0xd6CF3C87b0D4aD5978448bBbD6Db9EC6D74D624b\nPlease enter your PIN to confirm:\n0:Back\n9:Quit"
+                       "expectedContent": "065656 will receive 0.001 from {public_key}\nPlease enter your PIN to confirm:\n0:Back\n9:Quit"
                     },
                     {
                         "input": "1222",
@@ -137,11 +137,11 @@
                     },
                     {
                         "input": "1",
-                       "expectedContent": "065656 will receive 0.001 from 0xd6CF3C87b0D4aD5978448bBbD6Db9EC6D74D624b\nPlease enter your PIN to confirm:\n0:Back\n9:Quit"
+                       "expectedContent": "065656 will receive 0.001 from {public_key}\nPlease enter your PIN to confirm:\n0:Back\n9:Quit"
                     },
                     {
                         "input": "1234",
-                       "expectedContent": "Your request has been sent. 065656 will receive 0.001 from 0xd6CF3C87b0D4aD5978448bBbD6Db9EC6D74D624b."
+                       "expectedContent": "Your request has been sent. 065656 will receive 0.001 from {public_key}."
                     }
                 ]
             }

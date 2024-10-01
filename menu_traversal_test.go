@@ -138,3 +138,69 @@ func TestAccountRegistrationInvalidPin(t *testing.T) {
 		}
 	}
 }
+
+func TestMyAccount_Change_Language(t *testing.T) {
+	en, _ := enginetest.TestEngine("session1234112")
+	defer en.Finish()
+	ctx := context.Background()
+	sessions := testData
+	for _, session := range sessions {
+		groups := driver.FilterGroupsByName(session.Groups, "menu_my_account_language_change")
+		for _, group := range groups {
+			for index, step := range group.Steps {
+				t.Logf("step %v with input %v", index, step.Input)
+				cont, err := en.Exec(ctx, []byte(step.Input))
+				if err != nil {
+					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
+					return
+				}
+				if !cont {
+					break
+				}
+				w := bytes.NewBuffer(nil)
+				if _, err := en.Flush(ctx, w); err != nil {
+					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
+				}
+
+				b := w.Bytes()
+				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
+					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
+				}
+
+			}
+		}
+	}
+}
+
+func TestMyAccount_Savefirstname(t *testing.T) {
+	en, _ := enginetest.TestEngine("session1234112")
+	defer en.Finish()
+	ctx := context.Background()
+	sessions := testData
+	for _, session := range sessions {
+		groups := driver.FilterGroupsByName(session.Groups, "menu_my_account_save_firstname")
+		for _, group := range groups {
+			for index, step := range group.Steps {
+				t.Logf("step %v with input %v", index, step.Input)
+				cont, err := en.Exec(ctx, []byte(step.Input))
+				if err != nil {
+					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
+					return
+				}
+				if !cont {
+					break
+				}
+				w := bytes.NewBuffer(nil)
+				if _, err := en.Flush(ctx, w); err != nil {
+					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
+				}
+
+				b := w.Bytes()
+				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
+					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
+				}
+
+			}
+		}
+	}
+}

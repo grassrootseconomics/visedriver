@@ -137,3 +137,34 @@ func TestAccountRegistrationInvalidPin(t *testing.T) {
 		}
 	}
 }
+
+func TestSendWithInvalidRecipient(t *testing.T) {
+	en, fn := enginetest.TestEngine("session1234112")
+	defer fn()
+	ctx := context.Background()
+	sessions := testData
+	for _, session := range sessions {
+		groups := driver.FilterGroupsByName(session.Groups, "send_with_invalid_recipient")
+		for _, group := range groups {
+			for _, step := range group.Steps {
+				cont, err := en.Exec(ctx, []byte(step.Input))
+				if err != nil {
+					t.Fatalf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
+					return
+				}
+				if !cont {
+					break
+				}
+				w := bytes.NewBuffer(nil)
+				if _, err := en.Flush(ctx, w); err != nil {
+					t.Fatalf("Test case '%s' failed during Flush: %v", group.Name, err)
+				}
+
+				b := w.Bytes()
+				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
+					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
+				}
+			}
+		}
+	}
+}

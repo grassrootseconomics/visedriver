@@ -95,6 +95,39 @@
                     }
                    
                 ]
+            },
+            {
+                "name": "send_with_invalid_recipient",
+                "steps": [
+                    {
+                        "input": "",
+                       "expectedContent": "Balance: 0.003 CELO\n\n1:Send\n2:My Vouchers\n3:My Account\n4:Help\n9:Quit"
+                    },
+                    {
+                        "input": "1",
+                       "expectedContent": "Enter recipient's phone number:\n0:Back"
+                    },
+                    {
+                        "input": "000",
+                       "expectedContent": "000 is not registered or invalid, please try again:\n1:retry\n9:Quit"
+                    },
+                    {
+                        "input": "1",
+                       "expectedContent": "Enter recipient's phone number:\n0:Back"
+                    },
+                    {
+                        "input": "065656",
+                       "expectedContent": "Maximum amount: 0.003 CELO\nEnter amount:\n0:Back"
+                    },
+                    {
+                        "input": "0.001",
+                       "expectedContent": "065656 will receive 0.001 from 0xd6CF3C87b0D4aD5978448bBbD6Db9EC6D74D624b\nPlease enter your PIN to confirm:\n0:Back\n9:Quit"
+                    },
+                    {
+                        "input": "1234",
+                       "expectedContent": "Your request has been sent. 065656 will receive 0.001 from 0xd6CF3C87b0D4aD5978448bBbD6Db9EC6D74D624b."
+                    }
+                ]
             }
         ]
     }

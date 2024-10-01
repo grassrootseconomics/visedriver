@@ -8,7 +8,6 @@ import (
 
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/logging"
-	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
 	"git.grassecon.net/urdt/ussd/internal/handlers"
 	"git.grassecon.net/urdt/ussd/internal/storage"
@@ -19,7 +18,7 @@ var (
 	scriptDir = path.Join("services", "registration")
 )
 
-func TestEngine(sessionId string) (engine.Engine, *persist.Persister) {
+func TestEngine(sessionId string) (engine.Engine, func()) {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
 	pfp := path.Join(scriptDir, "pp.csv")
@@ -53,7 +52,7 @@ func TestEngine(sessionId string) (engine.Engine, *persist.Persister) {
 		os.Exit(1)
 	}
 
-	userdatastore, err := menuStorageService.GetUserdataDb(ctx)
+	userDataStore, err := menuStorageService.GetUserdataDb(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
@@ -66,7 +65,7 @@ func TestEngine(sessionId string) (engine.Engine, *persist.Persister) {
 	}
 
 	lhs, err := handlers.NewLocalHandlerService(pfp, true, dbResource, cfg, rs)
-	lhs.SetDataStore(&userdatastore)
+	lhs.SetDataStore(&userDataStore)
 	lhs.SetPersister(pe)
 
 	if err != nil {
@@ -83,7 +82,14 @@ func TestEngine(sessionId string) (engine.Engine, *persist.Persister) {
 	en := lhs.GetEngine()
 	en = en.WithFirst(hl.Init)
 
-	//en = en.WithDebug(nil)
-	return en, pe
+	cleanFn := func() {
+		err := menuStorageService.Close()
+		if err != nil {
+			logg.Errorf(err.Error())
+		}
+		logg.Infof("testengine storage closed")
+	}
 
+	//en = en.WithDebug(nil)
+	return en, cleanFn
 }

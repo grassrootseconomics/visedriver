@@ -14,8 +14,8 @@ var (
 )
 
 func TestUserRegistration(t *testing.T) {
-	en, _ := enginetest.TestEngine("session1234112")
-	defer en.Finish()
+	en, fn := enginetest.TestEngine("session1234112")
+	defer fn()
 	ctx := context.Background()
 	sessions := testData
 	for _, session := range sessions {
@@ -26,8 +26,7 @@ func TestUserRegistration(t *testing.T) {
 				cont, err := en.Exec(ctx, []byte(step.Input))
 
 				if err != nil {
-					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
-					return
+					t.Fatalf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
 				}
 				if !cont {
 					break
@@ -35,7 +34,7 @@ func TestUserRegistration(t *testing.T) {
 				w := bytes.NewBuffer(nil)
 				_, err = en.Flush(ctx, w)
 				if err != nil {
-					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
+					t.Fatalf("Test case '%s' failed during Flush: %v", group.Name, err)
 				}
 				b := w.Bytes()
 				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
@@ -48,8 +47,8 @@ func TestUserRegistration(t *testing.T) {
 }
 
 func TestTerms(t *testing.T) {
-	en, _ := enginetest.TestEngine("session1234112")
-	defer en.Finish()
+	en, fn := enginetest.TestEngine("session1234112_a")
+	defer fn()
 	ctx := context.Background()
 	sessions := testData
 
@@ -59,13 +58,13 @@ func TestTerms(t *testing.T) {
 			for _, step := range group.Steps {
 				_, err := en.Exec(ctx, []byte(step.Input))
 				if err != nil {
-					t.Fail()
+					t.Fatalf("Test case '%s' failed during Exec: %v", group.Name, err)
 				}
 
 				w := bytes.NewBuffer(nil)
 				_, err = en.Flush(ctx, w)
 				if err != nil {
-					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
+					t.Fatalf("Test case '%s' failed during Flush: %v", group.Name, err)
 				}
 				b := w.Bytes()
 				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
@@ -78,8 +77,8 @@ func TestTerms(t *testing.T) {
 }
 
 func TestAccountRegistrationRejectTerms(t *testing.T) {
-	en, _ := enginetest.TestEngine("session1234112")
-	defer en.Finish()
+	en, fn := enginetest.TestEngine("session1234112_b")
+	defer fn()
 	ctx := context.Background()
 	sessions := testData
 	for _, session := range sessions {
@@ -88,7 +87,7 @@ func TestAccountRegistrationRejectTerms(t *testing.T) {
 			for _, step := range group.Steps {
 				cont, err := en.Exec(ctx, []byte(step.Input))
 				if err != nil {
-					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
+					t.Fatalf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
 					return
 				}
 				if !cont {
@@ -96,7 +95,7 @@ func TestAccountRegistrationRejectTerms(t *testing.T) {
 				}
 				w := bytes.NewBuffer(nil)
 				if _, err := en.Flush(ctx, w); err != nil {
-					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
+					t.Fatalf("Test case '%s' failed during Flush: %v", group.Name, err)
 				}
 
 				b := w.Bytes()
@@ -109,8 +108,8 @@ func TestAccountRegistrationRejectTerms(t *testing.T) {
 }
 
 func TestAccountRegistrationInvalidPin(t *testing.T) {
-	en, _ := enginetest.TestEngine("session1234112")
-	defer en.Finish()
+	en, fn := enginetest.TestEngine("session1234112")
+	defer fn()
 	ctx := context.Background()
 	sessions := testData
 	for _, session := range sessions {
@@ -119,7 +118,7 @@ func TestAccountRegistrationInvalidPin(t *testing.T) {
 			for _, step := range group.Steps {
 				cont, err := en.Exec(ctx, []byte(step.Input))
 				if err != nil {
-					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
+					t.Fatalf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
 					return
 				}
 				if !cont {
@@ -127,7 +126,7 @@ func TestAccountRegistrationInvalidPin(t *testing.T) {
 				}
 				w := bytes.NewBuffer(nil)
 				if _, err := en.Flush(ctx, w); err != nil {
-					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
+					t.Fatalf("Test case '%s' failed during Flush: %v", group.Name, err)
 				}
 
 				b := w.Bytes()

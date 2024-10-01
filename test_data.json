@@ -95,6 +95,71 @@
                     }
                    
                 ]
+            },
+            {
+                "name": "menu_my_account_language_change",
+                "steps": [
+                    {
+                        "input":"",
+                       "expectedContent": "Balance: 0.003 CELO\n\n1:Send\n2:My Vouchers\n3:My Account\n4:Help\n9:Quit"
+
+                    },
+                    {
+                        "input": "3",
+                       "expectedContent": "My Account\n1:Profile\n2:Change language\n3:Check balances\n4:Check statement\n5:PIN options\n6:My Address\n0:Back"
+                    },
+                    {
+                        "input": "2",
+                       "expectedContent": "Please enter your PIN:"
+                    },
+                    {
+                        "input": "1234",
+                       "expectedContent": "Select language:\n0:english\n1:kiswahili"
+                    },
+                    {
+                        "input": "0",
+                       "expectedContent": "Your language change request was successful.\n0:Back\n9:Quit"
+                    },
+                    {
+                        "input": "9",
+                       "expectedContent": "Thank you for using Sarafu. Goodbye!"
+                    } 
+                                 
+                ]
+            },
+            {
+                "name": "menu_my_account_save_firstname",
+                "steps": [ 
+                    {
+
+                        "input": "",
+                        "expectedContent":"Balance: 0.003 CELO\n\n1:Send\n2:My Vouchers\n3:My Account\n4:Help\n9:Quit"
+                    },
+                    {
+                        "input": "3",
+                       "expectedContent": "My Account\n1:Profile\n2:Change language\n3:Check balances\n4:Check statement\n5:PIN options\n6:My Address\n0:Back"
+                    },
+                    {
+                        "input": "1",
+                       "expectedContent": "My profile\n1:Edit name\n2:Edit family name\n3:Edit gender\n4:Edit year of birth\n5:Edit location\n6:Edit offerings\n7:View profile\n0:Back"
+                    },
+                    {
+                        "input": "1",
+                       "expectedContent": "Enter your first names:\n0:Back"
+                    },
+                    {
+                        "input": "foo",
+                       "expectedContent": "Please enter your PIN:"
+                    },  
+                    {
+                        "input": "1234",
+                       "expectedContent": "Profile updated successfully\n\n0:Back\n9:Quit"
+                    },
+                    {
+                        "input": "9",
+                       "expectedContent": "Thank you for using Sarafu. Goodbye!"
+                    }                   
+                ]
             }
         ]
     }

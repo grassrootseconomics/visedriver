@@ -139,8 +139,8 @@ func TestAccountRegistrationInvalidPin(t *testing.T) {
 }
 
 func TestMyAccount_Change_Language(t *testing.T) {
-	en, _ := enginetest.TestEngine("session1234112")
-	defer en.Finish()
+	en, fn := enginetest.TestEngine("session1234112")
+	defer fn()
 	ctx := context.Background()
 	sessions := testData
 	for _, session := range sessions {
@@ -172,8 +172,8 @@ func TestMyAccount_Change_Language(t *testing.T) {
 }
 
 func TestMyAccount_Savefirstname(t *testing.T) {
-	en, _ := enginetest.TestEngine("session1234112")
-	defer en.Finish()
+	en, fn := enginetest.TestEngine("session1234112")
+	defer fn()
 	ctx := context.Background()
 	sessions := testData
 	for _, session := range sessions {
@@ -181,11 +181,14 @@ func TestMyAccount_Savefirstname(t *testing.T) {
 		for _, group := range groups {
 			for index, step := range group.Steps {
 				t.Logf("step %v with input %v", index, step.Input)
-				cont, err := en.Exec(ctx, []byte(step.Input))
+
+				cont, err := en.Exec(ctx, []byte("3"))
+
 				if err != nil {
 					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
 					return
 				}
+
 				if !cont {
 					break
 				}
@@ -198,6 +201,7 @@ func TestMyAccount_Savefirstname(t *testing.T) {
 				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}
+				en.Finish()
 
 			}
 		}

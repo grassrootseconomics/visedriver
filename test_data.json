@@ -97,6 +97,118 @@
                 ]
             },
             {
+                "name": "send_with_invalid_inputs",
+                "steps": [
+                    {
+                        "input": "",
+                       "expectedContent": "Balance: 0.003 CELO\n\n1:Send\n2:My Vouchers\n3:My Account\n4:Help\n9:Quit"
+                    },
+                    {
+                        "input": "1",
+                       "expectedContent": "Enter recipient's phone number:\n0:Back"
+                    },
+                    {
+                        "input": "000",
+                       "expectedContent": "000 is not registered or invalid, please try again:\n1:retry\n9:Quit"
+                    },
+                    {
+                        "input": "1",
+                       "expectedContent": "Enter recipient's phone number:\n0:Back"
+                    },
+                    {
+                        "input": "065656",
+                       "expectedContent": "Maximum amount: 0.003 CELO\nEnter amount:\n0:Back"
+                    },
+                    {
+                        "input": "0.1",
+                       "expectedContent": "Amount 0.1 is invalid, please try again:\n1:retry\n9:Quit"
+                    },
+                    {
+                        "input": "1",
+                       "expectedContent": "Maximum amount: 0.003 CELO\nEnter amount:\n0:Back"
+                    },
+                    {
+                        "input": "0.001",
+                       "expectedContent": "065656 will receive 0.001 from {public_key}\nPlease enter your PIN to confirm:\n0:Back\n9:Quit"
+                    },
+                    {
+                        "input": "1222",
+                       "expectedContent": "Incorrect pin\n1:retry\n9:Quit"
+                    },
+                    {
+                        "input": "1",
+                       "expectedContent": "065656 will receive 0.001 from {public_key}\nPlease enter your PIN to confirm:\n0:Back\n9:Quit"
+                    },
+                    {
+                        "input": "1234",
+                       "expectedContent": "Your request has been sent. 065656 will receive 0.001 from {public_key}."
+                    }
+                ]
+            },
+            {
+                "name": "main_menu_help",
+                "steps": [
+                    {
+                        "input": "",
+                       "expectedContent": "Balance: 0.003 CELO\n\n1:Send\n2:My Vouchers\n3:My Account\n4:Help\n9:Quit"
+                    },
+                    {
+                        "input": "4",
+                       "expectedContent": "For more help,please call: 0757628885"
+                    }
+                ]
+            },
+            {
+                "name": "main_menu_quit",
+                "steps": [
+                    {
+                        "input": "",
+                       "expectedContent": "Balance: 0.003 CELO\n\n1:Send\n2:My Vouchers\n3:My Account\n4:Help\n9:Quit"
+                    },
+                    {
+                        "input": "9",
+                       "expectedContent": "Thank you for using Sarafu. Goodbye!"
+                    }
+                ]
+            },
+            {
+                "name": "my_account_change_pin",
+                "steps": [
+                    {
+                        "input": "",
+                       "expectedContent": "Balance: 0.003 CELO\n\n1:Send\n2:My Vouchers\n3:My Account\n4:Help\n9:Quit"
+                    },
+                    {
+                        "input": "3",
+                       "expectedContent": "My Account\n1:Profile\n2:Change language\n3:Check balances\n4:Check statement\n5:PIN options\n6:My Address\n0:Back"
+                    },
+                    {
+                        "input": "5",
+                       "expectedContent": "PIN Management\n1:Change PIN\n2:Reset other's PIN\n3:Guard my PIN\n0:Back"
+                    },
+                    {
+                        "input": "1",
+                       "expectedContent": "Enter your old PIN\n\n0:Back"
+                    },
+                    {
+                        "input": "1234",
+                       "expectedContent": "Enter a new four number pin\n\n0:Back"
+                    },
+                    {
+                        "input": "1234",
+                       "expectedContent": "Confirm your new PIN:\n\n0:Back"
+                    },
+                    {
+                        "input": "1234",
+                       "expectedContent": "Your PIN change request has been successful\n\n0:Back\n9:Quit"
+                    },
+                    {
+                        "input": "9",
+                       "expectedContent": "Thank you for using Sarafu. Goodbye!"
+                    }
+                ]
+            },
+            {
                 "name": "menu_my_account_language_change",
                 "steps": [
                     {

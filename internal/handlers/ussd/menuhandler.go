@@ -241,21 +241,24 @@ func (h *Handlers) SaveTemporaryPin(ctx context.Context, sym string, input []byt
 
 	accountPIN := string(input)
 
-	// Validate that the PIN is a 4-digit number
-	if !isValidPIN(accountPIN) {
-		res.FlagSet = append(res.FlagSet, flag_incorrect_pin)
+	if accountPIN != "0" { // for the 0:Back case
+		// Validate that the PIN is a 4-digit number
+		if !isValidPIN(accountPIN) {
+			res.FlagSet = append(res.FlagSet, flag_incorrect_pin)
+			return res, nil
+		}
+		store := h.userdataStore
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_PIN, []byte(accountPIN))
+		if err != nil {
+			return res, err
+		}
 		return res, nil
 	}
-	store := h.userdataStore
-	err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_PIN, []byte(accountPIN))
-	if err != nil {
-		return res, err
-	}
+
 	return res, nil
 }
 
-
-func (h *Handlers) GetVoucherList(ctx context.Context,sym string,input []byte) (resource.Result,error){
+func (h *Handlers) GetVoucherList(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	vouchers := []string{
 		"SRF",
@@ -286,9 +289,9 @@ func (h *Handlers) GetVoucherList(ctx context.Context,sym string,input []byte) (
 	for i, voucher := range vouchers {
 		numberedVouchers = append(numberedVouchers, fmt.Sprintf("%d:%s", i+1, voucher))
 	}
-	res.Content = strings.Join(numberedVouchers,"\n")
+	res.Content = strings.Join(numberedVouchers, "\n")
 
-	return res,nil
+	return res, nil
 }
 
 func (h *Handlers) ConfirmPinChange(ctx context.Context, sym string, input []byte) (resource.Result, error) {
@@ -577,7 +580,7 @@ func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (res
 	if err != nil {
 		return res, err
 	}
-	if len(input) == 4 {
+	if len(input) > 1 {
 		if bytes.Equal(input, AccountPin) {
 			if h.st.MatchFlag(flag_account_authorized, false) {
 				res.FlagReset = append(res.FlagReset, flag_incorrect_pin)

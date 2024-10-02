@@ -92,11 +92,6 @@ func(tib *TimedDb) Put(ctx context.Context, key []byte, val []byte) error {
 	return nil
 }
 
-func(tib *TimedDb) Get(ctx context.Context, key []byte) ([]byte, error) {
-	v, err := tib.Db.Get(ctx, key)
-	return v, err
-}
-
 func(tib *TimedDb) Stale(ctx context.Context, pfx uint8, sessionId string, key []byte) bool {
 	tib.tdb.SetSession("")
 	b := db.ToSessionKey(pfx, []byte(sessionId), key)

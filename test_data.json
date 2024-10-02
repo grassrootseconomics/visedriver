@@ -188,19 +188,19 @@
                     },
                     {
                         "input": "1",
-                       "expectedContent": "Enter your old PIN\n\n0:Back"
+                       "expectedContent": "Enter your old PIN\n0:Back"
                     },
                     {
                         "input": "1234",
-                       "expectedContent": "Enter a new four number pin\n\n0:Back"
+                       "expectedContent": "Enter a new four number pin\n0:Back"
                     },
                     {
                         "input": "1234",
-                       "expectedContent": "Confirm your new PIN:\n\n0:Back"
+                       "expectedContent": "Confirm your new PIN:\n0:Back"
                     },
                     {
                         "input": "1234",
-                       "expectedContent": "Your PIN change request has been successful\n\n0:Back\n9:Quit"
+                       "expectedContent": "Your PIN change request has been successful\n0:Back\n9:Quit"
                     },
                     {
                         "input": "9",
@@ -265,7 +265,7 @@
                     },  
                     {
                         "input": "1234",
-                       "expectedContent": "Profile updated successfully\n\n0:Back\n9:Quit"
+                       "expectedContent": "Profile updated successfully\n0:Back\n9:Quit"
                     },
                     {
                         "input": "9",
@@ -299,7 +299,7 @@
                     },  
                     {
                         "input": "1234",
-                       "expectedContent": "Profile updated successfully\n\n0:Back\n9:Quit"
+                       "expectedContent": "Profile updated successfully\n0:Back\n9:Quit"
                     },
                     {
                         "input": "9",
@@ -333,7 +333,7 @@
                     },  
                     {
                         "input": "1234",
-                       "expectedContent": "Profile updated successfully\n\n0:Back\n9:Quit"
+                       "expectedContent": "Profile updated successfully\n0:Back\n9:Quit"
                     },
                     {
                         "input": "9",
@@ -367,7 +367,7 @@
                     },  
                     {
                         "input": "1234",
-                       "expectedContent": "Profile updated successfully\n\n0:Back\n9:Quit"
+                       "expectedContent": "Profile updated successfully\n0:Back\n9:Quit"
                     },
                     {
                         "input": "9",
@@ -401,7 +401,7 @@
                     },  
                     {
                         "input": "1234",
-                       "expectedContent": "Profile updated successfully\n\n0:Back\n9:Quit"
+                       "expectedContent": "Profile updated successfully\n0:Back\n9:Quit"
                     },
                     {
                         "input": "9",
@@ -435,7 +435,7 @@
                     },  
                     {
                         "input": "1234",
-                       "expectedContent": "Profile updated successfully\n\n0:Back\n9:Quit"
+                       "expectedContent": "Profile updated successfully\n0:Back\n9:Quit"
                     },
                     {
                         "input": "9",

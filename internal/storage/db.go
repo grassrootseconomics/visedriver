@@ -26,6 +26,10 @@ func NewSubPrefixDb(store db.Db, pfx []byte) *SubPrefixDb {
 	}
 }
 
+func(s *SubPrefixDb) SetSession(sessionId string) {
+	s.store.SetSession(sessionId)	
+}
+
 func(s *SubPrefixDb) toKey(k []byte) []byte {
         return append(s.pfx, k...)
 }

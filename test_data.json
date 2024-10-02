@@ -583,7 +583,7 @@
                     },
                     {
                         "input": "6",
-                       "expectedContent": "Address: 0xdF8CB1D9b5BDaE418E5Bee107031cA7d933906CD\n9:Quit"
+                       "expectedContent": "Address: {public_key}\n9:Quit"
                     },
                     {
                         "input": "9",

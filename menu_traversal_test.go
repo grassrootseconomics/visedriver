@@ -659,10 +659,14 @@ func TestMyAccount_MyAddress(t *testing.T) {
 					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
 				}
 				b := w.Bytes()
-				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
-					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
-				}
 
+				publicKey := extractPublicKey(b)
+
+				expectedContent := bytes.Replace([]byte(step.ExpectedContent), []byte("{public_key}"), []byte(publicKey), -1)
+
+				if !bytes.Equal(b, expectedContent) {
+					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", expectedContent, b)
+				}
 			}
 		}
 	}

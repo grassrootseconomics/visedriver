@@ -240,6 +240,29 @@
                 ]
             },
             {
+                "name": "menu_my_account_language_change_incorectpin",
+                "steps": [
+                    {
+                        "input":"",
+                       "expectedContent": "Balance: 0.003 CELO\n\n1:Send\n2:My Vouchers\n3:My Account\n4:Help\n9:Quit"
+
+                    },
+                    {
+                        "input": "3",
+                       "expectedContent": "My Account\n1:Profile\n2:Change language\n3:Check balances\n4:Check statement\n5:PIN options\n6:My Address\n0:Back"
+                    },
+                    {
+                        "input": "2",
+                       "expectedContent": "Please enter your PIN:"
+                    },
+                    {
+                        "input": "1235",
+                       "expectedContent": "Incorrect pin\n1:retry\n9:Quit"
+                    }
+                                   
+                ]
+            },
+            {
                 "name": "menu_my_account_edit_firstname",
                 "steps": [ 
                     {
@@ -324,7 +347,7 @@
                        "expectedContent": "My profile\n1:Edit name\n2:Edit family name\n3:Edit gender\n4:Edit year of birth\n5:Edit location\n6:Edit offerings\n7:View profile\n0:Back"
                     },
                     {
-                        "input": "2",
+                        "input": "3",
                        "expectedContent": "Select gender: \n1:Male\n2:Female\n3:Unspecified\n0:Back"
                     },
                     {
@@ -465,7 +488,7 @@
                     },
                     {
                         "input": "1234",
-                       "expectedContent": "My profile:\nName: foo foo\nGender: foo\nAge: 79\nLocation: 1945\nYou provide: 1945\n\n0:Back"
+                       "expectedContent": "My profile:\nName: foo bar\nGender: Female\nAge: 79\nLocation: Kilifi\nYou provide: Bananas\n\n0:Back"
                     },  
                     {
                         "input": "0",
@@ -483,7 +506,7 @@
                 ]
             },
             {
-                "name": "menu_my_account_check_balance",
+                "name": "menu_my_account_check_my_balance",
                 "steps": [
                     {
                         "input":"",
@@ -504,13 +527,40 @@
                     },
                     {
                         "input": "1234",
-                       "expectedContent": "Please enter your PIN:"
+                       "expectedContent": "Your balance is: 0.00 SRFYour account balance is 0.003 CELO"
                     }
                                  
                 ]
             },
             {
-                "name": "menu_my_account_check_balance_incorrect_pin",
+                "name": "menu_my_account_check_community_balance",
+                "steps": [
+                    {
+                        "input":"",
+                       "expectedContent": "Balance: 0.003 CELO\n\n1:Send\n2:My Vouchers\n3:My Account\n4:Help\n9:Quit"
+
+                    },
+                    {
+                        "input": "3",
+                       "expectedContent": "My Account\n1:Profile\n2:Change language\n3:Check balances\n4:Check statement\n5:PIN options\n6:My Address\n0:Back"
+                    },
+                    {
+                        "input": "3",
+                       "expectedContent": "Balances:\n1:My balance\n2:Community balance\n0:Back"
+                    },
+                    {
+                        "input": "2",
+                       "expectedContent": "Please enter your PIN:"
+                    },
+                    {
+                        "input": "1234",
+                       "expectedContent": "Your balance is: 0.00 SRFYour account balance is 0.003 CELO"
+                    }
+                                 
+                ]
+            },
+            {
+                "name": "menu_my_account_check_my_balance_incorrect_pin",
                 "steps": [
                     {
                         "input":"",
@@ -527,6 +577,33 @@
                     },
                     {
                         "input": "1",
+                       "expectedContent": "Please enter your PIN:"
+                    },
+                    {
+                        "input": "1235",
+                       "expectedContent": "Incorrect pin\n1:retry\n9:Quit"
+                    }
+                                 
+                ]
+            },
+            {
+                "name": "menu_my_account_check_community_balance_incorrect_pin",
+                "steps": [
+                    {
+                        "input":"",
+                       "expectedContent": "Balance: 0.003 CELO\n\n1:Send\n2:My Vouchers\n3:My Account\n4:Help\n9:Quit"
+
+                    },
+                    {
+                        "input": "3",
+                       "expectedContent": "My Account\n1:Profile\n2:Change language\n3:Check balances\n4:Check statement\n5:PIN options\n6:My Address\n0:Back"
+                    },
+                    {
+                        "input": "3",
+                       "expectedContent": "Balances:\n1:My balance\n2:Community balance\n0:Back"
+                    },
+                    {
+                        "input": "2",
                        "expectedContent": "Please enter your PIN:"
                     },
                     {

@@ -303,7 +303,6 @@ func TestMyAccount_Change_Language(t *testing.T) {
 				if _, err := en.Flush(ctx, w); err != nil {
 					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
 				}
-
 				b := w.Bytes()
 				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
@@ -314,20 +313,183 @@ func TestMyAccount_Change_Language(t *testing.T) {
 	}
 }
 
-func TestMyAccount_Savefirstname(t *testing.T) {
+func TestMyAccount_Edit_firstname(t *testing.T) {
 	en, fn := enginetest.TestEngine("session1234112")
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
 	for _, session := range sessions {
-		groups := driver.FilterGroupsByName(session.Groups, "menu_my_account_save_firstname")
+		groups := driver.FilterGroupsByName(session.Groups, "menu_my_account_edit_firstname")
 		for _, group := range groups {
 			for index, step := range group.Steps {
 				t.Logf("step %v with input %v", index, step.Input)
-				_, err := en.Exec(ctx, []byte(step.Input))
+				cont, err := en.Exec(ctx, []byte(step.Input))
 				if err != nil {
 					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
 					return
+				}
+				if !cont {
+					break
+				}
+				w := bytes.NewBuffer(nil)
+				if _, err := en.Flush(ctx, w); err != nil {
+					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
+				}
+				b := w.Bytes()
+				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
+					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
+				}
+
+			}
+		}
+	}
+}
+
+func TestMyAccount_Edit_familyname(t *testing.T) {
+	en, fn := enginetest.TestEngine("session1234112")
+	defer fn()
+	ctx := context.Background()
+	sessions := testData
+	for _, session := range sessions {
+		groups := driver.FilterGroupsByName(session.Groups, "menu_my_account_edit_familyname")
+		for _, group := range groups {
+			for index, step := range group.Steps {
+				t.Logf("step %v with input %v", index, step.Input)
+				cont, err := en.Exec(ctx, []byte(step.Input))
+				if err != nil {
+					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
+					return
+				}
+				if !cont {
+					break
+				}
+				w := bytes.NewBuffer(nil)
+				if _, err := en.Flush(ctx, w); err != nil {
+					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
+				}
+				b := w.Bytes()
+				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
+					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
+				}
+
+			}
+		}
+	}
+}
+
+func TestMyAccount_Edit_gender(t *testing.T) {
+	en, fn := enginetest.TestEngine("session1234112")
+	defer fn()
+	ctx := context.Background()
+	sessions := testData
+	for _, session := range sessions {
+		groups := driver.FilterGroupsByName(session.Groups, "menu_my_account_edit_gender")
+		for _, group := range groups {
+			for index, step := range group.Steps {
+				t.Logf("step %v with input %v", index, step.Input)
+				cont, err := en.Exec(ctx, []byte(step.Input))
+				if err != nil {
+					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
+					return
+				}
+				if !cont {
+					break
+				}
+				w := bytes.NewBuffer(nil)
+				if _, err := en.Flush(ctx, w); err != nil {
+					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
+				}
+				b := w.Bytes()
+				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
+					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
+				}
+
+			}
+		}
+	}
+}
+
+func TestMyAccount_Edit_yob(t *testing.T) {
+	en, fn := enginetest.TestEngine("session1234112")
+	defer fn()
+	ctx := context.Background()
+	sessions := testData
+	for _, session := range sessions {
+		groups := driver.FilterGroupsByName(session.Groups, "menu_my_account_edit_yob")
+		for _, group := range groups {
+			for index, step := range group.Steps {
+				t.Logf("step %v with input %v", index, step.Input)
+				cont, err := en.Exec(ctx, []byte(step.Input))
+				if err != nil {
+					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
+					return
+				}
+				if !cont {
+					break
+				}
+				w := bytes.NewBuffer(nil)
+				if _, err := en.Flush(ctx, w); err != nil {
+					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
+				}
+				b := w.Bytes()
+				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
+					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
+				}
+
+			}
+		}
+	}
+}
+
+func TestMyAccount_Edit_location(t *testing.T) {
+	en, fn := enginetest.TestEngine("session1234112")
+	defer fn()
+	ctx := context.Background()
+	sessions := testData
+	for _, session := range sessions {
+		groups := driver.FilterGroupsByName(session.Groups, "menu_my_account_edit_location")
+		for _, group := range groups {
+			for index, step := range group.Steps {
+				t.Logf("step %v with input %v", index, step.Input)
+				cont, err := en.Exec(ctx, []byte(step.Input))
+				if err != nil {
+					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
+					return
+				}
+				if !cont {
+					break
+				}
+				w := bytes.NewBuffer(nil)
+				if _, err := en.Flush(ctx, w); err != nil {
+					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
+				}
+				b := w.Bytes()
+				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
+					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
+				}
+
+			}
+		}
+	}
+}
+
+func TestMyAccount_Edit_offerings(t *testing.T) {
+	en, fn := enginetest.TestEngine("session1234112")
+	defer fn()
+	ctx := context.Background()
+	sessions := testData
+	for _, session := range sessions {
+		groups := driver.FilterGroupsByName(session.Groups, "menu_my_account_edit_offerings")
+		for _, group := range groups {
+			for index, step := range group.Steps {
+				t.Logf("step %v with input %v", index, step.Input)
+				cont, err := en.Exec(ctx, []byte(step.Input))
+				if err != nil {
+					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
+					return
+				}
+				if !cont {
+					break
 				}
 				w := bytes.NewBuffer(nil)
 				if _, err := en.Flush(ctx, w); err != nil {

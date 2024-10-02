@@ -83,7 +83,12 @@ func TestEngine(sessionId string) (engine.Engine, func()) {
 	en = en.WithFirst(hl.Init)
 
 	cleanFn := func() {
-		err := menuStorageService.Close()
+		err := en.Finish()
+		if err != nil {
+			logg.Errorf(err.Error())
+		}
+
+		err = menuStorageService.Close()
 		if err != nil {
 			logg.Errorf(err.Error())
 		}

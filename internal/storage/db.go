@@ -10,6 +10,10 @@ const (
 	DATATYPE_USERSUB = 64
 )
 
+const (
+	SUBPREFIX_TIME = uint16(1)
+)
+
 type SubPrefixDb struct {
 	store db.Db
 	pfx []byte

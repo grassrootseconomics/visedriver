@@ -12,6 +12,7 @@ var (
 	dbC map[string]chan db.Db
 )
 
+
 type ThreadGdbmDb struct {
 	db db.Db
 	connStr string

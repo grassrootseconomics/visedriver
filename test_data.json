@@ -148,7 +148,7 @@
                     },
                     {
                         "input": "1234",
-                       "expectedContent": "Enter a new four number pin\n0:Back"
+                       "expectedContent": "Enter a new four number PIN:\n0:Back"
                     },
                     {
                         "input": "1234",

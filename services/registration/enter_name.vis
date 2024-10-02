@@ -7,6 +7,3 @@ HALT
 RELOAD save_firstname
 INCMP _ 0
 INCMP pin_entry *
-
-
-

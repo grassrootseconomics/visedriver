@@ -9,5 +9,3 @@ HALT
 RELOAD save_gender
 INCMP _ 0
 INCMP pin_entry *
-
-

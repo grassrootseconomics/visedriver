@@ -34,9 +34,7 @@ func TestAccountCreationSuccessful(t *testing.T) {
 		groups := driver.FilterGroupsByName(session.Groups, "account_creation_successful")
 		for _, group := range groups {
 			for _, step := range group.Steps {
-
 				cont, err := en.Exec(ctx, []byte(step.Input))
-
 				if err != nil {
 					t.Fatalf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
 				}
@@ -52,7 +50,6 @@ func TestAccountCreationSuccessful(t *testing.T) {
 				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}
-
 			}
 		}
 	}
@@ -246,7 +243,6 @@ func TestMyAccount_Change_Language(t *testing.T) {
 				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}
-
 			}
 		}
 	}
@@ -278,7 +274,6 @@ func TestMyAccount_Change_Language_Incorrect_Pin(t *testing.T) {
 				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}
-
 			}
 		}
 	}
@@ -310,7 +305,6 @@ func TestMyAccount_Edit_firstname(t *testing.T) {
 				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}
-
 			}
 		}
 	}
@@ -342,7 +336,6 @@ func TestMyAccount_Edit_familyname(t *testing.T) {
 				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}
-
 			}
 		}
 	}
@@ -374,7 +367,6 @@ func TestMyAccount_Edit_gender(t *testing.T) {
 				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}
-
 			}
 		}
 	}
@@ -406,7 +398,6 @@ func TestMyAccount_Edit_yob(t *testing.T) {
 				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}
-
 			}
 		}
 	}
@@ -438,7 +429,6 @@ func TestMyAccount_Edit_location(t *testing.T) {
 				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}
-
 			}
 		}
 	}
@@ -470,7 +460,6 @@ func TestMyAccount_Edit_offerings(t *testing.T) {
 				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}
-
 			}
 		}
 	}
@@ -502,7 +491,6 @@ func TestMyAccount_View_Profile(t *testing.T) {
 				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}
-
 			}
 		}
 	}
@@ -534,7 +522,6 @@ func TestMyAccount_Check_My_Balance(t *testing.T) {
 				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}
-
 			}
 		}
 	}
@@ -566,7 +553,6 @@ func TestMyAccount_Check_My_Balance_IncorrectPin(t *testing.T) {
 				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}
-
 			}
 		}
 	}
@@ -598,7 +584,6 @@ func TestMyAccount_Check_Community_Balance(t *testing.T) {
 				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}
-
 			}
 		}
 	}
@@ -630,7 +615,6 @@ func TestMyAccount_Check_Community_Balance_IncorrectPin(t *testing.T) {
 				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}
-
 			}
 		}
 	}

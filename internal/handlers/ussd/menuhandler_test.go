@@ -892,7 +892,10 @@ func TestAuthorize(t *testing.T) {
 		{
 			name:           "Test with pin that is not a 4 digit",
 			input:          []byte("1235aqds"),
-			expectedResult: resource.Result{},
+			expectedResult: resource.Result{
+				FlagReset: []uint32{flag_account_authorized},
+				FlagSet:   []uint32{flag_incorrect_pin},
+			},
 		},
 	}
 

@@ -118,16 +118,13 @@ func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (r
 	var res resource.Result
 
 	symbol, _ := h.st.Where()
+	code := strings.Split(symbol, "_")[1]
 
-	switch symbol {
-	case "set_default":
-		res.FlagSet = append(res.FlagSet, state.FLAG_LANG)
-		res.Content = "eng"
-	case "set_swa":
-		res.FlagSet = append(res.FlagSet, state.FLAG_LANG)
-		res.Content = "swa"
-	default:
+	if !utils.IsValidISO639(code) {
+		return res, nil
 	}
+	res.FlagSet = append(res.FlagSet, state.FLAG_LANG)
+	res.Content = code
 
 	languageSetFlag, err := h.flagManager.GetFlag("flag_language_set")
 	if err != nil {
@@ -319,32 +316,6 @@ func (h *Handlers) ConfirmPinChange(ctx context.Context, sym string, input []byt
 	return res, nil
 }
 
-// SetResetSingleEdit sets and resets  flags to allow gradual editing of profile information.
-func (h *Handlers) SetResetSingleEdit(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	var res resource.Result
-
-	menuOption := string(input)
-
-	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
-	flag_single_edit, _ := h.flagManager.GetFlag("flag_single_edit")
-
-	switch menuOption {
-	case "2":
-		res.FlagReset = append(res.FlagReset, flag_allow_update)
-		res.FlagSet = append(res.FlagSet, flag_single_edit)
-	case "3":
-		res.FlagReset = append(res.FlagReset, flag_allow_update)
-		res.FlagSet = append(res.FlagSet, flag_single_edit)
-	case "4":
-		res.FlagReset = append(res.FlagReset, flag_allow_update)
-		res.FlagSet = append(res.FlagSet, flag_single_edit)
-	default:
-		res.FlagReset = append(res.FlagReset, flag_single_edit)
-	}
-
-	return res, nil
-}
-
 // VerifyPin checks whether the confirmation PIN is similar to the account PIN
 // If similar, it sets the USERFLAG_PIN_SET flag allowing the user
 // to access the main menu
@@ -475,6 +446,7 @@ func (h *Handlers) SaveLocation(ctx context.Context, sym string, input []byte) (
 
 // SaveGender updates the gender in the gdbm with the provided input.
 func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	symbol, _ := h.st.Where()
 	var res resource.Result
 	var err error
 	sessionId, ok := ctx.Value("SessionId").(string)
@@ -482,21 +454,11 @@ func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (re
 		return res, fmt.Errorf("missing session")
 	}
 
-	if len(input) > 0 {
-		gender := string(input)
-		switch gender {
-		case "1":
-			gender = "Male"
-		case "2":
-			gender = "Female"
-		case "3":
-			gender = "Unspecified"
-		}
-		store := h.userdataStore
-		err = store.WriteEntry(ctx, sessionId, utils.DATA_GENDER, []byte(gender))
-		if err != nil {
-			return res, nil
-		}
+	gender := strings.Split(symbol, "_")[1]
+	store := h.userdataStore
+	err = store.WriteEntry(ctx, sessionId, utils.DATA_GENDER, []byte(gender))
+	if err != nil {
+		return res, nil
 	}
 
 	return res, nil

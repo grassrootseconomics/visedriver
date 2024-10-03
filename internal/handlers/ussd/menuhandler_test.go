@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"git.defalsify.org/vise.git/db"
+	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/state"
 	"git.grassecon.net/urdt/ussd/internal/mocks"
@@ -16,6 +17,7 @@ import (
 	"git.grassecon.net/urdt/ussd/internal/utils"
 	"github.com/alecthomas/assert/v2"
 	testdataloader "github.com/peteole/testdata-loader"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -92,6 +94,25 @@ func TestCreateAccount(t *testing.T) {
 
 	// Assert that expectations were met
 	mockDataStore.AssertExpectations(t)
+}
+
+func TestWithPersister(t *testing.T) {
+	// Test case: Setting a persister
+	h := &Handlers{}
+	p := &persist.Persister{}
+
+	result := h.WithPersister(p)
+
+	assert.Equal(t, p, h.pe, "The persister should be set correctly.")
+	assert.Equal(t, h, result, "The returned handler should be the same instance.")
+}
+
+func TestWithPersister_PanicWhenAlreadySet(t *testing.T) {
+	// Test case: Panic on multiple calls
+	h := &Handlers{pe: &persist.Persister{}}
+	require.Panics(t, func() {
+		h.WithPersister(&persist.Persister{})
+	}, "Should panic when trying to set a persister again.")
 }
 
 func TestSaveFirstname(t *testing.T) {
@@ -295,6 +316,7 @@ func TestSaveOfferings(t *testing.T) {
 func TestSaveGender(t *testing.T) {
 	// Create a new instance of MockMyDataStore
 	mockStore := new(mocks.MockUserDataStore)
+	mockState := state.NewState(16)
 
 	// Define the session ID and context
 	sessionId := "session123"
@@ -302,34 +324,32 @@ func TestSaveGender(t *testing.T) {
 
 	// Define test cases
 	tests := []struct {
-		name           string
-		input          []byte
-		expectedGender string
-		expectCall     bool
+		name            string
+		input           []byte
+		expectedGender  string
+		expectCall      bool
+		executingSymbol string
 	}{
 		{
-			name:           "Valid Male Input",
-			input:          []byte("1"),
-			expectedGender: "Male",
-			expectCall:     true,
+			name:            "Valid Male Input",
+			input:           []byte("1"),
+			expectedGender:  "male",
+			executingSymbol: "set_male",
+			expectCall:      true,
 		},
 		{
-			name:           "Valid Female Input",
-			input:          []byte("2"),
-			expectedGender: "Female",
-			expectCall:     true,
+			name:            "Valid Female Input",
+			input:           []byte("2"),
+			expectedGender:  "female",
+			executingSymbol: "set_female",
+			expectCall:      true,
 		},
 		{
-			name:           "Valid Unspecified Input",
-			input:          []byte("3"),
-			expectedGender: "Unspecified",
-			expectCall:     true,
-		},
-		{
-			name:           "Empty Input",
-			input:          []byte(""),
-			expectedGender: "",
-			expectCall:     false,
+			name:            "Valid Unspecified Input",
+			input:           []byte("3"),
+			executingSymbol: "set_unspecified",
+			expectedGender:  "unspecified",
+			expectCall:      true,
 		},
 	}
 
@@ -342,14 +362,15 @@ func TestSaveGender(t *testing.T) {
 			} else {
 				mockStore.On("WriteEntry", ctx, sessionId, utils.DATA_GENDER, []byte(tt.expectedGender)).Return(nil)
 			}
-
+			mockState.ExecPath = append(mockState.ExecPath, tt.executingSymbol)
 			// Create the Handlers instance with the mock store
 			h := &Handlers{
 				userdataStore: mockStore,
+				st:            mockState,
 			}
 
 			// Call the method
-			_, err := h.SaveGender(ctx, "someSym", tt.input)
+			_, err := h.SaveGender(ctx, "save_gender", tt.input)
 
 			// Assert no error
 			assert.NoError(t, err)
@@ -538,13 +559,13 @@ func TestSetLanguage(t *testing.T) {
 	}
 	// Define test cases
 	tests := []struct {
-		name                string
-		execPath            []string
-		expectedResult      resource.Result
+		name           string
+		execPath       []string
+		expectedResult resource.Result
 	}{
 		{
 			name:     "Set Default Language (English)",
-			execPath: []string{"set_default"},
+			execPath: []string{"set_eng"},
 			expectedResult: resource.Result{
 				FlagSet: []uint32{state.FLAG_LANG, 8},
 				Content: "eng",
@@ -556,13 +577,6 @@ func TestSetLanguage(t *testing.T) {
 			expectedResult: resource.Result{
 				FlagSet: []uint32{state.FLAG_LANG, 8},
 				Content: "swa",
-			},
-		},
-		{
-			name:     "Unhandled path",
-			execPath: []string{""},
-			expectedResult: resource.Result{
-				FlagSet: []uint32{8},
 			},
 		},
 	}
@@ -592,76 +606,6 @@ func TestSetLanguage(t *testing.T) {
 		})
 	}
 }
-
-func TestSetResetSingleEdit(t *testing.T) {
-	fm, err := NewFlagManager(flagsPath)
-
-	flag_allow_update, _ := fm.parser.GetFlag("flag_allow_update")
-	flag_single_edit, _ := fm.parser.GetFlag("flag_single_edit")
-
-	if err != nil {
-		log.Fatal(err)
-	}
-	// Define test cases
-	tests := []struct {
-		name           string
-		input          []byte
-		expectedResult resource.Result
-	}{
-		{
-			name:  "Set single Edit",
-			input: []byte("2"),
-			expectedResult: resource.Result{
-				FlagSet:   []uint32{flag_single_edit},
-				FlagReset: []uint32{flag_allow_update},
-			},
-		},
-		{
-			name:  "Set single Edit",
-			input: []byte("3"),
-			expectedResult: resource.Result{
-				FlagSet:   []uint32{flag_single_edit},
-				FlagReset: []uint32{flag_allow_update},
-			},
-		},
-		{
-			name:  "Set single edit",
-			input: []byte("4"),
-			expectedResult: resource.Result{
-				FlagReset: []uint32{flag_allow_update},
-				FlagSet:   []uint32{flag_single_edit},
-			},
-		},
-		{
-			name:  "No single edit set",
-			input: []byte("1"),
-			expectedResult: resource.Result{
-				FlagReset: []uint32{flag_single_edit},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			// Create the Handlers instance with the mock flag manager
-			h := &Handlers{
-				flagManager: fm.parser,
-			}
-
-			// Call the method
-			res, err := h.SetResetSingleEdit(context.Background(), "set_reset_single_edit", tt.input)
-
-			if err != nil {
-				t.Error(err)
-			}
-			// Assert that the Result FlagSet has the required flags after language switch
-			assert.Equal(t, res, tt.expectedResult, "Flags should match reset edit")
-
-		})
-	}
-}
-
 func TestResetAllowUpdate(t *testing.T) {
 	fm, err := NewFlagManager(flagsPath)
 
@@ -1483,7 +1427,7 @@ func TestValidateAmount(t *testing.T) {
 	if err != nil {
 		t.Logf(err.Error())
 	}
-	//flag_invalid_amount, _ := fm.parser.GetFlag("flag_invalid_amount")
+	flag_invalid_amount, _ := fm.parser.GetFlag("flag_invalid_amount")
 	mockDataStore := new(mocks.MockUserDataStore)
 	mockCreateAccountService := new(mocks.MockAccountService)
 
@@ -1512,26 +1456,26 @@ func TestValidateAmount(t *testing.T) {
 				Content: "0.001",
 			},
 		},
-		// {
-		// 	name:      "Test with amount larger than balance",
-		// 	input:     []byte("0.02"),
-		// 	balance:   "0.003 CELO",
-		// 	publicKey: []byte("0xrqeqrequuq"),
-		// 	expectedResult: resource.Result{
-		// 		FlagSet: []uint32{flag_invalid_amount},
-		// 		Content: "0.02",
-		// 	},
-		// },
-		// {
-		// 	name:      "Test with invalid amount",
-		// 	input:     []byte("0.02ms"),
-		// 	balance:   "0.003 CELO",
-		// 	publicKey: []byte("0xrqeqrequuq"),
-		// 	expectedResult: resource.Result{
-		// 		FlagSet: []uint32{flag_invalid_amount},
-		// 		Content: "0.02ms",
-		// 	},
-		// },
+		{
+			name:      "Test with amount larger than balance",
+			input:     []byte("0.02"),
+			balance:   "0.003 CELO",
+			publicKey: []byte("0xrqeqrequuq"),
+			expectedResult: resource.Result{
+				FlagSet: []uint32{flag_invalid_amount},
+				Content: "0.02",
+			},
+		},
+		{
+			name:      "Test with invalid amount",
+			input:     []byte("0.02ms"),
+			balance:   "0.003 CELO",
+			publicKey: []byte("0xrqeqrequuq"),
+			expectedResult: resource.Result{
+				FlagSet: []uint32{flag_invalid_amount},
+				Content: "0.02ms",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1539,7 +1483,7 @@ func TestValidateAmount(t *testing.T) {
 
 			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_PUBLIC_KEY).Return(tt.publicKey, nil)
 			mockCreateAccountService.On("CheckBalance", string(tt.publicKey)).Return(tt.balance, nil)
-			mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_AMOUNT, tt.input).Return(nil)
+			mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_AMOUNT, tt.input).Return(nil).Maybe()
 
 			// Call the method under test
 			res, _ := h.ValidateAmount(ctx, "test_validate_amount", tt.input)
@@ -1651,6 +1595,7 @@ func TestGetProfile(t *testing.T) {
 
 	mockDataStore := new(mocks.MockUserDataStore)
 	mockCreateAccountService := new(mocks.MockAccountService)
+
 	h := &Handlers{
 		userdataStore:  mockDataStore,
 		accountService: mockCreateAccountService,

@@ -11,11 +11,13 @@ import (
 	"git.defalsify.org/vise.git/resource"
 	"git.grassecon.net/urdt/ussd/internal/handlers"
 	"git.grassecon.net/urdt/ussd/internal/storage"
+	testdataloader "github.com/peteole/testdata-loader"
 )
 
 var (
+	baseDir   = testdataloader.GetBasePath()
 	logg      = logging.NewVanilla()
-	scriptDir = path.Join("services", "registration")
+	scriptDir = path.Join(baseDir, "services", "registration")
 )
 
 func TestEngine(sessionId string) (engine.Engine, func()) {

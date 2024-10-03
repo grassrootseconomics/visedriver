@@ -3,14 +3,13 @@ package main
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"regexp"
 	"testing"
 	"time"
 
 	"git.grassecon.net/urdt/ussd/driver"
 	enginetest "git.grassecon.net/urdt/ussd/engine"
+	"github.com/gofrs/uuid"
 )
 
 var (
@@ -18,14 +17,13 @@ var (
 	sessionID string
 )
 
-// GenerateRandomSessionID generates a random session ID of 10 characters
-func GenerateRandomSessionID() string {
-	bytes := make([]byte, 5)
-	_, err := rand.Read(bytes)
+// GenerateRandomSessionID generates a random UUID for the sessionID
+func GenerateUUID() string {
+	u, err := uuid.NewV4()
 	if err != nil {
-		return "default_session"
+		return "default_uuid"
 	}
-	return hex.EncodeToString(bytes)
+	return u.String()
 }
 
 // Extract the public key from the engine response
@@ -40,7 +38,7 @@ func extractPublicKey(response []byte) string {
 }
 
 func TestMain(m *testing.M) {
-	sessionID = GenerateRandomSessionID()
+	sessionID = GenerateUUID()
 	m.Run()
 }
 
@@ -77,7 +75,9 @@ func TestAccountCreationSuccessful(t *testing.T) {
 }
 
 func TestAccountRegistrationRejectTerms(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID + "_b")
+	// Generate a new UUID for this edge case test
+	edgeCaseSessionID := GenerateUUID()
+	en, fn := enginetest.TestEngine(edgeCaseSessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData

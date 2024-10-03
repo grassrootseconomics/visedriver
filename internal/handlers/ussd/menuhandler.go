@@ -117,9 +117,9 @@ func (h *Handlers) Init(ctx context.Context, sym string, input []byte) (resource
 func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 
-	sym, _ = h.st.Where()
+	symbol, _ := h.st.Where()
 
-	switch sym {
+	switch symbol {
 	case "set_default":
 		res.FlagSet = append(res.FlagSet, state.FLAG_LANG)
 		res.Content = "eng"

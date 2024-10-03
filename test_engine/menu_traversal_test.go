@@ -3,16 +3,30 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"regexp"
 	"testing"
+	"time"
 
 	"git.grassecon.net/urdt/ussd/driver"
 	enginetest "git.grassecon.net/urdt/ussd/engine"
 )
 
 var (
-	testData = driver.ReadData()
+	testData  = driver.ReadData()
+	sessionID string
 )
+
+// GenerateRandomSessionID generates a random session ID of 10 characters
+func GenerateRandomSessionID() string {
+	bytes := make([]byte, 5)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		return "default_session"
+	}
+	return hex.EncodeToString(bytes)
+}
 
 // Extract the public key from the engine response
 func extractPublicKey(response []byte) string {
@@ -25,8 +39,13 @@ func extractPublicKey(response []byte) string {
 	return ""
 }
 
+func TestMain(m *testing.M) {
+	sessionID = GenerateRandomSessionID()
+	m.Run()
+}
+
 func TestAccountCreationSuccessful(t *testing.T) {
-	en, fn := enginetest.TestEngine("session1234112")
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -53,10 +72,12 @@ func TestAccountCreationSuccessful(t *testing.T) {
 			}
 		}
 	}
+	// Adding a sleep after the test to wait for registration to complete the process
+	time.Sleep(5 * time.Second)
 }
 
 func TestAccountRegistrationRejectTerms(t *testing.T) {
-	en, fn := enginetest.TestEngine("session1234112_b")
+	en, fn := enginetest.TestEngine(sessionID + "_b")
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -87,7 +108,7 @@ func TestAccountRegistrationRejectTerms(t *testing.T) {
 }
 
 func TestSendWithInvalidInputs(t *testing.T) {
-	en, fn := enginetest.TestEngine("session1234112")
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -124,8 +145,39 @@ func TestSendWithInvalidInputs(t *testing.T) {
 	}
 }
 
+func TestMyAccount_Check_My_Balance(t *testing.T) {
+	en, fn := enginetest.TestEngine(sessionID)
+	defer fn()
+	ctx := context.Background()
+	sessions := testData
+	for _, session := range sessions {
+		groups := driver.FilterGroupsByName(session.Groups, "menu_my_account_check_my_balance")
+		for _, group := range groups {
+			for index, step := range group.Steps {
+				t.Logf("step %v with input %v", index, step.Input)
+				cont, err := en.Exec(ctx, []byte(step.Input))
+				if err != nil {
+					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
+					return
+				}
+				if !cont {
+					break
+				}
+				w := bytes.NewBuffer(nil)
+				if _, err := en.Flush(ctx, w); err != nil {
+					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
+				}
+				b := w.Bytes()
+				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
+					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
+				}
+			}
+		}
+	}
+}
+
 func TestMainMenuHelp(t *testing.T) {
-	en, fn := enginetest.TestEngine("session1234112")
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -156,7 +208,7 @@ func TestMainMenuHelp(t *testing.T) {
 }
 
 func TestMainMenuQuit(t *testing.T) {
-	en, fn := enginetest.TestEngine("session1234112")
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -186,8 +238,39 @@ func TestMainMenuQuit(t *testing.T) {
 	}
 }
 
+func TestMyAccount_Check_Community_Balance(t *testing.T) {
+	en, fn := enginetest.TestEngine(sessionID)
+	defer fn()
+	ctx := context.Background()
+	sessions := testData
+	for _, session := range sessions {
+		groups := driver.FilterGroupsByName(session.Groups, "menu_my_account_check_community_balance")
+		for _, group := range groups {
+			for index, step := range group.Steps {
+				t.Logf("step %v with input %v", index, step.Input)
+				cont, err := en.Exec(ctx, []byte(step.Input))
+				if err != nil {
+					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
+					return
+				}
+				if !cont {
+					break
+				}
+				w := bytes.NewBuffer(nil)
+				if _, err := en.Flush(ctx, w); err != nil {
+					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
+				}
+				b := w.Bytes()
+				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
+					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
+				}
+			}
+		}
+	}
+}
+
 func TestMyAccountChangePin(t *testing.T) {
-	en, fn := enginetest.TestEngine("session1234112")
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -218,7 +301,7 @@ func TestMyAccountChangePin(t *testing.T) {
 }
 
 func TestMyAccount_Change_Language(t *testing.T) {
-	en, fn := enginetest.TestEngine("session1234112")
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -249,7 +332,7 @@ func TestMyAccount_Change_Language(t *testing.T) {
 }
 
 func TestMyAccount_Edit_firstname(t *testing.T) {
-	en, fn := enginetest.TestEngine("session1234112")
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -280,7 +363,7 @@ func TestMyAccount_Edit_firstname(t *testing.T) {
 }
 
 func TestMyAccount_Edit_familyname(t *testing.T) {
-	en, fn := enginetest.TestEngine("session1234112")
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -311,7 +394,7 @@ func TestMyAccount_Edit_familyname(t *testing.T) {
 }
 
 func TestMyAccount_Edit_gender(t *testing.T) {
-	en, fn := enginetest.TestEngine("session1234112")
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -342,7 +425,7 @@ func TestMyAccount_Edit_gender(t *testing.T) {
 }
 
 func TestMyAccount_Edit_yob(t *testing.T) {
-	en, fn := enginetest.TestEngine("session1234112")
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -373,7 +456,7 @@ func TestMyAccount_Edit_yob(t *testing.T) {
 }
 
 func TestMyAccount_Edit_location(t *testing.T) {
-	en, fn := enginetest.TestEngine("session1234112")
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -404,7 +487,7 @@ func TestMyAccount_Edit_location(t *testing.T) {
 }
 
 func TestMyAccount_Edit_offerings(t *testing.T) {
-	en, fn := enginetest.TestEngine("session1234112")
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -435,7 +518,7 @@ func TestMyAccount_Edit_offerings(t *testing.T) {
 }
 
 func TestMyAccount_View_Profile(t *testing.T) {
-	en, fn := enginetest.TestEngine("session1234112")
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -465,70 +548,8 @@ func TestMyAccount_View_Profile(t *testing.T) {
 	}
 }
 
-func TestMyAccount_Check_My_Balance(t *testing.T) {
-	en, fn := enginetest.TestEngine("session1234112")
-	defer fn()
-	ctx := context.Background()
-	sessions := testData
-	for _, session := range sessions {
-		groups := driver.FilterGroupsByName(session.Groups, "menu_my_account_check_my_balance")
-		for _, group := range groups {
-			for index, step := range group.Steps {
-				t.Logf("step %v with input %v", index, step.Input)
-				cont, err := en.Exec(ctx, []byte(step.Input))
-				if err != nil {
-					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
-					return
-				}
-				if !cont {
-					break
-				}
-				w := bytes.NewBuffer(nil)
-				if _, err := en.Flush(ctx, w); err != nil {
-					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
-				}
-				b := w.Bytes()
-				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
-					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
-				}
-			}
-		}
-	}
-}
-
-func TestMyAccount_Check_Community_Balance(t *testing.T) {
-	en, fn := enginetest.TestEngine("session1234112")
-	defer fn()
-	ctx := context.Background()
-	sessions := testData
-	for _, session := range sessions {
-		groups := driver.FilterGroupsByName(session.Groups, "menu_my_account_check_community_balance")
-		for _, group := range groups {
-			for index, step := range group.Steps {
-				t.Logf("step %v with input %v", index, step.Input)
-				cont, err := en.Exec(ctx, []byte(step.Input))
-				if err != nil {
-					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
-					return
-				}
-				if !cont {
-					break
-				}
-				w := bytes.NewBuffer(nil)
-				if _, err := en.Flush(ctx, w); err != nil {
-					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
-				}
-				b := w.Bytes()
-				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
-					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
-				}
-			}
-		}
-	}
-}
-
 func TestMyAccount_MyAddress(t *testing.T) {
-	en, fn := enginetest.TestEngine("session1234112")
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData

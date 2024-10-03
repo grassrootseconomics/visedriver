@@ -44,7 +44,7 @@ func TestFilteredStaleDb(t *testing.T) {
 
 	k := []byte("foo")
 	tdb := NewTimedDb(mdb, time.Duration(time.Millisecond))
-	tdb = tdb.WithMatch(db.DATATYPE_STATE, []byte("in"))
+	tdb = tdb.WithMatch(db.DATATYPE_STATE, []byte("fo"))
 	tdb.SetPrefix(db.DATATYPE_USERDATA)
 	tdb.SetSession("inky")
 	err = tdb.Put(ctx, k, []byte("bar"))
@@ -80,6 +80,46 @@ func TestFilteredStaleDb(t *testing.T) {
 		t.Fatal("expected stale")
 	}
 	if tdb.Stale(ctx, db.DATATYPE_STATE, "blinky", k) {
+		t.Fatal("expected not stale")
+	}
+}
+
+func TestFilteredSameKeypartStaleDb(t *testing.T) {
+	ctx := context.Background()
+	mdb := memdb.NewMemDb()
+	err := mdb.Connect(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tdb := NewTimedDb(mdb, time.Duration(time.Millisecond))
+	tdb = tdb.WithMatch(db.DATATYPE_USERDATA, []byte("ba"))
+	tdb.SetPrefix(db.DATATYPE_USERDATA)
+	tdb.SetSession("xyzzy")
+	err = tdb.Put(ctx, []byte("bar"), []byte("inky"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	tdb.SetPrefix(db.DATATYPE_USERDATA)
+	tdb.SetSession("xyzzy")
+	err = tdb.Put(ctx, []byte("baz"), []byte("pinky"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	tdb.SetPrefix(db.DATATYPE_USERDATA)
+	tdb.SetSession("xyzzy")
+	err = tdb.Put(ctx, []byte("foo"), []byte("blinky"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(time.Millisecond)
+	if !tdb.Stale(ctx, db.DATATYPE_USERDATA, "xyzzy", []byte("bar")) {
+		t.Fatal("expected stale")
+	}
+	if !tdb.Stale(ctx, db.DATATYPE_USERDATA, "xyzzy", []byte("baz")) {
+	t.Fatal("expected stale")
+	}
+	if tdb.Stale(ctx, db.DATATYPE_USERDATA, "xyzzy", []byte("foo")) {
 		t.Fatal("expected not stale")
 	}
 }

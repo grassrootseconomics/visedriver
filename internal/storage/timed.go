@@ -44,12 +44,10 @@ func(tib *TimedDb) checkPrefix(pfx uint8, key []byte) bool {
 	}
 	for _, v = range(tib.matchPfx[pfx]) {
 		l := len(v)
-		k := append(tib.parentSession, key...)
-		if l > len(k) {
+		if l > len(key) {
 			continue
 		}
-		logg.Debugf("check the prefix", "v", v, "k", k, "l", l )
-		if bytes.Equal(v, k[:l]) {
+		if bytes.Equal(v, key[:l]) {
 			return true	
 		}
 	}
@@ -98,7 +96,7 @@ func(tib *TimedDb) Stale(ctx context.Context, pfx uint8, sessionId string, key [
 	b = append([]byte{pfx}, b...)
 	v, err := tib.tdb.Get(ctx, b)
 	if err != nil {
-		logg.ErrorCtxf(ctx, "no time entry", "key", key, "b", b)
+		logg.WarnCtxf(ctx, "no time entry", "key", key, "b", b)
 		return false
 	}
 	t_now := time.Now()	

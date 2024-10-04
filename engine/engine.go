@@ -6,11 +6,11 @@ import (
 	"os"
 	"path"
 
-	"git.defalsify.org/vise.git/db"
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/resource"
 	"git.grassecon.net/urdt/ussd/internal/handlers"
+	"git.grassecon.net/urdt/ussd/internal/handlers/server"
 	"git.grassecon.net/urdt/ussd/internal/storage"
 	testdataloader "github.com/peteole/testdata-loader"
 )
@@ -21,7 +21,7 @@ var (
 	scriptDir = path.Join(baseDir, "services", "registration")
 )
 
-func TestEngine(sessionId string) (engine.Engine, func(), *db.Db) {
+func TestEngine(sessionId string) (engine.Engine, func()) {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
 	pfp := path.Join(scriptDir, "pp.csv")
@@ -76,7 +76,8 @@ func TestEngine(sessionId string) (engine.Engine, func(), *db.Db) {
 		os.Exit(1)
 	}
 
-	hl, err := lhs.GetHandler()
+	mockAccountService := server.MockAccountService{}
+	hl, err := lhs.GetHandler(&mockAccountService)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
@@ -99,5 +100,5 @@ func TestEngine(sessionId string) (engine.Engine, func(), *db.Db) {
 	}
 
 	//en = en.WithDebug(nil)
-	return en, cleanFn, lhs.UserdataStore
+	return en, cleanFn
 }

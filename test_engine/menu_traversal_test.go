@@ -3,7 +3,9 @@ package main
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"log"
+	"math/rand"
+	"os"
 	"regexp"
 	"testing"
 	"time"
@@ -15,16 +17,19 @@ import (
 
 var (
 	testData  = driver.ReadData()
+	testStore = ".test_state"
 	sessionID string
+	src       = rand.NewSource(42)
+	g         = rand.New(src)
 )
 
-// GenerateRandomSessionID generates a random UUID for the sessionID
-func GenerateUUID() string {
-	u, err := uuid.NewV4()
+func GenerateSessionId() string {
+	uu := uuid.NewGenWithOptions(uuid.WithRandomReader(g))
+	v, err := uu.NewV4()
 	if err != nil {
-		return "default_uuid"
+		panic(err)
 	}
-	return u.String()
+	return v.String()
 }
 
 // Extract the public key from the engine response
@@ -39,12 +44,18 @@ func extractPublicKey(response []byte) string {
 }
 
 func TestMain(m *testing.M) {
-	sessionID = GenerateUUID()
+	sessionID = GenerateSessionId()
+	testStore = ".test_state"
+	defer func() {
+		if err := os.RemoveAll(testStore); err != nil {
+			log.Fatalf("Failed to delete state store %s: %v", testStore, err)
+		}
+	}()
 	m.Run()
 }
 
 func TestAccountCreationSuccessful(t *testing.T) {
-	en, fn, _ := enginetest.TestEngine(sessionID)
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -77,8 +88,13 @@ func TestAccountCreationSuccessful(t *testing.T) {
 
 func TestAccountRegistrationRejectTerms(t *testing.T) {
 	// Generate a new UUID for this edge case test
-	edgeCaseSessionID := GenerateUUID()
-	en, fn, _ := enginetest.TestEngine(edgeCaseSessionID)
+	uu := uuid.NewGenWithOptions(uuid.WithRandomReader(g))
+	v, err := uu.NewV4()
+	if err != nil {
+		t.Fail()
+	}
+	edgeCaseSessionID := v.String()
+	en, fn := enginetest.TestEngine(edgeCaseSessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -109,7 +125,7 @@ func TestAccountRegistrationRejectTerms(t *testing.T) {
 }
 
 func TestSendWithInvalidInputs(t *testing.T) {
-	en, fn, _ := enginetest.TestEngine(sessionID)
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -147,7 +163,7 @@ func TestSendWithInvalidInputs(t *testing.T) {
 }
 
 func TestMyAccount_Check_My_Balance(t *testing.T) {
-	en, fn, _ := enginetest.TestEngine(sessionID)
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -178,7 +194,7 @@ func TestMyAccount_Check_My_Balance(t *testing.T) {
 }
 
 func TestMainMenuHelp(t *testing.T) {
-	en, fn, _ := enginetest.TestEngine(sessionID)
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -209,7 +225,7 @@ func TestMainMenuHelp(t *testing.T) {
 }
 
 func TestMainMenuQuit(t *testing.T) {
-	en, fn, _ := enginetest.TestEngine(sessionID)
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -240,7 +256,7 @@ func TestMainMenuQuit(t *testing.T) {
 }
 
 func TestMyAccount_Check_Community_Balance(t *testing.T) {
-	en, fn, _ := enginetest.TestEngine(sessionID)
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -271,7 +287,7 @@ func TestMyAccount_Check_Community_Balance(t *testing.T) {
 }
 
 func TestMyAccountChangePin(t *testing.T) {
-	en, fn, _ := enginetest.TestEngine(sessionID)
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -302,7 +318,7 @@ func TestMyAccountChangePin(t *testing.T) {
 }
 
 func TestMyAccount_Change_Language(t *testing.T) {
-	en, fn, _ := enginetest.TestEngine(sessionID)
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -333,7 +349,7 @@ func TestMyAccount_Change_Language(t *testing.T) {
 }
 
 func TestMyAccount_Edit_firstname(t *testing.T) {
-	en, fn, _ := enginetest.TestEngine(sessionID)
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -364,7 +380,7 @@ func TestMyAccount_Edit_firstname(t *testing.T) {
 }
 
 func TestMyAccount_Edit_familyname(t *testing.T) {
-	en, fn, _ := enginetest.TestEngine(sessionID)
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -395,7 +411,7 @@ func TestMyAccount_Edit_familyname(t *testing.T) {
 }
 
 func TestMyAccount_Edit_gender(t *testing.T) {
-	en, fn, _ := enginetest.TestEngine(sessionID)
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -417,7 +433,6 @@ func TestMyAccount_Edit_gender(t *testing.T) {
 					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
 				}
 				b := w.Bytes()
-				fmt.Println("Content:", string(b))
 				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}
@@ -427,7 +442,7 @@ func TestMyAccount_Edit_gender(t *testing.T) {
 }
 
 func TestMyAccount_Edit_yob(t *testing.T) {
-	en, fn, _ := enginetest.TestEngine(sessionID)
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -458,7 +473,7 @@ func TestMyAccount_Edit_yob(t *testing.T) {
 }
 
 func TestMyAccount_Edit_location(t *testing.T) {
-	en, fn, _ := enginetest.TestEngine(sessionID)
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -489,7 +504,7 @@ func TestMyAccount_Edit_location(t *testing.T) {
 }
 
 func TestMyAccount_Edit_offerings(t *testing.T) {
-	en, fn, _ := enginetest.TestEngine(sessionID)
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -521,7 +536,7 @@ func TestMyAccount_Edit_offerings(t *testing.T) {
 }
 
 func TestMyAccount_MyAddress(t *testing.T) {
-	en, fn, _ := enginetest.TestEngine(sessionID)
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -557,7 +572,7 @@ func TestMyAccount_MyAddress(t *testing.T) {
 }
 
 func TestMyAccount_View_Profile(t *testing.T) {
-	en, fn, _ := enginetest.TestEngine(sessionID)
+	en, fn := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData

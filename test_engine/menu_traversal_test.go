@@ -458,12 +458,10 @@ func TestMyAccount_Edit_yob(t *testing.T) {
 }
 
 func TestMyAccount_Edit_location(t *testing.T) {
-	en, fn, db := enginetest.TestEngine(sessionID)
+	en, fn, _ := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
-
-	userDataStore := utils.UserDataStore{Db: *db}
 	for _, session := range sessions {
 		groups := driver.FilterGroupsByName(session.Groups, "menu_my_account_edit_location")
 		for _, group := range groups {
@@ -482,11 +480,6 @@ func TestMyAccount_Edit_location(t *testing.T) {
 					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
 				}
 				b := w.Bytes()
-				location, err := userDataStore.ReadEntry(ctx, sessionID, utils.DATA_LOCATION)
-				if err != nil {
-					t.Fail()
-				}
-				fmt.Println("location:", string(location))
 				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}

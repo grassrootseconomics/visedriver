@@ -6,6 +6,7 @@ import (
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
+	"git.grassecon.net/urdt/ussd/internal/handlers/server"
 	"git.grassecon.net/urdt/ussd/internal/handlers/ussd"
 )
 
@@ -52,8 +53,8 @@ func (ls *LocalHandlerService) SetDataStore(db *db.Db) {
 	ls.UserdataStore = db
 }
 
-func (ls *LocalHandlerService) GetHandler() (*ussd.Handlers, error) {
-	ussdHandlers, err := ussd.NewHandlers(ls.Parser, *ls.UserdataStore)
+func (ls *LocalHandlerService) GetHandler(accountService server.AccountServiceInterface) (*ussd.Handlers, error) {
+	ussdHandlers, err := ussd.NewHandlers(ls.Parser, *ls.UserdataStore, accountService)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +94,7 @@ func (ls *LocalHandlerService) GetHandler() (*ussd.Handlers, error) {
 	ls.DbRs.AddLocalFunc("verify_new_pin", ussdHandlers.VerifyNewPin)
 	ls.DbRs.AddLocalFunc("confirm_pin_change", ussdHandlers.ConfirmPinChange)
 	ls.DbRs.AddLocalFunc("quit_with_help", ussdHandlers.QuitWithHelp)
-	ls.DbRs.AddLocalFunc("get_vouchers",ussdHandlers.GetVoucherList)
+	ls.DbRs.AddLocalFunc("get_vouchers", ussdHandlers.GetVoucherList)
 
 	return ussdHandlers, nil
 }

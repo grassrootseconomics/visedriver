@@ -11,6 +11,7 @@ import (
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/resource"
 	"git.grassecon.net/urdt/ussd/internal/handlers"
+	"git.grassecon.net/urdt/ussd/internal/handlers/server"
 	"git.grassecon.net/urdt/ussd/internal/storage"
 )
 
@@ -84,8 +85,8 @@ func main() {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
-
-	hl, err := lhs.GetHandler()
+	accountService := server.AccountService{}
+	hl, err := lhs.GetHandler(&accountService)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)

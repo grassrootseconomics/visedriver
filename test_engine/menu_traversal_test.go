@@ -5,12 +5,14 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"regexp"
 	"testing"
 	"time"
 
 	"git.grassecon.net/urdt/ussd/driver"
 	enginetest "git.grassecon.net/urdt/ussd/engine"
+	"git.grassecon.net/urdt/ussd/internal/utils"
 )
 
 var (
@@ -45,7 +47,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestAccountCreationSuccessful(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
+	en, fn, _ := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -77,7 +79,7 @@ func TestAccountCreationSuccessful(t *testing.T) {
 }
 
 func TestAccountRegistrationRejectTerms(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID + "_b")
+	en, fn, _ := enginetest.TestEngine(sessionID + "_b")
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -108,7 +110,7 @@ func TestAccountRegistrationRejectTerms(t *testing.T) {
 }
 
 func TestSendWithInvalidInputs(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
+	en, fn, _ := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -146,7 +148,7 @@ func TestSendWithInvalidInputs(t *testing.T) {
 }
 
 func TestMyAccount_Check_My_Balance(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
+	en, fn, _ := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -177,7 +179,7 @@ func TestMyAccount_Check_My_Balance(t *testing.T) {
 }
 
 func TestMainMenuHelp(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
+	en, fn, _ := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -208,7 +210,7 @@ func TestMainMenuHelp(t *testing.T) {
 }
 
 func TestMainMenuQuit(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
+	en, fn, _ := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -239,7 +241,7 @@ func TestMainMenuQuit(t *testing.T) {
 }
 
 func TestMyAccount_Check_Community_Balance(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
+	en, fn, _ := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -270,7 +272,7 @@ func TestMyAccount_Check_Community_Balance(t *testing.T) {
 }
 
 func TestMyAccountChangePin(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
+	en, fn, _ := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -301,7 +303,7 @@ func TestMyAccountChangePin(t *testing.T) {
 }
 
 func TestMyAccount_Change_Language(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
+	en, fn, _ := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -332,7 +334,7 @@ func TestMyAccount_Change_Language(t *testing.T) {
 }
 
 func TestMyAccount_Edit_firstname(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
+	en, fn, _ := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -363,7 +365,7 @@ func TestMyAccount_Edit_firstname(t *testing.T) {
 }
 
 func TestMyAccount_Edit_familyname(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
+	en, fn, _ := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -394,7 +396,7 @@ func TestMyAccount_Edit_familyname(t *testing.T) {
 }
 
 func TestMyAccount_Edit_gender(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
+	en, fn, _ := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -416,6 +418,7 @@ func TestMyAccount_Edit_gender(t *testing.T) {
 					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
 				}
 				b := w.Bytes()
+				fmt.Println("Content:", string(b))
 				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}
@@ -425,7 +428,7 @@ func TestMyAccount_Edit_gender(t *testing.T) {
 }
 
 func TestMyAccount_Edit_yob(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
+	en, fn, _ := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -456,10 +459,12 @@ func TestMyAccount_Edit_yob(t *testing.T) {
 }
 
 func TestMyAccount_Edit_location(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
+	en, fn, db := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
+
+	userDataStore := utils.UserDataStore{Db: *db}
 	for _, session := range sessions {
 		groups := driver.FilterGroupsByName(session.Groups, "menu_my_account_edit_location")
 		for _, group := range groups {
@@ -478,6 +483,11 @@ func TestMyAccount_Edit_location(t *testing.T) {
 					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
 				}
 				b := w.Bytes()
+				location, err := userDataStore.ReadEntry(ctx, sessionID, utils.DATA_LOCATION)
+				if err != nil {
+					t.Fail()
+				}
+				fmt.Println("location:", string(location))
 				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}
@@ -487,7 +497,7 @@ func TestMyAccount_Edit_location(t *testing.T) {
 }
 
 func TestMyAccount_Edit_offerings(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
+	en, fn, _ := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -496,37 +506,7 @@ func TestMyAccount_Edit_offerings(t *testing.T) {
 		for _, group := range groups {
 			for index, step := range group.Steps {
 				t.Logf("step %v with input %v", index, step.Input)
-				cont, err := en.Exec(ctx, []byte(step.Input))
-				if err != nil {
-					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
-					return
-				}
-				if !cont {
-					break
-				}
-				w := bytes.NewBuffer(nil)
-				if _, err := en.Flush(ctx, w); err != nil {
-					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
-				}
-				b := w.Bytes()
-				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
-					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
-				}
-			}
-		}
-	}
-}
 
-func TestMyAccount_View_Profile(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
-	defer fn()
-	ctx := context.Background()
-	sessions := testData
-	for _, session := range sessions {
-		groups := driver.FilterGroupsByName(session.Groups, "menu_my_account_view_profile")
-		for _, group := range groups {
-			for index, step := range group.Steps {
-				t.Logf("step %v with input %v", index, step.Input)
 				cont, err := en.Exec(ctx, []byte(step.Input))
 				if err != nil {
 					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
@@ -549,7 +529,7 @@ func TestMyAccount_View_Profile(t *testing.T) {
 }
 
 func TestMyAccount_MyAddress(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
+	en, fn, _ := enginetest.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -578,6 +558,37 @@ func TestMyAccount_MyAddress(t *testing.T) {
 
 				if !bytes.Equal(b, expectedContent) {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", expectedContent, b)
+				}
+			}
+		}
+	}
+}
+
+func TestMyAccount_View_Profile(t *testing.T) {
+	en, fn, _ := enginetest.TestEngine(sessionID)
+	defer fn()
+	ctx := context.Background()
+	sessions := testData
+	for _, session := range sessions {
+		groups := driver.FilterGroupsByName(session.Groups, "menu_my_account_view_profile")
+		for _, group := range groups {
+			for index, step := range group.Steps {
+				t.Logf("step %v with input %v", index, step.Input)
+				cont, err := en.Exec(ctx, []byte(step.Input))
+				if err != nil {
+					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
+					return
+				}
+				if !cont {
+					break
+				}
+				w := bytes.NewBuffer(nil)
+				if _, err := en.Flush(ctx, w); err != nil {
+					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
+				}
+				b := w.Bytes()
+				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
+					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}
 			}
 		}

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 
+	"git.defalsify.org/vise.git/db"
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/resource"
@@ -20,7 +21,7 @@ var (
 	scriptDir = path.Join(baseDir, "services", "registration")
 )
 
-func TestEngine(sessionId string) (engine.Engine, func()) {
+func TestEngine(sessionId string) (engine.Engine, func(), *db.Db) {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
 	pfp := path.Join(scriptDir, "pp.csv")
@@ -98,5 +99,5 @@ func TestEngine(sessionId string) (engine.Engine, func()) {
 	}
 
 	//en = en.WithDebug(nil)
-	return en, cleanFn
+	return en, cleanFn, lhs.UserdataStore
 }

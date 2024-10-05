@@ -3,6 +3,7 @@ package ussd
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"path"
 	"regexp"
@@ -232,22 +233,36 @@ func (h *Handlers) SaveTemporaryPin(ctx context.Context, sym string, input []byt
 }
 
 // GetVoucherList fetches the list of vouchers and formats them
-// checks whether they are synced internally before calling the API
+// checks whether they are stored internally before calling the API
 func (h *Handlers) GetVoucherList(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
 
 	// check if the vouchers exist internally and if not
 	// fetch from the API
 
-	// Fetch vouchers from API
-	vouchers, err := h.accountService.FetchVouchersFromAPI()
+	// Read vouchers from the store
+	store := h.userdataStore
+	voucherData, err := store.ReadEntry(ctx, sessionId, utils.DATA_VOUCHER_LIST)
 	if err != nil {
-		return res, fmt.Errorf("error fetching vouchers: %w", err)
+		return res, err
+	}
+
+	// Unmarshal the stored JSON data into the correct struct
+	var vouchers []struct {
+		TokenSymbol string `json:"tokenSymbol"`
+	}
+	err = json.Unmarshal(voucherData, &vouchers)
+	if err != nil {
+		return res, fmt.Errorf("failed to unmarshal vouchers: %v", err)
 	}
 
 	var numberedVouchers []string
 	for i, voucher := range vouchers {
-		numberedVouchers = append(numberedVouchers, fmt.Sprintf("%d:%s", i+1, voucher.Symbol))
+		numberedVouchers = append(numberedVouchers, fmt.Sprintf("%d:%s", i+1, voucher.TokenSymbol))
 	}
 	res.Content = strings.Join(numberedVouchers, "\n")
 
@@ -1004,6 +1019,44 @@ func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte)
 		"Name: %s\nGender: %s\nAge: %s\nLocation: %s\nYou provide: %s\n",
 		name, gender, age, location, offerings,
 	)
+
+	return res, nil
+}
+
+// CheckVouchers retrieves the token holdings from the API using the "PublicKey" and stores
+// them to gdbm
+func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	var err error
+
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+
+	store := h.userdataStore
+	publicKey, err := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
+	if err != nil {
+		return res, nil
+	}
+
+	// Fetch vouchers from the API
+	vouchersResp, err := h.accountService.FetchVouchers(string(publicKey))
+	if err != nil {
+		return res, nil
+	}
+
+	// Convert only the list of holdings (vouchers) to JSON
+	voucherBytes, err := json.Marshal(vouchersResp.Result.Holdings)
+	if err != nil {
+		return res, nil
+	}
+
+	// Store the voucher symbols in the userdataStore
+	err = store.WriteEntry(ctx, sessionId, utils.DATA_VOUCHER_LIST, voucherBytes)
+	if err != nil {
+		return res, nil
+	}
 
 	return res, nil
 }

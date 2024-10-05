@@ -1,4 +1,4 @@
-package enginetest
+package engine
 
 import (
 	"context"
@@ -22,6 +22,7 @@ var (
 )
 
 func TestEngine(sessionId string) (engine.Engine, func()) {
+	var accountService server.AccountServiceInterface
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
 	pfp := path.Join(scriptDir, "pp.csv")
@@ -76,8 +77,12 @@ func TestEngine(sessionId string) (engine.Engine, func()) {
 		os.Exit(1)
 	}
 
-	mockAccountService := server.MockAccountService{}
-	hl, err := lhs.GetHandler(&mockAccountService)
+	if OnlineTestEnabled {
+		accountService = &server.AccountService{}
+	} else {
+		accountService = &server.MockAccountService{}
+	}
+	hl, err := lhs.GetHandler(accountService)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)

@@ -16,11 +16,12 @@ import (
 )
 
 var (
-	testData  = driver.ReadData()
-	testStore = ".test_state"
-	sessionID string
-	src       = rand.NewSource(42)
-	g         = rand.New(src)
+	testData      = driver.ReadData()
+	testStore     = ".test_state"
+	groupTestFile = "group_test.json"
+	sessionID     string
+	src           = rand.NewSource(42)
+	g             = rand.New(src)
 )
 
 func GenerateSessionId() string {
@@ -285,254 +286,7 @@ func TestMyAccount_Check_Community_Balance(t *testing.T) {
 	}
 }
 
-func TestMyAccountChangePin(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
-	defer fn()
-	ctx := context.Background()
-	sessions := testData
-	for _, session := range sessions {
-		groups := driver.FilterGroupsByName(session.Groups, "my_account_change_pin")
-		for _, group := range groups {
-			for _, step := range group.Steps {
-				cont, err := en.Exec(ctx, []byte(step.Input))
-				if err != nil {
-					t.Fatalf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
-					return
-				}
-				if !cont {
-					break
-				}
-				w := bytes.NewBuffer(nil)
-				if _, err := en.Flush(ctx, w); err != nil {
-					t.Fatalf("Test case '%s' failed during Flush: %v", group.Name, err)
-				}
 
-				b := w.Bytes()
-				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
-					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
-				}
-			}
-		}
-	}
-}
-
-func TestMyAccount_Change_Language(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
-	defer fn()
-	ctx := context.Background()
-	sessions := testData
-	for _, session := range sessions {
-		groups := driver.FilterGroupsByName(session.Groups, "menu_my_account_language_change")
-		for _, group := range groups {
-			for index, step := range group.Steps {
-				t.Logf("step %v with input %v", index, step.Input)
-				cont, err := en.Exec(ctx, []byte(step.Input))
-				if err != nil {
-					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
-					return
-				}
-				if !cont {
-					break
-				}
-				w := bytes.NewBuffer(nil)
-				if _, err := en.Flush(ctx, w); err != nil {
-					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
-				}
-				b := w.Bytes()
-				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
-					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
-				}
-			}
-		}
-	}
-}
-
-func TestMyAccount_Edit_firstname(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
-	defer fn()
-	ctx := context.Background()
-	sessions := testData
-	for _, session := range sessions {
-		groups := driver.FilterGroupsByName(session.Groups, "menu_my_account_edit_firstname")
-		for _, group := range groups {
-			for index, step := range group.Steps {
-				t.Logf("step %v with input %v", index, step.Input)
-				cont, err := en.Exec(ctx, []byte(step.Input))
-				if err != nil {
-					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
-					return
-				}
-				if !cont {
-					break
-				}
-				w := bytes.NewBuffer(nil)
-				if _, err := en.Flush(ctx, w); err != nil {
-					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
-				}
-				b := w.Bytes()
-				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
-					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
-				}
-			}
-		}
-	}
-}
-
-func TestMyAccount_Edit_familyname(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
-	defer fn()
-	ctx := context.Background()
-	sessions := testData
-	for _, session := range sessions {
-		groups := driver.FilterGroupsByName(session.Groups, "menu_my_account_edit_familyname")
-		for _, group := range groups {
-			for index, step := range group.Steps {
-				t.Logf("step %v with input %v", index, step.Input)
-				cont, err := en.Exec(ctx, []byte(step.Input))
-				if err != nil {
-					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
-					return
-				}
-				if !cont {
-					break
-				}
-				w := bytes.NewBuffer(nil)
-				if _, err := en.Flush(ctx, w); err != nil {
-					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
-				}
-				b := w.Bytes()
-				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
-					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
-				}
-			}
-		}
-	}
-}
-
-func TestMyAccount_Edit_gender(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
-	defer fn()
-	ctx := context.Background()
-	sessions := testData
-	for _, session := range sessions {
-		groups := driver.FilterGroupsByName(session.Groups, "menu_my_account_edit_gender")
-		for _, group := range groups {
-			for index, step := range group.Steps {
-				t.Logf("step %v with input %v", index, step.Input)
-				cont, err := en.Exec(ctx, []byte(step.Input))
-				if err != nil {
-					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
-					return
-				}
-				if !cont {
-					break
-				}
-				w := bytes.NewBuffer(nil)
-				if _, err := en.Flush(ctx, w); err != nil {
-					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
-				}
-				b := w.Bytes()
-				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
-					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
-				}
-			}
-		}
-	}
-}
-
-func TestMyAccount_Edit_yob(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
-	defer fn()
-	ctx := context.Background()
-	sessions := testData
-	for _, session := range sessions {
-		groups := driver.FilterGroupsByName(session.Groups, "menu_my_account_edit_yob")
-		for _, group := range groups {
-			for index, step := range group.Steps {
-				t.Logf("step %v with input %v", index, step.Input)
-				cont, err := en.Exec(ctx, []byte(step.Input))
-				if err != nil {
-					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
-					return
-				}
-				if !cont {
-					break
-				}
-				w := bytes.NewBuffer(nil)
-				if _, err := en.Flush(ctx, w); err != nil {
-					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
-				}
-				b := w.Bytes()
-				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
-					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
-				}
-			}
-		}
-	}
-}
-
-func TestMyAccount_Edit_location(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
-	defer fn()
-	ctx := context.Background()
-	sessions := testData
-	for _, session := range sessions {
-		groups := driver.FilterGroupsByName(session.Groups, "menu_my_account_edit_location")
-		for _, group := range groups {
-			for index, step := range group.Steps {
-				t.Logf("step %v with input %v", index, step.Input)
-				cont, err := en.Exec(ctx, []byte(step.Input))
-				if err != nil {
-					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
-					return
-				}
-				if !cont {
-					break
-				}
-				w := bytes.NewBuffer(nil)
-				if _, err := en.Flush(ctx, w); err != nil {
-					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
-				}
-				b := w.Bytes()
-				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
-					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
-				}
-			}
-		}
-	}
-}
-
-func TestMyAccount_Edit_offerings(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
-	defer fn()
-	ctx := context.Background()
-	sessions := testData
-	for _, session := range sessions {
-		groups := driver.FilterGroupsByName(session.Groups, "menu_my_account_edit_offerings")
-		for _, group := range groups {
-			for index, step := range group.Steps {
-				t.Logf("step %v with input %v", index, step.Input)
-
-				cont, err := en.Exec(ctx, []byte(step.Input))
-				if err != nil {
-					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
-					return
-				}
-				if !cont {
-					break
-				}
-				w := bytes.NewBuffer(nil)
-				if _, err := en.Flush(ctx, w); err != nil {
-					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
-				}
-				b := w.Bytes()
-				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
-					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
-				}
-			}
-		}
-	}
-}
 
 func TestMyAccount_MyAddress(t *testing.T) {
 	en, fn := enginetest.TestEngine(sessionID)
@@ -570,41 +324,8 @@ func TestMyAccount_MyAddress(t *testing.T) {
 	}
 }
 
-func TestMyAccount_View_Profile(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
-	defer fn()
-	ctx := context.Background()
-	sessions := testData
-	for _, session := range sessions {
-		groups := driver.FilterGroupsByName(session.Groups, "menu_my_account_view_profile")
-		for _, group := range groups {
-			for index, step := range group.Steps {
-				t.Logf("step %v with input %v", index, step.Input)
-				cont, err := en.Exec(ctx, []byte(step.Input))
-				if err != nil {
-					t.Errorf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
-					return
-				}
-				if !cont {
-					break
-				}
-				w := bytes.NewBuffer(nil)
-				if _, err := en.Flush(ctx, w); err != nil {
-					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
-				}
-				b := w.Bytes()
-				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
-					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
-				}
-			}
-		}
-	}
-}
-
-func TestGroup(t *testing.T) {
-	// Load sessions from JSON file
-	filePath := "group_test.json"
-	sessions, err := driver.LoadTestGroups(filePath)
+func TestGroups(t *testing.T) {
+	groups, err := driver.LoadTestGroups(groupTestFile)
 	if err != nil {
 		log.Fatalf("Failed to load test groups: %v", err)
 	}
@@ -612,7 +333,7 @@ func TestGroup(t *testing.T) {
 	defer fn()
 	ctx := context.Background()
 	// Create test cases from loaded groups
-	tests := driver.CreateTestCases(sessions)
+	tests := driver.CreateTestCases(groups)
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			cont, err := en.Exec(ctx, []byte(tt.Input))

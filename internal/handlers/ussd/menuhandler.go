@@ -3,7 +3,6 @@ package ussd
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"path"
 	"regexp"
@@ -251,20 +250,7 @@ func (h *Handlers) GetVoucherList(ctx context.Context, sym string, input []byte)
 		return res, err
 	}
 
-	// Unmarshal the stored JSON data into the correct struct
-	var vouchers []struct {
-		TokenSymbol string `json:"tokenSymbol"`
-	}
-	err = json.Unmarshal(voucherData, &vouchers)
-	if err != nil {
-		return res, fmt.Errorf("failed to unmarshal vouchers: %v", err)
-	}
-
-	var numberedVouchers []string
-	for i, voucher := range vouchers {
-		numberedVouchers = append(numberedVouchers, fmt.Sprintf("%d:%s", i+1, voucher.TokenSymbol))
-	}
-	res.Content = strings.Join(numberedVouchers, "\n")
+	res.Content = string(voucherData)
 
 	return res, nil
 }
@@ -1027,8 +1013,6 @@ func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte)
 // them to gdbm
 func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
-	var err error
-
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
 		return res, fmt.Errorf("missing session")
@@ -1040,20 +1024,20 @@ func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) 
 		return res, nil
 	}
 
-	// Fetch vouchers from the API
+	// Fetch vouchers from the API using the public key
 	vouchersResp, err := h.accountService.FetchVouchers(string(publicKey))
 	if err != nil {
 		return res, nil
 	}
 
-	// Convert only the list of holdings (vouchers) to JSON
-	voucherBytes, err := json.Marshal(vouchersResp.Result.Holdings)
-	if err != nil {
-		return res, nil
+	var numberedVouchers []string
+	for i, voucher := range vouchersResp.Result.Holdings {
+		numberedVouchers = append(numberedVouchers, fmt.Sprintf("%d:%s", i+1, voucher.TokenSymbol))
 	}
 
-	// Store the voucher symbols in the userdataStore
-	err = store.WriteEntry(ctx, sessionId, utils.DATA_VOUCHER_LIST, voucherBytes)
+	voucherList := strings.Join(numberedVouchers, "\n")
+
+	err = store.WriteEntry(ctx, sessionId, utils.DATA_VOUCHER_LIST, []byte(voucherList))
 	if err != nil {
 		return res, nil
 	}

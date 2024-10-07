@@ -1,3 +1,4 @@
+RELOAD reset_account_authorized
 MOUT back 0
 MOUT quit 9
 HALT

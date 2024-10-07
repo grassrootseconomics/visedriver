@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"log"
 	"math/rand"
 	"os"
@@ -45,10 +46,11 @@ func extractPublicKey(response []byte) string {
 
 func TestMain(m *testing.M) {
 	sessionID = GenerateSessionId()
-	testStore = ".test_state"
 	defer func() {
 		if err := os.RemoveAll(testStore); err != nil {
 			log.Fatalf("Failed to delete state store %s: %v", testStore, err)
+		} else {
+			fmt.Println("After running test")
 		}
 	}()
 	m.Run()
@@ -599,5 +601,40 @@ func TestMyAccount_View_Profile(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+func TestGroup(t *testing.T) {
+	// Load sessions from JSON file
+	filePath := "group_test.json"
+	sessions, err := driver.LoadTestGroups(filePath)
+	if err != nil {
+		log.Fatalf("Failed to load test groups: %v", err)
+	}
+	en, fn := enginetest.TestEngine(sessionID)
+	defer fn()
+	ctx := context.Background()
+	// Create test cases from loaded groups
+	tests := driver.CreateTestCases(sessions)
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			cont, err := en.Exec(ctx, []byte(tt.Input))
+			if err != nil {
+				t.Errorf("Test case '%s' failed at input '%s': %v", tt.Name, tt.Input, err)
+				return
+			}
+			if !cont {
+				return
+			}
+			w := bytes.NewBuffer(nil)
+			if _, err := en.Flush(ctx, w); err != nil {
+				t.Errorf("Test case '%s' failed during Flush: %v", tt.Name, err)
+			}
+			b := w.Bytes()
+			if !bytes.Equal(b, []byte(tt.ExpectedContent)) {
+				t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", tt.ExpectedContent, b)
+			}
+
+		})
 	}
 }

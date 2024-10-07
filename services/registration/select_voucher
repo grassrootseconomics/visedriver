@@ -1,2 +1,0 @@
-Select number or symbol from your vouchers:
-{{.get_vouchers}}

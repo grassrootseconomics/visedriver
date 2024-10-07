@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"log"
 	"math/rand"
 	"os"
@@ -49,8 +48,6 @@ func TestMain(m *testing.M) {
 	defer func() {
 		if err := os.RemoveAll(testStore); err != nil {
 			log.Fatalf("Failed to delete state store %s: %v", testStore, err)
-		} else {
-			fmt.Println("After running test")
 		}
 	}()
 	m.Run()

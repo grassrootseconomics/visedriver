@@ -139,42 +139,6 @@ func (as *AccountService) FetchVouchers(publicKey string) (*models.VoucherHoldin
 					"tokenSymbol": "MILO",
 					"tokenDecimals": "6",
 					"balance": "75"
-				},
-				{
-					"contractAddress": "0xd4c288865Ce0985a481Eef3be02443dF5E2e4Ea9",
-					"tokenSymbol": "SOHAIL",
-					"tokenDecimals": "6",
-					"balance": "27874115"
-				},
-				{
-					"contractAddress": "0x45d747172e77d55575c197CbA9451bC2CD8F4958",
-					"tokenSymbol": "SRQIF",
-					"tokenDecimals": "6",
-					"balance": "2745987"
-				},
-				{
-					"contractAddress": "0x45d747172e77d55575c197CbA9451bC2CD8F4958",
-					"tokenSymbol": "SRFI",
-					"tokenDecimals": "6",
-					"balance": "2745987"
-				},
-				{
-					"contractAddress": "0x45d747172e77d55575c197CbA9451bC2CD8F4958",
-					"tokenSymbol": "SRFU",
-					"tokenDecimals": "6",
-					"balance": "2745987"
-				},
-				{
-					"contractAddress": "0x45d747172e77d55575c197CbA9451bC2CD8F4958",
-					"tokenSymbol": "SRQF",
-					"tokenDecimals": "6",
-					"balance": "2745987"
-				},
-				{
-					"contractAddress": "0x45d747172e77d55575c197CbA9451bC2CD8F4958",
-					"tokenSymbol": "SREF",
-					"tokenDecimals": "6",
-					"balance": "2745987"
 				}
 			]
 		}

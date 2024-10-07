@@ -21,6 +21,8 @@ import (
 	"git.grassecon.net/urdt/ussd/internal/handlers/server"
 	"git.grassecon.net/urdt/ussd/internal/utils"
 	"gopkg.in/leonelquinteros/gotext.v1"
+
+	"git.grassecon.net/urdt/ussd/internal/storage"
 )
 
 var (
@@ -235,19 +237,17 @@ func (h *Handlers) SaveTemporaryPin(ctx context.Context, sym string, input []byt
 // checks whether they are stored internally before calling the API
 func (h *Handlers) GetVoucherList(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
-	sessionId, ok := ctx.Value("SessionId").(string)
-	if !ok {
-		return res, fmt.Errorf("missing session")
-	}
 
 	// check if the vouchers exist internally and if not
 	// fetch from the API
 
 	// Read vouchers from the store
 	store := h.userdataStore
-	voucherData, err := store.ReadEntry(ctx, sessionId, utils.DATA_VOUCHER_LIST)
+	prefixdb := storage.NewSubPrefixDb(store, []byte("token_holdings"))
+
+	voucherData, err := prefixdb.Get(ctx, []byte("tokens"))
 	if err != nil {
-		return res, err
+		return res, nil
 	}
 
 	res.Content = string(voucherData)
@@ -1030,14 +1030,23 @@ func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) 
 		return res, nil
 	}
 
-	var numberedVouchers []string
+	var numberedSymbols []string
+	var numberedBalances []string
 	for i, voucher := range vouchersResp.Result.Holdings {
-		numberedVouchers = append(numberedVouchers, fmt.Sprintf("%d:%s", i+1, voucher.TokenSymbol))
+		numberedSymbols = append(numberedSymbols, fmt.Sprintf("%d:%s", i+1, voucher.TokenSymbol))
+		numberedBalances = append(numberedBalances, fmt.Sprintf("%d:%s", i+1, voucher.Balance))
 	}
 
-	voucherList := strings.Join(numberedVouchers, "\n")
+	voucherSymbolList := strings.Join(numberedSymbols, "\n")
+	voucherBalanceList := strings.Join(numberedBalances, "\n")
 
-	err = store.WriteEntry(ctx, sessionId, utils.DATA_VOUCHER_LIST, []byte(voucherList))
+	prefixdb := storage.NewSubPrefixDb(store, []byte("token_holdings"))
+	err = prefixdb.Put(ctx, []byte("tokens"), []byte(voucherSymbolList))
+	if err != nil {
+		return res, nil
+	}
+
+	err = prefixdb.Put(ctx, []byte(voucherSymbolList), []byte(voucherBalanceList))
 	if err != nil {
 		return res, nil
 	}

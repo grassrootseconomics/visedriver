@@ -18,6 +18,10 @@ type AccountServiceInterface interface {
 type AccountService struct {
 }
 
+type MockAccountService struct {
+}
+
+
 
 
 // CheckAccountStatus retrieves the status of an account transaction based on the provided tracking ID.
@@ -109,4 +113,41 @@ func (as *AccountService) CreateAccount() (*models.AccountResponse, error) {
 	}
 
 	return &accountResp, nil
+}
+
+
+
+func (mas *MockAccountService) CreateAccount() (*models.AccountResponse, error) {
+	return &models.AccountResponse{
+		Ok: true,
+		Result: struct {
+			CustodialId json.Number `json:"custodialId"`
+			PublicKey   string      `json:"publicKey"`
+			TrackingId  string      `json:"trackingId"`
+		}{
+			CustodialId: json.Number("182"),
+			PublicKey:   "0x48ADca309b5085852207FAaf2816eD72B52F527C",
+			TrackingId:  "28ebe84d-b925-472c-87ae-bbdfa1fb97be",
+		},
+	}, nil
+}
+
+func (mas *MockAccountService) CheckBalance(publicKey string) (string, error) {
+
+	balanceResponse := &models.BalanceResponse{
+		Ok: true,
+		Result: struct {
+			Balance string      `json:"balance"`
+			Nonce   json.Number `json:"nonce"`
+		}{
+			Balance: "0.003 CELO",
+			Nonce:   json.Number("0"),
+		},
+	}
+
+	return balanceResponse.Result.Balance, nil
+}
+
+func (mas *MockAccountService) CheckAccountStatus(trackingId string) (string, error) {
+	return "SUCCESS", nil
 }

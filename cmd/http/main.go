@@ -18,6 +18,7 @@ import (
 	"git.grassecon.net/urdt/ussd/internal/handlers"
 	httpserver "git.grassecon.net/urdt/ussd/internal/http"
 	"git.grassecon.net/urdt/ussd/internal/storage"
+	"git.grassecon.net/urdt/ussd/internal/handlers/server"
 )
 
 var (
@@ -88,7 +89,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	hl, err := lhs.GetHandler()
+	accountService := server.AccountService{}
+
+	hl, err := lhs.GetHandler(&accountService)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)

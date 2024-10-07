@@ -1053,3 +1053,71 @@ func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) 
 
 	return res, nil
 }
+
+// ViewVoucher retrieves the token holding and balance from the subprefixDB
+func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	var err error
+	inputStr := string(input)
+
+	if inputStr == "0" || inputStr == "00" {
+		return res, nil
+	}
+
+	flag_incorrect_voucher, _ := h.flagManager.GetFlag("flag_incorrect_voucher")
+
+	// Initialize the store and prefix database
+	store := h.userdataStore
+	prefixdb := storage.NewSubPrefixDb(store, []byte("token_holdings"))
+
+	// Retrieve the voucher symbol list
+	voucherSymbolList, err := prefixdb.Get(ctx, []byte("tokens"))
+	if err != nil {
+		return res, fmt.Errorf("failed to retrieve voucher symbol list: %v", err)
+	}
+
+	// Retrieve the voucher balance list
+	voucherBalanceList, err := prefixdb.Get(ctx, []byte(voucherSymbolList))
+	if err != nil {
+		return res, fmt.Errorf("failed to retrieve voucher balance list: %v", err)
+	}
+
+	// Convert the symbol and balance lists from byte arrays to strings
+	voucherSymbols := string(voucherSymbolList)
+	voucherBalances := string(voucherBalanceList)
+
+	// Split the lists into slices for processing
+	symbols := strings.Split(voucherSymbols, "\n")
+	balances := strings.Split(voucherBalances, "\n")
+
+	var matchedSymbol, matchedBalance string
+
+	for i, symbol := range symbols {
+		symbolParts := strings.SplitN(symbol, ":", 2)
+		if len(symbolParts) != 2 {
+			continue
+		}
+		voucherNum := symbolParts[0]
+		voucherSymbol := symbolParts[1]
+
+		// Check if input matches either the number or the symbol
+		if inputStr == voucherNum || strings.EqualFold(inputStr, voucherSymbol) {
+			matchedSymbol = voucherSymbol
+			// Ensure there's a corresponding balance
+			if i < len(balances) {
+				matchedBalance = strings.SplitN(balances[i], ":", 2)[1] // Extract balance after the "x:balance" format
+			}
+			break
+		}
+	}
+
+	// If a match is found, return the symbol and balance
+	if matchedSymbol != "" && matchedBalance != "" {
+		res.Content = fmt.Sprintf("%s\n%s", matchedSymbol, matchedBalance)
+		res.FlagReset = append(res.FlagReset, flag_incorrect_voucher)
+	} else {
+		res.FlagSet = append(res.FlagSet, flag_incorrect_voucher)
+	}
+
+	return res, nil
+}

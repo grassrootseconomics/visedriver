@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"git.grassecon.net/urdt/ussd/driver"
-	enginetest "git.grassecon.net/urdt/ussd/engine"
+	"git.grassecon.net/urdt/ussd/internal/testutil"
 	"github.com/gofrs/uuid"
 )
 
@@ -55,7 +55,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestAccountCreationSuccessful(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
+	en, fn := testutil.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -94,7 +94,7 @@ func TestAccountRegistrationRejectTerms(t *testing.T) {
 		t.Fail()
 	}
 	edgeCaseSessionID := v.String()
-	en, fn := enginetest.TestEngine(edgeCaseSessionID)
+	en, fn := testutil.TestEngine(edgeCaseSessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -125,7 +125,7 @@ func TestAccountRegistrationRejectTerms(t *testing.T) {
 }
 
 func TestSendWithInvalidInputs(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
+	en, fn := testutil.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -163,7 +163,7 @@ func TestSendWithInvalidInputs(t *testing.T) {
 }
 
 func TestMyAccount_Check_My_Balance(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
+	en, fn := testutil.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -194,7 +194,7 @@ func TestMyAccount_Check_My_Balance(t *testing.T) {
 }
 
 func TestMainMenuHelp(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
+	en, fn := testutil.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -225,7 +225,7 @@ func TestMainMenuHelp(t *testing.T) {
 }
 
 func TestMainMenuQuit(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
+	en, fn := testutil.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -256,7 +256,7 @@ func TestMainMenuQuit(t *testing.T) {
 }
 
 func TestMyAccount_Check_Community_Balance(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
+	en, fn := testutil.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -286,10 +286,8 @@ func TestMyAccount_Check_Community_Balance(t *testing.T) {
 	}
 }
 
-
-
 func TestMyAccount_MyAddress(t *testing.T) {
-	en, fn := enginetest.TestEngine(sessionID)
+	en, fn := testutil.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	sessions := testData
@@ -329,7 +327,7 @@ func TestGroups(t *testing.T) {
 	if err != nil {
 		log.Fatalf("Failed to load test groups: %v", err)
 	}
-	en, fn := enginetest.TestEngine(sessionID)
+	en, fn := testutil.TestEngine(sessionID)
 	defer fn()
 	ctx := context.Background()
 	// Create test cases from loaded groups

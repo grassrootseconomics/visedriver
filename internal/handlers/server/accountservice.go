@@ -14,6 +14,7 @@ type AccountServiceInterface interface {
 	CheckBalance(publicKey string) (string, error)
 	CreateAccount() (*models.AccountResponse, error)
 	CheckAccountStatus(trackingId string) (string, error)
+	FetchVouchers(publicKey string) (*models.VoucherHoldingResponse, error)
 }
 
 type AccountService struct {
@@ -104,6 +105,54 @@ func (as *AccountService) CreateAccount() (*models.AccountResponse, error) {
 	}
 
 	return &accountResp, nil
+}
+
+// FetchVouchers retrieves the token holdings for a given public key from the custodial holdings API endpoint
+// Parameters:
+//   - publicKey: The public key associated with the account.
+func (as *AccountService) FetchVouchers(publicKey string) (*models.VoucherHoldingResponse, error) {
+	// TODO replace with the actual request once ready
+	mockJSON := `{
+	"ok": true,
+	"description": "Token holdings with current balances",
+		"result": {
+			"holdings": [
+				{
+					"contractAddress": "0x6CC75A06ac72eB4Db2eE22F781F5D100d8ec03ee",
+					"tokenSymbol": "FSPTST",
+					"tokenDecimals": "6",
+					"balance": "8869964242"
+				},
+				{
+					"contractAddress": "0x724F2910D790B54A39a7638282a45B1D83564fFA",
+					"tokenSymbol": "GEO",
+					"tokenDecimals": "6",
+					"balance": "9884"
+				},
+				{
+					"contractAddress": "0x2105a206B7bec31E2F90acF7385cc8F7F5f9D273",
+					"tokenSymbol": "MFNK",
+					"tokenDecimals": "6",
+					"balance": "19788697"
+				},
+				{
+					"contractAddress": "0x63DE2Ac8D1008351Cc69Fb8aCb94Ba47728a7E83",
+					"tokenSymbol": "MILO",
+					"tokenDecimals": "6",
+					"balance": "75"
+				}
+			]
+		}
+	}`
+
+	// Unmarshal the JSON response
+	var holdings models.VoucherHoldingResponse
+	err := json.Unmarshal([]byte(mockJSON), &holdings)
+	if err != nil {
+		return nil, err
+	}
+
+	return &holdings, nil
 }
 
 func  GetTokenList() (*models.ApiResponse, error) {

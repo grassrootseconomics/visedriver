@@ -1,5 +1,7 @@
 LOAD check_balance 64
 RELOAD check_balance
+LOAD check_vouchers 10
+RELOAD check_vouchers
 MAP check_balance
 MOUT send 1
 MOUT vouchers 2

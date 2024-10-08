@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"os"
 
 	"git.grassecon.net/urdt/ussd/config"
 	"git.grassecon.net/urdt/ussd/internal/models"
@@ -18,8 +19,6 @@ type AccountServiceInterface interface {
 type AccountService struct {
 }
 
-
-
 // CheckAccountStatus retrieves the status of an account transaction based on the provided tracking ID.
 //
 // Parameters:
@@ -27,12 +26,10 @@ type AccountService struct {
 //     CreateAccount or a similar function that returns an AccountResponse. The `trackingId` field in the
 //     AccountResponse struct can be used here to check the account status during a transaction.
 //
-//
 // Returns:
 //   - string: The status of the transaction as a string. If there is an error during the request or processing, this will be an empty string.
 //   - error: An error if any occurred during the HTTP request, reading the response, or unmarshalling the JSON data.
 //     If no error occurs, this will be nil.
-//
 func (as *AccountService) CheckAccountStatus(trackingId string) (string, error) {
 	resp, err := http.Get(config.TrackStatusURL + trackingId)
 	if err != nil {
@@ -55,7 +52,6 @@ func (as *AccountService) CheckAccountStatus(trackingId string) (string, error) 
 
 	return status, nil
 }
-
 
 // CheckBalance retrieves the balance for a given public key from the custodial balance API endpoint.
 // Parameters:
@@ -83,8 +79,7 @@ func (as *AccountService) CheckBalance(publicKey string) (string, error) {
 	return balance, nil
 }
 
-
-//CreateAccount creates a new account in the custodial system.
+// CreateAccount creates a new account in the custodial system.
 // Returns:
 //   - *models.AccountResponse: A pointer to an AccountResponse struct containing the details of the created account.
 //     If there is an error during the request or processing, this will be nil.
@@ -109,4 +104,17 @@ func (as *AccountService) CreateAccount() (*models.AccountResponse, error) {
 	}
 
 	return &accountResp, nil
+}
+
+func  GetTokenList() (*models.ApiResponse, error) {
+	file, err := os.Open("sample_tokens.json")
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	var apiResponse models.ApiResponse
+	if err := json.NewDecoder(file).Decode(&apiResponse); err != nil {
+		return nil, err
+	}
+	return &apiResponse, nil
 }

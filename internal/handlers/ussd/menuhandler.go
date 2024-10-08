@@ -256,36 +256,50 @@ func (h *Handlers) SaveTemporaryPin(ctx context.Context, sym string, input []byt
 
 
 func (h *Handlers) GetVoucherList(ctx context.Context,sym string,input []byte) (resource.Result,error){
-	var res resource.Result
-	vouchers := []string{
-		"SRF",
-		"CRF",
-		"VCF",
-		"VSAPA",
-		"FSTMP",
-		"FSAW",
-		"PTAQ",
-		"VCRXT",
-		"VSGAQ",
-		"QPWIQQ",
-		"FSTMP",
-		"FSAW",
-		"PTAQ",
-		"VCRXT",
-		"VSGAQ",
-		"QPWIQQ",
-		"FSTMP",
-		"FSAW",
-		"PTAQ",
-		"VCRXT",
-		"VSGAQ",
-		"QPWIQQ",
+	res := resource.Result{}
+	//as := h.accountService.(*server.AccountService)
+	tokenList,err := server.GetTokenList()
+	fmt.Println("Error here:",err)
+	if err != nil {
+		return res,err
 	}
 
-	var numberedVouchers []string
-	for i, voucher := range vouchers {
-		numberedVouchers = append(numberedVouchers, fmt.Sprintf("%d:%s", i+1, voucher))
+	holdings := tokenList.Result.Holdings
+	fmt.Println("TokenList:",tokenList.Result.Holdings)
+	
+	// vouchers := []string{
+	// 	"SRF",
+	// 	"CRF",
+	// 	"VCF",
+	// 	"VSAPA",
+	// 	"FSTMP",
+	// 	"FSAW",
+	// 	"PTAQ",
+	// 	"VCRXT",
+	// 	"VSGAQ",
+	// 	"QPWIQQ",
+	// 	"FSTMP",
+	// 	"FSAW",
+	// 	"PTAQ",
+	// 	"VCRXT",
+	// 	"VSGAQ",
+	// 	"QPWIQQ",
+	// 	"FSTMP",
+	// 	"FSAW",
+	// 	"PTAQ",
+	// 	"VCRXT",
+	// 	"VSGAQ",
+	// 	"QPWIQQ",
+	// }
+    var numberedVouchers []string
+	for  i,token := range holdings {
+		numberedVouchers = append(numberedVouchers, fmt.Sprintf("%d:%s", i+1, token.TokenSymbol))
 	}
+
+	// var numberedVouchers []string
+	// for i, voucher := range vouchers {
+	// 	numberedVouchers = append(numberedVouchers, fmt.Sprintf("%d:%s", i+1, voucher))
+	// }
 	res.Content = strings.Join(numberedVouchers,"\n")
 
 	return res,nil

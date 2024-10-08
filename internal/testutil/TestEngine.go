@@ -10,7 +10,6 @@ import (
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/resource"
 	"git.grassecon.net/urdt/ussd/internal/handlers"
-	"git.grassecon.net/urdt/ussd/internal/handlers/server"
 	"git.grassecon.net/urdt/ussd/internal/storage"
 	testdataloader "github.com/peteole/testdata-loader"
 )
@@ -22,7 +21,7 @@ var (
 )
 
 func TestEngine(sessionId string) (engine.Engine, func()) {
-	var accountService server.AccountServiceInterface
+	//var accountService server.AccountServiceInterface
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
 	pfp := path.Join(scriptDir, "pp.csv")
@@ -76,13 +75,7 @@ func TestEngine(sessionId string) (engine.Engine, func()) {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
-
-	if OnlineTestEnabled {
-		accountService = &server.AccountService{}
-	} else {
-		accountService = &server.MockAccountService{}
-	}
-	hl, err := lhs.GetHandler(accountService)
+	hl, err := lhs.GetHandler(AccountService)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)

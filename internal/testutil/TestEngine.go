@@ -97,6 +97,6 @@ func TestEngine(sessionId string) (engine.Engine, func()) {
 		logg.Infof("testengine storage closed")
 	}
 
-	en = en.WithDebug(nil)
+	//en = en.WithDebug(nil)
 	return en, cleanFn
 }

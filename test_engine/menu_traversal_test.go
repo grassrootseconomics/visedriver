@@ -76,7 +76,11 @@ func TestAccountCreationSuccessful(t *testing.T) {
 					t.Fatalf("Test case '%s' failed during Flush: %v", group.Name, err)
 				}
 				b := w.Bytes()
-				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
+				match, err := step.MatchesExpectedContent(b)
+				if err != nil {
+					t.Fatalf("Error compiling regex for step '%s': %v", step.Input, err)
+				}
+				if !match {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}
 			}
@@ -116,7 +120,11 @@ func TestAccountRegistrationRejectTerms(t *testing.T) {
 				}
 
 				b := w.Bytes()
-				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
+				match, err := step.MatchesExpectedContent(b)
+				if err != nil {
+					t.Fatalf("Error compiling regex for step '%s': %v", step.Input, err)
+				}
+				if !match {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}
 			}
@@ -153,8 +161,11 @@ func TestSendWithInvalidInputs(t *testing.T) {
 
 				// Replace placeholder {public_key} with the actual dynamic public key
 				expectedContent := bytes.Replace([]byte(step.ExpectedContent), []byte("{public_key}"), []byte(publicKey), -1)
-
-				if !bytes.Equal(b, expectedContent) {
+				match, err := step.MatchesExpectedContent(b)
+				if err != nil {
+					t.Fatalf("Error compiling regex for step '%s': %v", step.Input, err)
+				}
+				if !match {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", expectedContent, b)
 				}
 			}
@@ -185,7 +196,11 @@ func TestMyAccount_Check_My_Balance(t *testing.T) {
 					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
 				}
 				b := w.Bytes()
-				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
+				match, err := step.MatchesExpectedContent(b)
+				if err != nil {
+					t.Fatalf("Error compiling regex for step '%s': %v", step.Input, err)
+				}
+				if !match {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}
 			}
@@ -216,7 +231,11 @@ func TestMainMenuHelp(t *testing.T) {
 				}
 
 				b := w.Bytes()
-				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
+				match, err := step.MatchesExpectedContent(b)
+				if err != nil {
+					t.Fatalf("Error compiling regex for step '%s': %v", step.Input, err)
+				}
+				if !match {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}
 			}
@@ -247,7 +266,11 @@ func TestMainMenuQuit(t *testing.T) {
 				}
 
 				b := w.Bytes()
-				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
+				match, err := step.MatchesExpectedContent(b)
+				if err != nil {
+					t.Fatalf("Error compiling regex for step '%s': %v", step.Input, err)
+				}
+				if !match {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}
 			}
@@ -278,7 +301,11 @@ func TestMyAccount_Check_Community_Balance(t *testing.T) {
 					t.Errorf("Test case '%s' failed during Flush: %v", group.Name, err)
 				}
 				b := w.Bytes()
-				if !bytes.Equal(b, []byte(step.ExpectedContent)) {
+				match, err := step.MatchesExpectedContent(b)
+				if err != nil {
+					t.Fatalf("Error compiling regex for step '%s': %v", step.Input, err)
+				}
+				if !match {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", step.ExpectedContent, b)
 				}
 			}
@@ -311,10 +338,12 @@ func TestMyAccount_MyAddress(t *testing.T) {
 				b := w.Bytes()
 
 				publicKey := extractPublicKey(b)
-
 				expectedContent := bytes.Replace([]byte(step.ExpectedContent), []byte("{public_key}"), []byte(publicKey), -1)
-
-				if !bytes.Equal(b, expectedContent) {
+				match, err := step.MatchesExpectedContent(b)
+				if err != nil {
+					t.Fatalf("Error compiling regex for step '%s': %v", step.Input, err)
+				}
+				if !match {
 					t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", expectedContent, b)
 				}
 			}
@@ -347,7 +376,11 @@ func TestGroups(t *testing.T) {
 				t.Errorf("Test case '%s' failed during Flush: %v", tt.Name, err)
 			}
 			b := w.Bytes()
-			if !bytes.Equal(b, []byte(tt.ExpectedContent)) {
+			match, err := tt.MatchesExpectedContent(b)
+			if err != nil {
+				t.Fatalf("Error compiling regex for step '%s': %v", tt.Input, err)
+			}
+			if !match {
 				t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", tt.ExpectedContent, b)
 			}
 

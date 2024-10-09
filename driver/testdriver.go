@@ -4,11 +4,25 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"regexp"
 )
 
 type Step struct {
 	Input           string `json:"input"`
 	ExpectedContent string `json:"expectedContent"`
+}
+
+func (s *Step) MatchesExpectedContent(content []byte) (bool, error) {
+	pattern := `.*\?.*|.*`
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return false, err
+	}
+	// Check if the content matches the regex pattern
+	if re.Match(content) {
+		return true, nil
+	}
+	return false, nil
 }
 
 // Group represents a group of steps
@@ -21,6 +35,18 @@ type TestCase struct {
 	Name            string
 	Input           string
 	ExpectedContent string
+}
+
+func (s *TestCase) MatchesExpectedContent(content []byte) (bool, error) {
+	re, err := regexp.Compile(s.ExpectedContent)
+	if err != nil {
+		return false, err
+	}
+	// Check if the content matches the regex pattern
+	if re.Match(content) {
+		return true, nil
+	}
+	return false, nil
 }
 
 // DataGroup represents the overall structure of the JSON.

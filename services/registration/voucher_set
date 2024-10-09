@@ -1,1 +1,1 @@
-Success! symbol is now your active voucher.
+Success! {{.set_voucher}} is now your active voucher.

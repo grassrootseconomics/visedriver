@@ -1058,6 +1058,13 @@ func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) 
 func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	var err error
+	store := h.userdataStore
+
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+
 	inputStr := string(input)
 
 	if inputStr == "0" || inputStr == "99" {
@@ -1067,7 +1074,6 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 	flag_incorrect_voucher, _ := h.flagManager.GetFlag("flag_incorrect_voucher")
 
 	// Initialize the store and prefix database
-	store := h.userdataStore
 	prefixdb := storage.NewSubPrefixDb(store, []byte("token_holdings"))
 
 	// Retrieve the voucher symbol list
@@ -1111,13 +1117,52 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 		}
 	}
 
-	// If a match is found, return the symbol and balance
+	// If a match is found, write the temporary sym , then return the symbol and balance
 	if matchedSymbol != "" && matchedBalance != "" {
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_SYM, []byte(matchedSymbol))
+		if err != nil {
+			return res, err
+		}
 		res.Content = fmt.Sprintf("%s\n%s", matchedSymbol, matchedBalance)
 		res.FlagReset = append(res.FlagReset, flag_incorrect_voucher)
 	} else {
 		res.FlagSet = append(res.FlagSet, flag_incorrect_voucher)
 	}
+
+	return res, nil
+}
+
+// SetVoucher retrieves the temporary voucher, sets it as the active voucher and
+// clears the temporary voucher/sym
+func (h *Handlers) SetVoucher(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	var err error
+	store := h.userdataStore
+
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+
+	// get the current temporary symbol
+	temporarySym, err := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_SYM)
+	if err != nil {
+		return res, err
+	}
+
+	// set the active symbol
+	err = store.WriteEntry(ctx, sessionId, utils.DATA_ACTIVE_SYM, []byte(temporarySym))
+	if err != nil {
+		return res, err
+	}
+
+	// reset the temporary symbol
+	err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_SYM, []byte(""))
+	if err != nil {
+		return res, err
+	}
+
+	res.Content = string(temporarySym)
 
 	return res, nil
 }

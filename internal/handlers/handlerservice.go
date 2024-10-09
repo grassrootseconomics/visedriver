@@ -95,6 +95,7 @@ func (ls *LocalHandlerService) GetHandler() (*ussd.Handlers, error) {
 	ls.DbRs.AddLocalFunc("check_vouchers", ussdHandlers.CheckVouchers)
 	ls.DbRs.AddLocalFunc("get_vouchers", ussdHandlers.GetVoucherList)
 	ls.DbRs.AddLocalFunc("view_voucher", ussdHandlers.ViewVoucher)
+	ls.DbRs.AddLocalFunc("set_voucher", ussdHandlers.SetVoucher)
 
 	return ussdHandlers, nil
 }

@@ -1060,7 +1060,7 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 	var err error
 	inputStr := string(input)
 
-	if inputStr == "0" || inputStr == "00" {
+	if inputStr == "0" || inputStr == "99" {
 		return res, nil
 	}
 

@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"time"
 
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/resource"
 	"git.grassecon.net/urdt/ussd/internal/handlers"
+	"git.grassecon.net/urdt/ussd/internal/handlers/server"
 	"git.grassecon.net/urdt/ussd/internal/storage"
 	testdataloader "github.com/peteole/testdata-loader"
 )
@@ -20,11 +22,12 @@ var (
 	scriptDir = path.Join(baseDir, "services", "registration")
 )
 
-func TestEngine(sessionId string) (engine.Engine, func()) {
-	//var accountService server.AccountServiceInterface
+func TestEngine(sessionId string) (engine.Engine, func(), chan bool) {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
 	pfp := path.Join(scriptDir, "pp.csv")
+
+	var eventChannel = make(chan bool)
 
 	cfg := engine.Config{
 		Root:       "root",
@@ -75,6 +78,21 @@ func TestEngine(sessionId string) (engine.Engine, func()) {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
+
+	switch AccountService.(type) {
+	case *server.MockAccountService:
+		go func() {
+			eventChannel <- false
+		}()
+	case *server.AccountService:
+		go func() {
+			time.Sleep(5 * time.Second) // Wait for 5 seconds
+			eventChannel <- true
+		}()
+	default:
+		panic("Unknown account service type")
+	}
+
 	hl, err := lhs.GetHandler(AccountService)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
@@ -83,7 +101,6 @@ func TestEngine(sessionId string) (engine.Engine, func()) {
 
 	en := lhs.GetEngine()
 	en = en.WithFirst(hl.Init)
-
 	cleanFn := func() {
 		err := en.Finish()
 		if err != nil {
@@ -98,5 +115,5 @@ func TestEngine(sessionId string) (engine.Engine, func()) {
 	}
 
 	//en = en.WithDebug(nil)
-	return en, cleanFn
+	return en, cleanFn, eventChannel
 }

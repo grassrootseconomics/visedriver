@@ -13,13 +13,9 @@ type Step struct {
 }
 
 func (s *Step) MatchesExpectedContent(content []byte) (bool, error) {
-	pattern := `.*\?.*|.*`
-	re, err := regexp.Compile(pattern)
-	if err != nil {
-		return false, err
-	}
-	// Check if the content matches the regex pattern
-	if re.Match(content) {
+	pattern := regexp.QuoteMeta(s.ExpectedContent)
+	re, _ := regexp.Compile(pattern)
+	if re.Match([]byte(content)) {
 		return true, nil
 	}
 	return false, nil
@@ -38,7 +34,8 @@ type TestCase struct {
 }
 
 func (s *TestCase) MatchesExpectedContent(content []byte) (bool, error) {
-	re, err := regexp.Compile(s.ExpectedContent)
+	pattern := regexp.QuoteMeta(s.ExpectedContent)
+	re, err := regexp.Compile(pattern)
 	if err != nil {
 		return false, err
 	}

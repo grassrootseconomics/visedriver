@@ -1,15 +1,12 @@
+//go:build online
 // +build online
 
 package testutil
 
-const OnlineTestEnabled = true
-
-
-
+import "git.grassecon.net/urdt/ussd/internal/handlers/server"
 
 var AccountService server.AccountServiceInterface
 
-
 func init() {
-    AccountService = &server.AccountService{}
+	AccountService = &server.AccountService{}
 }

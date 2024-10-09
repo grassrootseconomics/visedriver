@@ -24,6 +24,8 @@ const (
 	DATA_AMOUNT
 	DATA_TEMPORARY_PIN
 	DATA_VOUCHER_LIST
+	DATA_TEMPORARY_SYM
+	DATA_ACTIVE_SYM
 )
 
 func typToBytes(typ DataTyp) []byte {

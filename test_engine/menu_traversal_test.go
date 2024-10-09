@@ -160,6 +160,7 @@ func TestSendWithInvalidInputs(t *testing.T) {
 
 				// Replace placeholder {public_key} with the actual dynamic public key
 				expectedContent := bytes.Replace([]byte(step.ExpectedContent), []byte("{public_key}"), []byte(publicKey), -1)
+				step.ExpectedContent = string(expectedContent)
 				match, err := step.MatchesExpectedContent(b)
 				if err != nil {
 					t.Fatalf("Error compiling regex for step '%s': %v", step.Input, err)
@@ -338,6 +339,7 @@ func TestMyAccount_MyAddress(t *testing.T) {
 
 				publicKey := extractPublicKey(b)
 				expectedContent := bytes.Replace([]byte(step.ExpectedContent), []byte("{public_key}"), []byte(publicKey), -1)
+				step.ExpectedContent = string(expectedContent)
 				match, err := step.MatchesExpectedContent(b)
 				if err != nil {
 					t.Fatalf("Error compiling regex for step '%s': %v", step.Input, err)

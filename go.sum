@@ -2,6 +2,8 @@ git.defalsify.org/vise.git v0.1.0-rc.3.0.20240923162317-c20d557a3dbb h1:6P4kxihc
 git.defalsify.org/vise.git v0.1.0-rc.3.0.20240923162317-c20d557a3dbb/go.mod h1:JDguWmcoWBdsnpw7PUjVZAEpdC/ubBmjdUBy3tjP63M=
 git.defalsify.org/vise.git v0.1.0-rc.3.0.20240926120105-89b0529cf7ac h1:D4KI22KWXT8S66sHIjWhTBX6SXRfnd7j8VErq3PPbok=
 git.defalsify.org/vise.git v0.1.0-rc.3.0.20240926120105-89b0529cf7ac/go.mod h1:JDguWmcoWBdsnpw7PUjVZAEpdC/ubBmjdUBy3tjP63M=
+git.defalsify.org/vise.git v0.2.0 h1:X2ZgiGRq4C+9qOlDMP0b/oE5QHjVQNT4aEFZB88ST0Q=
+git.defalsify.org/vise.git v0.2.0/go.mod h1:JDguWmcoWBdsnpw7PUjVZAEpdC/ubBmjdUBy3tjP63M=
 github.com/alecthomas/assert/v2 v2.2.2 h1:Z/iVC0xZfWTaFNE6bA3z07T86hd45Xe2eLt6WVy2bbk=
 github.com/alecthomas/assert/v2 v2.2.2/go.mod h1:pXcQ2Asjp247dahGEmsZ6ru0UVwnkhktn7S0bBDLxvQ=
 github.com/alecthomas/participle/v2 v2.0.0 h1:Fgrq+MbuSsJwIkw3fEj9h75vDP0Er5JzepJ0/HNHv0g=

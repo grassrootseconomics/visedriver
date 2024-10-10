@@ -1123,6 +1123,10 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 		if err != nil {
 			return res, err
 		}
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_BAL, []byte(matchedBalance))
+		if err != nil {
+			return res, err
+		}
 		res.Content = fmt.Sprintf("%s\n%s", matchedSymbol, matchedBalance)
 		res.FlagReset = append(res.FlagReset, flag_incorrect_voucher)
 	} else {
@@ -1149,15 +1153,30 @@ func (h *Handlers) SetVoucher(ctx context.Context, sym string, input []byte) (re
 	if err != nil {
 		return res, err
 	}
+	// get the current temporary balance
+	temporaryBal, err := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_BAL)
+	if err != nil {
+		return res, err
+	}
 
 	// set the active symbol
 	err = store.WriteEntry(ctx, sessionId, utils.DATA_ACTIVE_SYM, []byte(temporarySym))
 	if err != nil {
 		return res, err
 	}
+	// set the active balance
+	err = store.WriteEntry(ctx, sessionId, utils.DATA_ACTIVE_BAL, []byte(temporaryBal))
+	if err != nil {
+		return res, err
+	}
 
 	// reset the temporary symbol
 	err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_SYM, []byte(""))
+	if err != nil {
+		return res, err
+	}
+	// reset the temporary balance
+	err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_BAL, []byte(""))
 	if err != nil {
 		return res, err
 	}

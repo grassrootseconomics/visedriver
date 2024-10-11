@@ -660,11 +660,28 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 		return res, err
 	}
 
-	balance, err := h.accountService.CheckBalance(string(publicKey))
+	// check if the user has an active sym
+	activeSym, err := store.ReadEntry(ctx, sessionId, utils.DATA_ACTIVE_SYM)
 	if err != nil {
-		return res, nil
+		if db.IsNotFound(err) {
+			logg.Printf(logging.LVL_INFO, "Using the default sym to fetch balance")
+			balance, err := h.accountService.CheckBalance(string(publicKey))
+			if err != nil {
+				return res, err
+			}
+
+			res.Content = balance
+
+			return res, nil
+		}
 	}
-	res.Content = balance
+
+	activeBal, err := store.ReadEntry(ctx, sessionId, utils.DATA_ACTIVE_BAL)
+	if err != nil {
+		return res, err
+	}
+
+	res.Content = fmt.Sprintf("%s %s", activeBal, activeSym)
 
 	return res, nil
 }

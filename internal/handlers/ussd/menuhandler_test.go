@@ -1560,33 +1560,72 @@ func TestValidateRecipient(t *testing.T) {
 }
 
 func TestCheckBalance(t *testing.T) {
-
-	mockDataStore := new(mocks.MockUserDataStore)
-	sessionId := "session123"
-	publicKey := "0X13242618721"
-	balance := "0.003 CELO"
-
-	expectedResult := resource.Result{
-		Content: "0.003 CELO",
+	tests := []struct {
+		name           string
+		sessionId      string
+		publicKey      string
+		activeSym      string
+		activeBal      string
+		expectedResult resource.Result
+		expectError    bool
+	}{
+		{
+			name:           "User with active sym",
+			sessionId:      "session456",
+			publicKey:      "0X98765432109",
+			activeSym:      "ETH",
+			activeBal:      "1.5",
+			expectedResult: resource.Result{Content: "1.5 ETH"},
+			expectError:    false,
+		},
+		{
+			name:           "User without active sym",
+			sessionId:      "session123",
+			publicKey:      "0X13242618721",
+			activeSym:      "",
+			activeBal:      "",
+			expectedResult: resource.Result{Content: "0.003 CELO"},
+			expectError:    false,
+		},
 	}
 
-	mockCreateAccountService := new(mocks.MockAccountService)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockDataStore := new(mocks.MockUserDataStore)
+			mockAccountService := new(mocks.MockAccountService)
+			ctx := context.WithValue(context.Background(), "SessionId", tt.sessionId)
 
-	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
+			h := &Handlers{
+				userdataStore:  mockDataStore,
+				accountService: mockAccountService,
+			}
 
-	h := &Handlers{
-		userdataStore:  mockDataStore,
-		accountService: mockCreateAccountService,
-		//flagManager:    fm.parser,
+			// Mock calls for public key
+			mockDataStore.On("ReadEntry", ctx, tt.sessionId, utils.DATA_PUBLIC_KEY).Return([]byte(tt.publicKey), nil)
+
+			if tt.activeSym == "" {
+				// Mock for user without active sym
+				mockDataStore.On("ReadEntry", ctx, tt.sessionId, utils.DATA_ACTIVE_SYM).Return([]byte{}, db.ErrNotFound{})
+				mockAccountService.On("CheckBalance", tt.publicKey).Return("0.003 CELO", nil)
+			} else {
+				// Mock for user with active sym
+				mockDataStore.On("ReadEntry", ctx, tt.sessionId, utils.DATA_ACTIVE_SYM).Return([]byte(tt.activeSym), nil)
+				mockDataStore.On("ReadEntry", ctx, tt.sessionId, utils.DATA_ACTIVE_BAL).Return([]byte(tt.activeBal), nil)
+			}
+
+			res, err := h.CheckBalance(ctx, "check_balance", []byte("123456"))
+
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedResult, res, "Result should match expected output")
+			}
+
+			mockDataStore.AssertExpectations(t)
+			mockAccountService.AssertExpectations(t)
+		})
 	}
-	//mock call operations
-	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_PUBLIC_KEY).Return([]byte(publicKey), nil)
-	mockCreateAccountService.On("CheckBalance", string(publicKey)).Return(balance, nil)
-
-	res, _ := h.CheckBalance(ctx, "check_balance", []byte("123456"))
-
-	assert.Equal(t, res, expectedResult, "Result should contain flag(s) that have been reset")
-
 }
 
 func TestGetProfile(t *testing.T) {

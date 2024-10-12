@@ -18,11 +18,8 @@ type AccountServiceInterface interface {
 type AccountService struct {
 }
 
-type MockAccountService struct {
+type TestAccountService struct {
 }
-
-
-
 
 // CheckAccountStatus retrieves the status of an account transaction based on the provided tracking ID.
 //
@@ -31,12 +28,10 @@ type MockAccountService struct {
 //     CreateAccount or a similar function that returns an AccountResponse. The `trackingId` field in the
 //     AccountResponse struct can be used here to check the account status during a transaction.
 //
-//
 // Returns:
 //   - string: The status of the transaction as a string. If there is an error during the request or processing, this will be an empty string.
 //   - error: An error if any occurred during the HTTP request, reading the response, or unmarshalling the JSON data.
 //     If no error occurs, this will be nil.
-//
 func (as *AccountService) CheckAccountStatus(trackingId string) (string, error) {
 	resp, err := http.Get(config.TrackStatusURL + trackingId)
 	if err != nil {
@@ -54,12 +49,9 @@ func (as *AccountService) CheckAccountStatus(trackingId string) (string, error) 
 	if err != nil {
 		return "", err
 	}
-
 	status := trackResp.Result.Transaction.Status
-
 	return status, nil
 }
-
 
 // CheckBalance retrieves the balance for a given public key from the custodial balance API endpoint.
 // Parameters:
@@ -87,8 +79,7 @@ func (as *AccountService) CheckBalance(publicKey string) (string, error) {
 	return balance, nil
 }
 
-
-//CreateAccount creates a new account in the custodial system.
+// CreateAccount creates a new account in the custodial system.
 // Returns:
 //   - *models.AccountResponse: A pointer to an AccountResponse struct containing the details of the created account.
 //     If there is an error during the request or processing, this will be nil.
@@ -115,9 +106,7 @@ func (as *AccountService) CreateAccount() (*models.AccountResponse, error) {
 	return &accountResp, nil
 }
 
-
-
-func (mas *MockAccountService) CreateAccount() (*models.AccountResponse, error) {
+func (tas *TestAccountService) CreateAccount() (*models.AccountResponse, error) {
 	return &models.AccountResponse{
 		Ok: true,
 		Result: struct {
@@ -132,7 +121,7 @@ func (mas *MockAccountService) CreateAccount() (*models.AccountResponse, error) 
 	}, nil
 }
 
-func (mas *MockAccountService) CheckBalance(publicKey string) (string, error) {
+func (tas *TestAccountService) CheckBalance(publicKey string) (string, error) {
 
 	balanceResponse := &models.BalanceResponse{
 		Ok: true,
@@ -148,6 +137,6 @@ func (mas *MockAccountService) CheckBalance(publicKey string) (string, error) {
 	return balanceResponse.Result.Balance, nil
 }
 
-func (mas *MockAccountService) CheckAccountStatus(trackingId string) (string, error) {
+func (tas *TestAccountService) CheckAccountStatus(trackingId string) (string, error) {
 	return "SUCCESS", nil
 }

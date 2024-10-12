@@ -233,28 +233,6 @@ func (h *Handlers) SaveTemporaryPin(ctx context.Context, sym string, input []byt
 	return res, nil
 }
 
-// GetVoucherList fetches the list of vouchers and formats them
-// checks whether they are stored internally before calling the API
-func (h *Handlers) GetVoucherList(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	var res resource.Result
-
-	// check if the vouchers exist internally and if not
-	// fetch from the API
-
-	// Read vouchers from the store
-	store := h.userdataStore
-	prefixdb := storage.NewSubPrefixDb(store, []byte("token_holdings"))
-
-	voucherData, err := prefixdb.Get(ctx, []byte("tokens"))
-	if err != nil {
-		return res, nil
-	}
-
-	res.Content = string(voucherData)
-
-	return res, nil
-}
-
 func (h *Handlers) ConfirmPinChange(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	sessionId, ok := ctx.Value("SessionId").(string)
@@ -1057,16 +1035,34 @@ func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) 
 	voucherSymbolList := strings.Join(numberedSymbols, "\n")
 	voucherBalanceList := strings.Join(numberedBalances, "\n")
 
-	prefixdb := storage.NewSubPrefixDb(store, []byte("token_holdings"))
-	err = prefixdb.Put(ctx, []byte("tokens"), []byte(voucherSymbolList))
+	prefixdb := storage.NewSubPrefixDb(store, []byte("pfx"))
+	err = prefixdb.Put(ctx, []byte("sym"), []byte(voucherSymbolList))
 	if err != nil {
 		return res, nil
 	}
 
-	err = prefixdb.Put(ctx, []byte(voucherSymbolList), []byte(voucherBalanceList))
+	err = prefixdb.Put(ctx, []byte("bal"), []byte(voucherBalanceList))
 	if err != nil {
 		return res, nil
 	}
+
+	return res, nil
+}
+
+// GetVoucherList fetches the list of vouchers and formats them
+func (h *Handlers) GetVoucherList(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+
+	// Read vouchers from the store
+	store := h.userdataStore
+	prefixdb := storage.NewSubPrefixDb(store, []byte("pfx"))
+
+	voucherData, err := prefixdb.Get(ctx, []byte("sym"))
+	if err != nil {
+		return res, nil
+	}
+
+	res.Content = string(voucherData)
 
 	return res, nil
 }
@@ -1082,25 +1078,25 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 		return res, fmt.Errorf("missing session")
 	}
 
+	flag_incorrect_voucher, _ := h.flagManager.GetFlag("flag_incorrect_voucher")
+
 	inputStr := string(input)
 
 	if inputStr == "0" || inputStr == "99" {
+		res.FlagReset = append(res.FlagReset, flag_incorrect_voucher)
 		return res, nil
 	}
 
-	flag_incorrect_voucher, _ := h.flagManager.GetFlag("flag_incorrect_voucher")
-
-	// Initialize the store and prefix database
-	prefixdb := storage.NewSubPrefixDb(store, []byte("token_holdings"))
+	prefixdb := storage.NewSubPrefixDb(store, []byte("pfx"))
 
 	// Retrieve the voucher symbol list
-	voucherSymbolList, err := prefixdb.Get(ctx, []byte("tokens"))
+	voucherSymbolList, err := prefixdb.Get(ctx, []byte("sym"))
 	if err != nil {
 		return res, fmt.Errorf("failed to retrieve voucher symbol list: %v", err)
 	}
 
 	// Retrieve the voucher balance list
-	voucherBalanceList, err := prefixdb.Get(ctx, []byte(voucherSymbolList))
+	voucherBalanceList, err := prefixdb.Get(ctx, []byte("bal"))
 	if err != nil {
 		return res, fmt.Errorf("failed to retrieve voucher balance list: %v", err)
 	}
@@ -1134,7 +1130,7 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 		}
 	}
 
-	// If a match is found, write the temporary sym , then return the symbol and balance
+	// If a match is found, write the temporary sym, then return the symbol and balance
 	if matchedSymbol != "" && matchedBalance != "" {
 		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_SYM, []byte(matchedSymbol))
 		if err != nil {
@@ -1153,8 +1149,9 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 	return res, nil
 }
 
-// SetVoucher retrieves the temporary voucher, sets it as the active voucher and
-// clears the temporary voucher/sym
+// SetVoucher retrieves the temporary sym and balance,
+// sets them as the active data and
+// clears the temporary data
 func (h *Handlers) SetVoucher(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	var err error

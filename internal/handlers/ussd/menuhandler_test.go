@@ -1782,5 +1782,38 @@ func TestConfirmPin(t *testing.T) {
 
 		})
 	}
+}
 
+func TestSetVoucher(t *testing.T) {
+	mockDataStore := new(mocks.MockUserDataStore)
+
+	sessionId := "session123"
+	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
+
+	temporarySym := []byte("tempSym")
+	temporaryBal := []byte("tempBal")
+
+	// Set expectations for the mock data store
+	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_SYM).Return(temporarySym, nil)
+	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_BAL).Return(temporaryBal, nil)
+	mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_ACTIVE_SYM, temporarySym).Return(nil)
+	mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_ACTIVE_BAL, temporaryBal).Return(nil)
+	mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_SYM, []byte("")).Return(nil)
+	mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_BAL, []byte("")).Return(nil)
+
+	h := &Handlers{
+		userdataStore: mockDataStore,
+	}
+
+	// Call the method under test
+	res, err := h.SetVoucher(ctx, "someSym", []byte{})
+
+	// Assert that no errors occurred
+	assert.NoError(t, err)
+
+	// Assert that the result content is correct
+	assert.Equal(t, string(temporarySym), res.Content)
+
+	// Assert that expectations were met
+	mockDataStore.AssertExpectations(t)
 }

@@ -69,7 +69,6 @@ func (ls *LocalHandlerService) GetHandler() (*ussd.Handlers, error) {
 	ls.DbRs.AddLocalFunc("check_balance", ussdHandlers.CheckBalance)
 	ls.DbRs.AddLocalFunc("validate_recipient", ussdHandlers.ValidateRecipient)
 	ls.DbRs.AddLocalFunc("transaction_reset", ussdHandlers.TransactionReset)
-	ls.DbRs.AddLocalFunc("max_amount", ussdHandlers.MaxAmount)
 	ls.DbRs.AddLocalFunc("validate_amount", ussdHandlers.ValidateAmount)
 	ls.DbRs.AddLocalFunc("reset_transaction_amount", ussdHandlers.ResetTransactionAmount)
 	ls.DbRs.AddLocalFunc("get_recipient", ussdHandlers.GetRecipient)

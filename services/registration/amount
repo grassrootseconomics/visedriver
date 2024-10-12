@@ -1,2 +1,2 @@
-Maximum amount: {{.max_amount}}
+Maximum amount: {{.check_balance}}
 Enter amount:

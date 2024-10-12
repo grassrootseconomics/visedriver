@@ -1,6 +1,6 @@
 LOAD reset_transaction_amount 0
-LOAD max_amount 10
-MAP max_amount
+LOAD check_balance 48
+MAP check_balance
 MOUT back 0
 HALT
 LOAD validate_amount 64

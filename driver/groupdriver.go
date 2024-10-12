@@ -14,7 +14,10 @@ type Step struct {
 
 func (s *Step) MatchesExpectedContent(content []byte) (bool, error) {
 	pattern := regexp.QuoteMeta(s.ExpectedContent)
-	re, _ := regexp.Compile(pattern)
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return false, err
+	}
 	if re.Match([]byte(content)) {
 		return true, nil
 	}

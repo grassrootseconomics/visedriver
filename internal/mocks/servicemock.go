@@ -26,6 +26,6 @@ func (m *MockAccountService) CheckAccountStatus(trackingId string) (string, erro
 }
 
 func (m *MockAccountService) FetchVouchers(publicKey string) (*models.VoucherHoldingResponse, error) {
-	args := m.Called()
+	args := m.Called(publicKey)
 	return args.Get(0).(*models.VoucherHoldingResponse), args.Error(1)
 }

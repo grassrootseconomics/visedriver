@@ -434,34 +434,6 @@ func TestCheckIdentifier(t *testing.T) {
 	}
 }
 
-func TestMaxAmount(t *testing.T) {
-	mockStore := new(mocks.MockUserDataStore)
-	mockCreateAccountService := new(mocks.MockAccountService)
-
-	// Define test data
-	sessionId := "session123"
-	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
-	publicKey := "0xcasgatweksalw1018221"
-	expectedBalance := "0.003CELO"
-
-	// Set up the expected behavior of the mock
-	mockStore.On("ReadEntry", ctx, sessionId, utils.DATA_PUBLIC_KEY).Return([]byte(publicKey), nil)
-	mockCreateAccountService.On("CheckBalance", publicKey).Return(expectedBalance, nil)
-
-	// Create the Handlers instance with the mock store
-	h := &Handlers{
-		userdataStore:  mockStore,
-		accountService: mockCreateAccountService,
-	}
-
-	// Call the method
-	res, _ := h.MaxAmount(ctx, "max_amount", []byte("check_balance"))
-
-	//Assert that the balance that was set as the result content is what was returned by  Check Balance
-	assert.Equal(t, expectedBalance, res.Content)
-
-}
-
 func TestGetSender(t *testing.T) {
 	mockStore := new(mocks.MockUserDataStore)
 
@@ -1444,59 +1416,81 @@ func TestValidateAmount(t *testing.T) {
 		name           string
 		input          []byte
 		publicKey      []byte
+		activeSym      []byte
+		activeBal      []byte
 		balance        string
 		expectedResult resource.Result
 	}{
 		{
-			name:      "Test with valid amount",
+			name:      "Test with valid amount and active symbol",
 			input:     []byte("0.001"),
-			balance:   "0.003 CELO",
 			publicKey: []byte("0xrqeqrequuq"),
+			activeSym: []byte("CELO"),
+			activeBal: []byte("0.003"),
 			expectedResult: resource.Result{
 				Content: "0.001",
 			},
 		},
 		{
-			name:      "Test with amount larger than balance",
+			name:      "Test with amount larger than active balance",
 			input:     []byte("0.02"),
-			balance:   "0.003 CELO",
 			publicKey: []byte("0xrqeqrequuq"),
+			activeSym: []byte("CELO"),
+			activeBal: []byte("0.003"),
 			expectedResult: resource.Result{
 				FlagSet: []uint32{flag_invalid_amount},
 				Content: "0.02",
 			},
 		},
 		{
-			name:      "Test with invalid amount",
+			name:      "Test with invalid amount format",
 			input:     []byte("0.02ms"),
-			balance:   "0.003 CELO",
 			publicKey: []byte("0xrqeqrequuq"),
+			balance:   "0.003 CELO",
 			expectedResult: resource.Result{
 				FlagSet: []uint32{flag_invalid_amount},
 				Content: "0.02ms",
+			},
+		},
+		{
+			name:      "Test fallback to current balance without active symbol",
+			input:     []byte("0.001"),
+			publicKey: []byte("0xrqeqrequuq"),
+			balance:   "0.003 CELO",
+			expectedResult: resource.Result{
+				Content: "0.001",
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
+			// Mock behavior for public key retrieval
 			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_PUBLIC_KEY).Return(tt.publicKey, nil)
-			mockCreateAccountService.On("CheckBalance", string(tt.publicKey)).Return(tt.balance, nil)
+
+			// Mock behavior for active symbol and balance retrieval (if present)
+			if len(tt.activeSym) > 0 {
+				mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_ACTIVE_SYM).Return(tt.activeSym, nil)
+				mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_ACTIVE_BAL).Return(tt.activeBal, nil)
+			} else {
+				mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_ACTIVE_SYM).Return(nil, fmt.Errorf("not found"))
+				mockCreateAccountService.On("CheckBalance", string(tt.publicKey)).Return(tt.balance, nil)
+			}
+
+			// Mock behavior for storing the amount (if valid)
 			mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_AMOUNT, tt.input).Return(nil).Maybe()
 
 			// Call the method under test
 			res, _ := h.ValidateAmount(ctx, "test_validate_amount", tt.input)
 
-			// Assert that no errors occurred
+			// Assert no errors occurred
 			assert.NoError(t, err)
 
-			//Assert that the account created flag has been set to the result
-			assert.Equal(t, res, tt.expectedResult, "Expected result should be equal to the actual result")
+			// Assert the result matches the expected result
+			assert.Equal(t, tt.expectedResult, res, "Expected result should match actual result")
 
-			// Assert that expectations were met
+			// Assert all expectations were met
 			mockDataStore.AssertExpectations(t)
-
 		})
 	}
 }

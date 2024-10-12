@@ -79,8 +79,12 @@ func TestEngine(sessionId string) (engine.Engine, func(), chan bool) {
 		os.Exit(1)
 	}
 
+	if AccountService == nil {
+		AccountService = &server.AccountService{}
+	}
+
 	switch AccountService.(type) {
-	case *server.MockAccountService:
+	case *server.TestAccountService:
 		go func() {
 			eventChannel <- false
 		}()

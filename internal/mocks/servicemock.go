@@ -15,12 +15,12 @@ func (m *MockAccountService) CreateAccount() (*models.AccountResponse, error) {
 	return args.Get(0).(*models.AccountResponse), args.Error(1)
 }
 
-func (m *MockAccountService) CheckBalance(publicKey string) (string, error) {
+func (m *MockAccountService) CheckBalance(publicKey string) (*models.BalanceResponse, error) {
 	args := m.Called(publicKey)
-	return args.String(0), args.Error(1)
+	return args.Get(0).(*models.BalanceResponse), args.Error(1)
 }
 
-func (m *MockAccountService) CheckAccountStatus(trackingId string) (string, error) {
+func (m *MockAccountService) CheckAccountStatus(trackingId string) (*models.TrackStatusResponse, error) {
 	args := m.Called(trackingId)
-	return args.String(0), args.Error(1)
+	return args.Get(0).(*models.TrackStatusResponse), args.Error(1)
 }

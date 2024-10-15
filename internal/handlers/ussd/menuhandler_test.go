@@ -1415,17 +1415,13 @@ func TestValidateAmount(t *testing.T) {
 	tests := []struct {
 		name           string
 		input          []byte
-		publicKey      []byte
-		activeSym      []byte
 		activeBal      []byte
 		balance        string
 		expectedResult resource.Result
 	}{
 		{
-			name:      "Test with valid amount and active symbol",
+			name:      "Test with valid amount",
 			input:     []byte("0.001"),
-			publicKey: []byte("0xrqeqrequuq"),
-			activeSym: []byte("CELO"),
 			activeBal: []byte("0.003"),
 			expectedResult: resource.Result{
 				Content: "0.001",
@@ -1434,8 +1430,6 @@ func TestValidateAmount(t *testing.T) {
 		{
 			name:      "Test with amount larger than active balance",
 			input:     []byte("0.02"),
-			publicKey: []byte("0xrqeqrequuq"),
-			activeSym: []byte("CELO"),
 			activeBal: []byte("0.003"),
 			expectedResult: resource.Result{
 				FlagSet: []uint32{flag_invalid_amount},
@@ -1445,37 +1439,18 @@ func TestValidateAmount(t *testing.T) {
 		{
 			name:      "Test with invalid amount format",
 			input:     []byte("0.02ms"),
-			publicKey: []byte("0xrqeqrequuq"),
 			balance:   "0.003 CELO",
 			expectedResult: resource.Result{
 				FlagSet: []uint32{flag_invalid_amount},
 				Content: "0.02ms",
 			},
 		},
-		{
-			name:      "Test fallback to current balance without active symbol",
-			input:     []byte("0.001"),
-			publicKey: []byte("0xrqeqrequuq"),
-			balance:   "0.003 CELO",
-			expectedResult: resource.Result{
-				Content: "0.001",
-			},
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Mock behavior for public key retrieval
-			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_PUBLIC_KEY).Return(tt.publicKey, nil)
-
-			// Mock behavior for active symbol and balance retrieval (if present)
-			if len(tt.activeSym) > 0 {
-				mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_ACTIVE_SYM).Return(tt.activeSym, nil)
-				mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_ACTIVE_BAL).Return(tt.activeBal, nil)
-			} else {
-				mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_ACTIVE_SYM).Return(nil, fmt.Errorf("not found"))
-				mockCreateAccountService.On("CheckBalance", string(tt.publicKey)).Return(tt.balance, nil)
-			}
+			// Mock behavior for active balance retrieval
+			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_ACTIVE_BAL).Return(tt.activeBal, nil)
 
 			// Mock behavior for storing the amount (if valid)
 			mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_AMOUNT, tt.input).Return(nil).Maybe()
@@ -1572,15 +1547,6 @@ func TestCheckBalance(t *testing.T) {
 			expectedResult: resource.Result{Content: "1.5 ETH"},
 			expectError:    false,
 		},
-		{
-			name:           "User without active sym",
-			sessionId:      "session123",
-			publicKey:      "0X13242618721",
-			activeSym:      "",
-			activeBal:      "",
-			expectedResult: resource.Result{Content: "0.003 CELO"},
-			expectError:    false,
-		},
 	}
 
 	for _, tt := range tests {
@@ -1593,21 +1559,12 @@ func TestCheckBalance(t *testing.T) {
 				userdataStore:  mockDataStore,
 				accountService: mockAccountService,
 			}
-
-			// Mock calls for public key
-			mockDataStore.On("ReadEntry", ctx, tt.sessionId, utils.DATA_PUBLIC_KEY).Return([]byte(tt.publicKey), nil)
-
-			if tt.activeSym == "" {
-				// Mock for user without active sym
-				mockDataStore.On("ReadEntry", ctx, tt.sessionId, utils.DATA_ACTIVE_SYM).Return([]byte{}, db.ErrNotFound{})
-				mockAccountService.On("CheckBalance", tt.publicKey).Return("0.003 CELO", nil)
-			} else {
-				// Mock for user with active sym
-				mockDataStore.On("ReadEntry", ctx, tt.sessionId, utils.DATA_ACTIVE_SYM).Return([]byte(tt.activeSym), nil)
-				mockDataStore.On("ReadEntry", ctx, tt.sessionId, utils.DATA_ACTIVE_BAL).Return([]byte(tt.activeBal), nil)
-			}
-
-			res, err := h.CheckBalance(ctx, "check_balance", []byte("123456"))
+			
+			// Mock for user with active sym
+			mockDataStore.On("ReadEntry", ctx, tt.sessionId, utils.DATA_ACTIVE_SYM).Return([]byte(tt.activeSym), nil)
+			mockDataStore.On("ReadEntry", ctx, tt.sessionId, utils.DATA_ACTIVE_BAL).Return([]byte(tt.activeBal), nil)
+		
+			res, err := h.CheckBalance(ctx, "check_balance", []byte(""))
 
 			if tt.expectError {
 				assert.Error(t, err)

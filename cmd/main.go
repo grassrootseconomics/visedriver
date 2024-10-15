@@ -40,7 +40,7 @@ func main() {
 		Root:       "root",
 		SessionId:  sessionId,
 		OutputSize: uint32(size),
-		FlagCount:  uint32(16),
+		FlagCount:  uint32(128),
 	}
 
 	resourceDir := scriptDir

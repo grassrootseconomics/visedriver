@@ -171,7 +171,7 @@ func TestSaveFamilyname(t *testing.T) {
 	mockStore.AssertExpectations(t)
 }
 
-func TestSaveTemporaryPIn(t *testing.T) {
+func TestSaveTemporaryPin(t *testing.T) {
 	fm, err := NewFlagManager(flagsPath)
 	mockStore := new(mocks.MockUserDataStore)
 	if err != nil {

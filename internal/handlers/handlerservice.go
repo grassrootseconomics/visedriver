@@ -91,6 +91,7 @@ func (ls *LocalHandlerService) GetHandler() (*ussd.Handlers, error) {
 	ls.DbRs.AddLocalFunc("verify_new_pin", ussdHandlers.VerifyNewPin)
 	ls.DbRs.AddLocalFunc("confirm_pin_change", ussdHandlers.ConfirmPinChange)
 	ls.DbRs.AddLocalFunc("quit_with_help", ussdHandlers.QuitWithHelp)
+	ls.DbRs.AddLocalFunc("set_default_voucher", ussdHandlers.SetDefaultVoucher)
 	ls.DbRs.AddLocalFunc("check_vouchers", ussdHandlers.CheckVouchers)
 	ls.DbRs.AddLocalFunc("get_vouchers", ussdHandlers.GetVoucherList)
 	ls.DbRs.AddLocalFunc("view_voucher", ussdHandlers.ViewVoucher)

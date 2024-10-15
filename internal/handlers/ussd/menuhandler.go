@@ -633,39 +633,11 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 	}
 
 	store := h.userdataStore
-	publicKey, err := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
-	if err != nil {
-		return res, err
-	}
 
-	// check if the user has an active sym
+	// get the active sym and active balance
 	activeSym, err := store.ReadEntry(ctx, sessionId, utils.DATA_ACTIVE_SYM)
 	if err != nil {
-		if db.IsNotFound(err) {
-			logg.Printf(logging.LVL_INFO, "Using the default sym to fetch balance")
-			balance, err := h.accountService.CheckBalance(string(publicKey))
-			if err != nil {
-				return res, err
-			}
-
-			res.Content = balance
-
-			return res, nil
-		}
-
 		return res, err
-	}
-
-	if len(activeSym) == 0 {
-		logg.Printf(logging.LVL_INFO, "Using the default sym to fetch balance")
-		balance, err := h.accountService.CheckBalance(string(publicKey))
-		if err != nil {
-			return res, err
-		}
-
-		res.Content = balance
-
-		return res, nil
 	}
 
 	activeBal, err := store.ReadEntry(ctx, sessionId, utils.DATA_ACTIVE_BAL)
@@ -1000,6 +972,69 @@ func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte)
 		"Name: %s\nGender: %s\nAge: %s\nLocation: %s\nYou provide: %s\n",
 		name, gender, age, location, offerings,
 	)
+
+	return res, nil
+}
+
+// SetDefaultVoucher retrieves the current vouchers
+// and sets the first as the default voucher, if no active voucher is set
+func (h *Handlers) SetDefaultVoucher(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	var err error
+	store := h.userdataStore
+
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+
+	fmt.Println("Running SetDefaultVoucher")
+
+	// check if the user has an active sym
+	_, err = store.ReadEntry(ctx, sessionId, utils.DATA_ACTIVE_SYM)
+
+	if err != nil {
+		if db.IsNotFound(err) {
+			publicKey, err := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
+
+			if err != nil {
+				return res, nil
+			}
+
+			// Fetch vouchers from the API using the public key
+			vouchersResp, err := h.accountService.FetchVouchers(string(publicKey))
+			if err != nil {
+				return res, nil
+			}
+
+			// Ensure there is at least one voucher
+			if len(vouchersResp.Result.Holdings) == 0 {
+				return res, err
+			}
+
+			// Use only the first voucher
+			firstVoucher := vouchersResp.Result.Holdings[0]
+			defaultSym := firstVoucher.TokenSymbol
+			defaultBal := firstVoucher.Balance
+
+			// set the active symbol
+			err = store.WriteEntry(ctx, sessionId, utils.DATA_ACTIVE_SYM, []byte(defaultSym))
+			if err != nil {
+				return res, err
+			}
+			// set the active balance
+			err = store.WriteEntry(ctx, sessionId, utils.DATA_ACTIVE_BAL, []byte(defaultBal))
+			if err != nil {
+				return res, err
+			}
+
+			return res, nil
+		}
+
+		fmt.Println("Nothing will happen as the error in not 404")
+
+		return res, err
+	}
 
 	return res, nil
 }

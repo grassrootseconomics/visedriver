@@ -1029,15 +1029,8 @@ func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) 
 		return res, nil
 	}
 
-	var numberedSymbols []string
-	var numberedBalances []string
-	for i, voucher := range vouchersResp.Result.Holdings {
-		numberedSymbols = append(numberedSymbols, fmt.Sprintf("%d:%s", i+1, voucher.TokenSymbol))
-		numberedBalances = append(numberedBalances, fmt.Sprintf("%d:%s", i+1, voucher.Balance))
-	}
-
-	voucherSymbolList := strings.Join(numberedSymbols, "\n")
-	voucherBalanceList := strings.Join(numberedBalances, "\n")
+	// process voucher data
+	voucherSymbolList, voucherBalanceList := ProcessVouchers(vouchersResp.Result.Holdings)
 
 	prefixdb := storage.NewSubPrefixDb(store, []byte("pfx"))
 	err = prefixdb.Put(ctx, []byte("sym"), []byte(voucherSymbolList))
@@ -1051,6 +1044,26 @@ func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) 
 	}
 
 	return res, nil
+}
+
+// ProcessVouchers formats the holdings into symbol and balance lists.
+func ProcessVouchers(holdings []struct {
+	ContractAddress string `json:"contractAddress"`
+	TokenSymbol     string `json:"tokenSymbol"`
+	TokenDecimals   string `json:"tokenDecimals"`
+	Balance         string `json:"balance"`
+}) (string, string) {
+	var numberedSymbols, numberedBalances []string
+
+	for i, voucher := range holdings {
+		numberedSymbols = append(numberedSymbols, fmt.Sprintf("%d:%s", i+1, voucher.TokenSymbol))
+		numberedBalances = append(numberedBalances, fmt.Sprintf("%d:%s", i+1, voucher.Balance))
+	}
+
+	voucherSymbolList := strings.Join(numberedSymbols, "\n")
+	voucherBalanceList := strings.Join(numberedBalances, "\n")
+
+	return voucherSymbolList, voucherBalanceList
 }
 
 // GetVoucherList fetches the list of vouchers and formats them
@@ -1074,7 +1087,6 @@ func (h *Handlers) GetVoucherList(ctx context.Context, sym string, input []byte)
 // ViewVoucher retrieves the token holding and balance from the subprefixDB
 func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
-	var err error
 	store := h.userdataStore
 
 	sessionId, ok := ctx.Value("SessionId").(string)
@@ -1105,10 +1117,31 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 		return res, fmt.Errorf("failed to retrieve voucher balance list: %v", err)
 	}
 
-	// Convert the symbol and balance lists from byte arrays to strings
-	voucherSymbols := string(voucherSymbolList)
-	voucherBalances := string(voucherBalanceList)
+	// match the voucher symbol and balance with the input
+	matchedSymbol, matchedBalance := MatchVoucher(inputStr, string(voucherSymbolList), string(voucherBalanceList))
 
+	// If a match is found, write the temporary sym and balance
+	if matchedSymbol != "" && matchedBalance != "" {
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_SYM, []byte(matchedSymbol))
+		if err != nil {
+			return res, err
+		}
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_BAL, []byte(matchedBalance))
+		if err != nil {
+			return res, err
+		}
+		
+		res.FlagReset = append(res.FlagReset, flag_incorrect_voucher)
+		res.Content = fmt.Sprintf("%s\n%s", matchedSymbol, matchedBalance)
+	} else {
+		res.FlagSet = append(res.FlagSet, flag_incorrect_voucher)
+	}
+
+	return res, nil
+}
+
+// MatchVoucher finds the matching voucher symbol and balance based on the input.
+func MatchVoucher(inputStr string, voucherSymbols, voucherBalances string) (string, string) {
 	// Split the lists into slices for processing
 	symbols := strings.Split(voucherSymbols, "\n")
 	balances := strings.Split(voucherBalances, "\n")
@@ -1128,29 +1161,13 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 			matchedSymbol = voucherSymbol
 			// Ensure there's a corresponding balance
 			if i < len(balances) {
-				matchedBalance = strings.SplitN(balances[i], ":", 2)[1] // Extract balance after the "x:balance" format
+				matchedBalance = strings.SplitN(balances[i], ":", 2)[1]
 			}
 			break
 		}
 	}
 
-	// If a match is found, write the temporary sym, then return the symbol and balance
-	if matchedSymbol != "" && matchedBalance != "" {
-		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_SYM, []byte(matchedSymbol))
-		if err != nil {
-			return res, err
-		}
-		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_BAL, []byte(matchedBalance))
-		if err != nil {
-			return res, err
-		}
-		res.Content = fmt.Sprintf("%s\n%s", matchedSymbol, matchedBalance)
-		res.FlagReset = append(res.FlagReset, flag_incorrect_voucher)
-	} else {
-		res.FlagSet = append(res.FlagSet, flag_incorrect_voucher)
-	}
-
-	return res, nil
+	return matchedSymbol, matchedBalance
 }
 
 // SetVoucher retrieves the temporary sym and balance,

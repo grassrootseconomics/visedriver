@@ -745,43 +745,16 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 	flag_invalid_amount, _ := h.flagManager.GetFlag("flag_invalid_amount")
 	store := h.userdataStore
 
-	publicKey, err := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
+	var balanceValue float64
+
+	// retrieve the active balance
+	activeBal, err := store.ReadEntry(ctx, sessionId, utils.DATA_ACTIVE_BAL)
 	if err != nil {
 		return res, err
 	}
-
-	// retrieve the active symbol
-	activeSym, err := store.ReadEntry(ctx, sessionId, utils.DATA_ACTIVE_SYM)
-	useActiveSymbol := err == nil && len(activeSym) > 0
-
-	var balanceValue float64
-	if useActiveSymbol {
-		// If active symbol is set, retrieve its balance
-		activeBal, err := store.ReadEntry(ctx, sessionId, utils.DATA_ACTIVE_BAL)
-		if err != nil {
-			return res, fmt.Errorf("failed to get active balance: %v", err)
-		}
-		balanceValue, err = strconv.ParseFloat(string(activeBal), 64)
-		if err != nil {
-			return res, fmt.Errorf("failed to parse active balance: %v", err)
-		}
-	} else {
-		// If no active symbol, use the current balance from the API
-		balanceStr, err := h.accountService.CheckBalance(string(publicKey))
-		if err != nil {
-			return res, fmt.Errorf("failed to check balance: %v", err)
-		}
-		res.Content = balanceStr
-
-		// Parse the balance string
-		balanceParts := strings.Split(balanceStr, " ")
-		if len(balanceParts) != 2 {
-			return res, fmt.Errorf("unexpected balance format: %s", balanceStr)
-		}
-		balanceValue, err = strconv.ParseFloat(balanceParts[0], 64)
-		if err != nil {
-			return res, fmt.Errorf("failed to parse balance: %v", err)
-		}
+	balanceValue, err = strconv.ParseFloat(string(activeBal), 64)
+	if err != nil {
+		return res, err
 	}
 
 	// Extract numeric part from the input amount

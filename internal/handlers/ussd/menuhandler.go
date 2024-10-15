@@ -829,6 +829,7 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 	}
 
 	flag_invalid_amount, _ := h.flagManager.GetFlag("flag_invalid_amount")
+	flag_api_error, _ := h.flagManager.GetFlag("flag_api_call_error")
 
 	store := h.userdataStore
 	publicKey, _ := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
@@ -838,10 +839,15 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 	balanceRes, err := h.accountService.CheckBalance(string(publicKey))
 	balanceStr := balanceRes.Result.Balance
 
+	if !balanceRes.Ok {
+		res.FlagSet = append(res.FlagSet, flag_api_error)
+		return res, nil
+	}
 	if err != nil {
 		return res, err
 	}
 	res.Content = balanceStr
+	res.FlagReset = append(res.FlagReset, flag_api_error)
 
 	// Parse the balance
 	balanceParts := strings.Split(balanceStr, " ")

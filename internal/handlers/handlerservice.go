@@ -82,7 +82,6 @@ func (ls *LocalHandlerService) GetHandler() (*ussd.Handlers, error) {
 	ls.DbRs.AddLocalFunc("save_location", ussdHandlers.SaveLocation)
 	ls.DbRs.AddLocalFunc("save_yob", ussdHandlers.SaveYob)
 	ls.DbRs.AddLocalFunc("save_offerings", ussdHandlers.SaveOfferings)
-	ls.DbRs.AddLocalFunc("quit_with_balance", ussdHandlers.QuitWithBalance)
 	ls.DbRs.AddLocalFunc("reset_account_authorized", ussdHandlers.ResetAccountAuthorized)
 	ls.DbRs.AddLocalFunc("reset_allow_update", ussdHandlers.ResetAllowUpdate)
 	ls.DbRs.AddLocalFunc("get_profile_info", ussdHandlers.GetProfileInfo)
@@ -93,6 +92,7 @@ func (ls *LocalHandlerService) GetHandler() (*ussd.Handlers, error) {
 	ls.DbRs.AddLocalFunc("verify_new_pin", ussdHandlers.VerifyNewPin)
 	ls.DbRs.AddLocalFunc("confirm_pin_change", ussdHandlers.ConfirmPinChange)
 	ls.DbRs.AddLocalFunc("quit_with_help", ussdHandlers.QuitWithHelp)
+	ls.DbRs.AddLocalFunc("fetch_custodial_balances", ussdHandlers.FetchCustodialBalances)
 
 	return ussdHandlers, nil
 }

@@ -7,8 +7,11 @@ import (
 	"log"
 	"path"
 	"testing"
+	"time"
 
+	"git.defalsify.org/vise.git/asm"
 	"git.defalsify.org/vise.git/db"
+	"git.defalsify.org/vise.git/lang"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/state"
@@ -25,10 +28,53 @@ var (
 	flagsPath = path.Join(baseDir, "services", "registration", "pp.csv")
 )
 
-func TestCreateAccount(t *testing.T) {
+type Transaction struct {
+	CreatedAt     time.Time   `json:"createdAt"`
+	Status        string      `json:"status"`
+	TransferValue json.Number `json:"transferValue"`
+	TxHash        string      `json:"txHash"`
+	TxType        string      `json:"txType"`
+}
 
+func TestNewHandlers(t *testing.T) {
 	fm, err := NewFlagManager(flagsPath)
+	if err != nil {
+		t.Logf(err.Error())
+	}
+	t.Run("Valid UserDataStore", func(t *testing.T) {
+		mockStore := &mocks.MockUserDataStore{}
+		handlers, err := NewHandlers(fm.parser, mockStore)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if handlers == nil {
+			t.Fatal("expected handlers to be non-nil")
+		}
+		if handlers.userdataStore == nil {
+			t.Fatal("expected userdataStore to be set in handlers")
+		}
+	})
 
+	// Test case for nil userdataStore
+	t.Run("Nil UserDataStore", func(t *testing.T) {
+		appFlags := &asm.FlagParser{}
+
+		handlers, err := NewHandlers(appFlags, nil)
+
+		if err == nil {
+			t.Fatal("expected an error, got none")
+		}
+		if handlers != nil {
+			t.Fatal("expected handlers to be nil")
+		}
+		if err.Error() != "cannot create handler with nil userdata store" {
+			t.Fatalf("expected specific error, got %v", err)
+		}
+	})
+}
+
+func TestCreateAccount(t *testing.T) {
+	fm, err := NewFlagManager(flagsPath)
 	if err != nil {
 		t.Logf(err.Error())
 	}
@@ -442,7 +488,10 @@ func TestMaxAmount(t *testing.T) {
 	sessionId := "session123"
 	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
 	publicKey := "0xcasgatweksalw1018221"
-	expectedBalance := "0.003CELO"
+
+	expectedBalance := &models.BalanceResponse{
+		Ok: true,
+	}
 
 	// Set up the expected behavior of the mock
 	mockStore.On("ReadEntry", ctx, sessionId, utils.DATA_PUBLIC_KEY).Return([]byte(publicKey), nil)
@@ -458,7 +507,7 @@ func TestMaxAmount(t *testing.T) {
 	res, _ := h.MaxAmount(ctx, "max_amount", []byte("check_balance"))
 
 	//Assert that the balance that was set as the result content is what was returned by  Check Balance
-	assert.Equal(t, expectedBalance, res.Content)
+	assert.Equal(t, expectedBalance.Result.Balance, res.Content)
 
 }
 
@@ -537,12 +586,10 @@ func TestGetRecipient(t *testing.T) {
 func TestGetFlag(t *testing.T) {
 	fm, err := NewFlagManager(flagsPath)
 	expectedFlag := uint32(9)
-
 	if err != nil {
 		t.Logf(err.Error())
 	}
 	flag, err := fm.GetFlag("flag_account_created")
-
 	if err != nil {
 		t.Logf(err.Error())
 	}
@@ -1012,53 +1059,109 @@ func TestVerifyPin(t *testing.T) {
 
 func TestCheckAccountStatus(t *testing.T) {
 	fm, err := NewFlagManager(flagsPath)
-
 	if err != nil {
 		t.Logf(err.Error())
 	}
-	mockDataStore := new(mocks.MockUserDataStore)
-	mockCreateAccountService := new(mocks.MockAccountService)
-
 	sessionId := "session123"
 	flag_account_success, _ := fm.GetFlag("flag_account_success")
 	flag_account_pending, _ := fm.GetFlag("flag_account_pending")
+	flag_api_error, _ := fm.GetFlag("flag_api_call_error")
 
 	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
 
-	h := &Handlers{
-		userdataStore:  mockDataStore,
-		accountService: mockCreateAccountService,
-		flagManager:    fm.parser,
-	}
 	tests := []struct {
 		name           string
 		input          []byte
-		status         string
+		response       *models.TrackStatusResponse
 		expectedResult resource.Result
 	}{
 		{
-			name:   "Test when account status is Success",
-			input:  []byte("TrackingId1234"),
-			status: "SUCCESS",
+			name:  "Test when account status is Success",
+			input: []byte("TrackingId1234"),
+			response: &models.TrackStatusResponse{
+				Ok: true,
+				Result: struct {
+					Transaction struct {
+						CreatedAt     time.Time   "json:\"createdAt\""
+						Status        string      "json:\"status\""
+						TransferValue json.Number "json:\"transferValue\""
+						TxHash        string      "json:\"txHash\""
+						TxType        string      "json:\"txType\""
+					}
+				}{
+					Transaction: Transaction{
+						CreatedAt:     time.Now(),
+						Status:        "SUCCESS",
+						TransferValue: json.Number("0.5"),
+						TxHash:        "0x123abc456def",
+						TxType:        "transfer",
+					},
+				},
+			},
 			expectedResult: resource.Result{
 				FlagSet:   []uint32{flag_account_success},
-				FlagReset: []uint32{flag_account_pending},
+				FlagReset: []uint32{flag_api_error, flag_account_pending},
+			},
+		},
+		{
+			name:  "Test when fetching  account status is not  Success",
+			input: []byte("TrackingId1234"),
+			response: &models.TrackStatusResponse{
+				Ok: false,
+			},
+			expectedResult: resource.Result{
+				FlagSet: []uint32{flag_api_error},
+			},
+		},
+		{
+			name:  "Test when checking account status api call is a SUCCESS but an account is not yet ready",
+			input: []byte("TrackingId1234"),
+			response: &models.TrackStatusResponse{
+				Ok: true,
+				Result: struct {
+					Transaction struct {
+						CreatedAt     time.Time   "json:\"createdAt\""
+						Status        string      "json:\"status\""
+						TransferValue json.Number "json:\"transferValue\""
+						TxHash        string      "json:\"txHash\""
+						TxType        string      "json:\"txType\""
+					}
+				}{
+					Transaction: Transaction{
+						CreatedAt:     time.Now(),
+						Status:        "IN_NETWORK",
+						TransferValue: json.Number("0.5"),
+						TxHash:        "0x123abc456def",
+						TxType:        "transfer",
+					},
+				},
+			},
+			expectedResult: resource.Result{
+				FlagSet:   []uint32{flag_account_pending},
+				FlagReset: []uint32{flag_api_error, flag_account_success},
 			},
 		},
 	}
-
-	typ := utils.DATA_TRACKING_ID
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			mockDataStore := new(mocks.MockUserDataStore)
+			mockCreateAccountService := new(mocks.MockAccountService)
 
+			h := &Handlers{
+				userdataStore:  mockDataStore,
+				accountService: mockCreateAccountService,
+				flagManager:    fm.parser,
+			}
+
+			status := tt.response.Result.Transaction.Status
 			// Define expected interactions with the mock
-			mockDataStore.On("ReadEntry", ctx, sessionId, typ).Return(tt.input, nil)
+			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TRACKING_ID).Return(tt.input, nil)
 
-			mockCreateAccountService.On("CheckAccountStatus", string(tt.input)).Return(tt.status, nil)
-			mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_ACCOUNT_STATUS, []byte(tt.status)).Return(nil)
+			mockCreateAccountService.On("CheckAccountStatus", string(tt.input)).Return(tt.response, nil)
+			mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_ACCOUNT_STATUS, []byte(status)).Return(nil).Maybe()
 
 			// Call the method under test
-			res, _ := h.CheckAccountStatus(ctx, "check_status", tt.input)
+			res, _ := h.CheckAccountStatus(ctx, "check_account_status", tt.input)
 
 			// Assert that no errors occurred
 			assert.NoError(t, err)
@@ -1358,66 +1461,6 @@ func TestIsValidPIN(t *testing.T) {
 	}
 }
 
-func TestQuitWithBalance(t *testing.T) {
-	fm, err := NewFlagManager(flagsPath)
-
-	if err != nil {
-		t.Logf(err.Error())
-	}
-	flag_account_authorized, _ := fm.parser.GetFlag("flag_account_authorized")
-
-	mockDataStore := new(mocks.MockUserDataStore)
-	mockCreateAccountService := new(mocks.MockAccountService)
-
-	sessionId := "session123"
-
-	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
-
-	h := &Handlers{
-		userdataStore:  mockDataStore,
-		accountService: mockCreateAccountService,
-		flagManager:    fm.parser,
-	}
-	tests := []struct {
-		name           string
-		input          []byte
-		publicKey      []byte
-		balance        string
-		expectedResult resource.Result
-	}{
-		{
-			name:      "Test quit with balance",
-			balance:   "0.02CELO",
-			publicKey: []byte("0xrqeqrequuq"),
-			expectedResult: resource.Result{
-				FlagReset: []uint32{flag_account_authorized},
-				Content:   fmt.Sprintf("Your account balance is %s", "0.02CELO"),
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_PUBLIC_KEY).Return(tt.publicKey, nil)
-			mockCreateAccountService.On("CheckBalance", string(tt.publicKey)).Return(tt.balance, nil)
-
-			// Call the method under test
-			res, _ := h.QuitWithBalance(ctx, "test_quit_with_balance", tt.input)
-
-			// Assert that no errors occurred
-			assert.NoError(t, err)
-
-			//Assert that the account created flag has been set to the result
-			assert.Equal(t, res, tt.expectedResult, "Expected result should be equal to the actual result")
-
-			// Assert that expectations were met
-			mockDataStore.AssertExpectations(t)
-
-		})
-	}
-}
-
 func TestValidateAmount(t *testing.T) {
 	fm, err := NewFlagManager(flagsPath)
 
@@ -1438,25 +1481,43 @@ func TestValidateAmount(t *testing.T) {
 		flagManager:    fm.parser,
 	}
 	tests := []struct {
-		name           string
-		input          []byte
-		publicKey      []byte
-		balance        string
-		expectedResult resource.Result
+		name            string
+		input           []byte
+		publicKey       []byte
+		balanceResponse *models.BalanceResponse
+		expectedResult  resource.Result
 	}{
 		{
-			name:      "Test with valid amount",
-			input:     []byte("0.001"),
-			balance:   "0.003 CELO",
+			name:  "Test with valid amount",
+			input: []byte("0.001"),
+			balanceResponse: &models.BalanceResponse{
+				Ok: true,
+				Result: struct {
+					Balance string      `json:"balance"`
+					Nonce   json.Number `json:"nonce"`
+				}{
+					Balance: "0.003 CELO",
+					Nonce:   json.Number("0"),
+				},
+			},
 			publicKey: []byte("0xrqeqrequuq"),
 			expectedResult: resource.Result{
 				Content: "0.001",
 			},
 		},
 		{
-			name:      "Test with amount larger than balance",
-			input:     []byte("0.02"),
-			balance:   "0.003 CELO",
+			name:  "Test with amount larger than balance",
+			input: []byte("0.02"),
+			balanceResponse: &models.BalanceResponse{
+				Ok: true,
+				Result: struct {
+					Balance string      `json:"balance"`
+					Nonce   json.Number `json:"nonce"`
+				}{
+					Balance: "0.003 CELO",
+					Nonce:   json.Number("0"),
+				},
+			},
 			publicKey: []byte("0xrqeqrequuq"),
 			expectedResult: resource.Result{
 				FlagSet: []uint32{flag_invalid_amount},
@@ -1464,9 +1525,18 @@ func TestValidateAmount(t *testing.T) {
 			},
 		},
 		{
-			name:      "Test with invalid amount",
-			input:     []byte("0.02ms"),
-			balance:   "0.003 CELO",
+			name:  "Test with invalid amount",
+			input: []byte("0.02ms"),
+			balanceResponse: &models.BalanceResponse{
+				Ok: true,
+				Result: struct {
+					Balance string      `json:"balance"`
+					Nonce   json.Number `json:"nonce"`
+				}{
+					Balance: "0.003 CELO",
+					Nonce:   json.Number("0"),
+				},
+			},
 			publicKey: []byte("0xrqeqrequuq"),
 			expectedResult: resource.Result{
 				FlagSet: []uint32{flag_invalid_amount},
@@ -1479,7 +1549,7 @@ func TestValidateAmount(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_PUBLIC_KEY).Return(tt.publicKey, nil)
-			mockCreateAccountService.On("CheckBalance", string(tt.publicKey)).Return(tt.balance, nil)
+			mockCreateAccountService.On("CheckBalance", string(tt.publicKey)).Return(tt.balanceResponse, nil)
 			mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_AMOUNT, tt.input).Return(nil).Maybe()
 
 			// Call the method under test
@@ -1558,31 +1628,83 @@ func TestValidateRecipient(t *testing.T) {
 
 func TestCheckBalance(t *testing.T) {
 
-	mockDataStore := new(mocks.MockUserDataStore)
 	sessionId := "session123"
 	publicKey := "0X13242618721"
-	balance := "0.003 CELO"
-
-	expectedResult := resource.Result{
-		Content: "0.003 CELO",
-	}
-
-	mockCreateAccountService := new(mocks.MockAccountService)
+	fm, _ := NewFlagManager(flagsPath)
+	flag_api_error, _ := fm.GetFlag("flag_api_call_error")
 
 	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
 
-	h := &Handlers{
-		userdataStore:  mockDataStore,
-		accountService: mockCreateAccountService,
-		//flagManager:    fm.parser,
+	tests := []struct {
+		name           string
+		balanceResonse *models.BalanceResponse
+		expectedResult resource.Result
+	}{
+		{
+			name: "Test when checking a balance is not a success",
+			balanceResonse: &models.BalanceResponse{
+				Ok: false,
+				Result: struct {
+					Balance string      `json:"balance"`
+					Nonce   json.Number `json:"nonce"`
+				}{
+					Balance: "0.003 CELO",
+					Nonce:   json.Number("0"),
+				},
+			},
+			expectedResult: resource.Result{
+				FlagSet: []uint32{flag_api_error},
+			},
+		},
+		{
+			name: "Test when checking a  balance is a success",
+			balanceResonse: &models.BalanceResponse{
+				Ok: true,
+				Result: struct {
+					Balance string      `json:"balance"`
+					Nonce   json.Number `json:"nonce"`
+				}{
+					Balance: "0.003 CELO",
+					Nonce:   json.Number("0"),
+				},
+			},
+			expectedResult: resource.Result{
+				Content:   "0.003 CELO",
+				FlagReset: []uint32{flag_api_error},
+			},
+		},
 	}
-	//mock call operations
-	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_PUBLIC_KEY).Return([]byte(publicKey), nil)
-	mockCreateAccountService.On("CheckBalance", string(publicKey)).Return(balance, nil)
 
-	res, _ := h.CheckBalance(ctx, "check_balance", []byte("123456"))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 
-	assert.Equal(t, res, expectedResult, "Result should contain flag(s) that have been reset")
+			mockDataStore := new(mocks.MockUserDataStore)
+			mockCreateAccountService := new(mocks.MockAccountService)
+			mockState := state.NewState(16)
+
+			// Create the Handlers instance with the mock store
+			h := &Handlers{
+				userdataStore:  mockDataStore,
+				flagManager:    fm.parser,
+				st:             mockState,
+				accountService: mockCreateAccountService,
+			}
+
+			// Set up the expected behavior of the mock
+			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_PUBLIC_KEY).Return([]byte(publicKey), nil)
+			mockCreateAccountService.On("CheckBalance", string(publicKey)).Return(tt.balanceResonse, nil)
+
+			// Call the method
+			res, _ := h.CheckBalance(ctx, "check_balance", []byte(""))
+
+			// Assert that expectations were met
+			mockDataStore.AssertExpectations(t)
+
+			//Assert that the result set to content is what was expected
+			assert.Equal(t, res, tt.expectedResult, "Result should contain flags set according to user input")
+
+		})
+	}
 
 }
 
@@ -1592,23 +1714,50 @@ func TestGetProfile(t *testing.T) {
 
 	mockDataStore := new(mocks.MockUserDataStore)
 	mockCreateAccountService := new(mocks.MockAccountService)
+	mockState := state.NewState(16)
 
 	h := &Handlers{
 		userdataStore:  mockDataStore,
 		accountService: mockCreateAccountService,
+		st:             mockState,
 	}
-	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
 
 	tests := []struct {
-		name        string
-		keys        []utils.DataTyp
-		profileInfo []string
-		result      resource.Result
+		name         string
+		languageCode string
+		keys         []utils.DataTyp
+		profileInfo  []string
+		result       resource.Result
 	}{
 		{
-			name:        "Test with full profile information",
-			keys:        []utils.DataTyp{utils.DATA_FAMILY_NAME, utils.DATA_FIRST_NAME, utils.DATA_GENDER, utils.DATA_OFFERINGS, utils.DATA_LOCATION, utils.DATA_YOB},
-			profileInfo: []string{"Doee", "John", "Male", "Bananas", "Kilifi", "1976"},
+			name:         "Test with full profile information in eng",
+			keys:         []utils.DataTyp{utils.DATA_FAMILY_NAME, utils.DATA_FIRST_NAME, utils.DATA_GENDER, utils.DATA_OFFERINGS, utils.DATA_LOCATION, utils.DATA_YOB},
+			profileInfo:  []string{"Doee", "John", "Male", "Bananas", "Kilifi", "1976"},
+			languageCode: "eng",
+			result: resource.Result{
+				Content: fmt.Sprintf(
+					"Name: %s\nGender: %s\nAge: %s\nLocation: %s\nYou provide: %s\n",
+					"John Doee", "Male", "48", "Kilifi", "Bananas",
+				),
+			},
+		},
+		{
+			name:         "Test with with profile information in swa ",
+			keys:         []utils.DataTyp{utils.DATA_FAMILY_NAME, utils.DATA_FIRST_NAME, utils.DATA_GENDER, utils.DATA_OFFERINGS, utils.DATA_LOCATION, utils.DATA_YOB},
+			profileInfo:  []string{"Doee", "John", "Male", "Bananas", "Kilifi", "1976"},
+			languageCode: "swa",
+			result: resource.Result{
+				Content: fmt.Sprintf(
+					"Jina: %s\nJinsia: %s\nUmri: %s\nEneo: %s\nUnauza: %s\n",
+					"John Doee", "Male", "48", "Kilifi", "Bananas",
+				),
+			},
+		},
+		{
+			name:         "Test with with profile information with language that is not yet supported",
+			keys:         []utils.DataTyp{utils.DATA_FAMILY_NAME, utils.DATA_FIRST_NAME, utils.DATA_GENDER, utils.DATA_OFFERINGS, utils.DATA_LOCATION, utils.DATA_YOB},
+			profileInfo:  []string{"Doee", "John", "Male", "Bananas", "Kilifi", "1976"},
+			languageCode: "nor",
 			result: resource.Result{
 				Content: fmt.Sprintf(
 					"Name: %s\nGender: %s\nAge: %s\nLocation: %s\nYou provide: %s\n",
@@ -1619,9 +1768,14 @@ func TestGetProfile(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.WithValue(context.Background(), "SessionId", sessionId)
+			ctx = context.WithValue(ctx, "Language", lang.Language{
+				Code: tt.languageCode,
+			})
 			for index, key := range tt.keys {
-				mockDataStore.On("ReadEntry", ctx, sessionId, key).Return([]byte(tt.profileInfo[index]), nil)
+				mockDataStore.On("ReadEntry", ctx, sessionId, key).Return([]byte(tt.profileInfo[index]), nil).Maybe()
 			}
+
 			res, _ := h.GetProfileInfo(ctx, "get_profile_info", []byte(""))
 
 			// Assert that expectations were met
@@ -1777,4 +1931,86 @@ func TestConfirmPin(t *testing.T) {
 		})
 	}
 
+}
+
+func TestFetchCustodialBalances(t *testing.T) {
+	fm, err := NewFlagManager(flagsPath)
+	if err != nil {
+		t.Logf(err.Error())
+	}
+	flag_api_error, _ := fm.GetFlag("flag_api_call_error")
+
+	// Define test data
+	sessionId := "session123"
+	publicKey := "0X13242618721"
+	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
+
+	tests := []struct {
+		name           string
+		balanceResonse *models.BalanceResponse
+		expectedResult resource.Result
+	}{
+		{
+			name: "Test when fetch custodial balances is not a success",
+			balanceResonse: &models.BalanceResponse{
+				Ok: false,
+				Result: struct {
+					Balance string      `json:"balance"`
+					Nonce   json.Number `json:"nonce"`
+				}{
+					Balance: "0.003 CELO",
+					Nonce:   json.Number("0"),
+				},
+			},
+			expectedResult: resource.Result{
+				FlagSet: []uint32{flag_api_error},
+			},
+		},
+		{
+			name: "Test when fetch custodial balances is a success",
+			balanceResonse: &models.BalanceResponse{
+				Ok: true,
+				Result: struct {
+					Balance string      `json:"balance"`
+					Nonce   json.Number `json:"nonce"`
+				}{
+					Balance: "0.003 CELO",
+					Nonce:   json.Number("0"),
+				},
+			},
+			expectedResult: resource.Result{
+				FlagReset: []uint32{flag_api_error},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			mockDataStore := new(mocks.MockUserDataStore)
+			mockCreateAccountService := new(mocks.MockAccountService)
+			mockState := state.NewState(16)
+
+			// Create the Handlers instance with the mock store
+			h := &Handlers{
+				userdataStore:  mockDataStore,
+				flagManager:    fm.parser,
+				st:             mockState,
+				accountService: mockCreateAccountService,
+			}
+
+			// Set up the expected behavior of the mock
+			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_PUBLIC_KEY).Return([]byte(publicKey), nil)
+			mockCreateAccountService.On("CheckBalance", string(publicKey)).Return(tt.balanceResonse, nil)
+
+			// Call the method
+			res, _ := h.FetchCustodialBalances(ctx, "fetch_custodial_balances", []byte(""))
+
+			// Assert that expectations were met
+			mockDataStore.AssertExpectations(t)
+
+			//Assert that the result set to content is what was expected
+			assert.Equal(t, res, tt.expectedResult, "Result should contain flags set according to user input")
+
+		})
+	}
 }

@@ -16,6 +16,8 @@ github.com/graygnuorg/go-gdbm v0.0.0-20220711140707-71387d66dce4 h1:U4kkNYryi/qf
 github.com/graygnuorg/go-gdbm v0.0.0-20220711140707-71387d66dce4/go.mod h1:zpZDgZFzeq9s0MIeB1P50NIEWDFFHSFBohI/NbaTD/Y=
 github.com/hexops/gotextdiff v1.0.3 h1:gitA9+qJrrTCsiCl7+kh75nPqQt1cx4ZkudSTLoUqJM=
 github.com/hexops/gotextdiff v1.0.3/go.mod h1:pSWU5MAI3yDq+fZBTazCSJysOMbxWL1BSow5/V2vxeg=
+github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
+github.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=
 github.com/mattn/kinako v0.0.0-20170717041458-332c0a7e205a h1:0Q3H0YXzMHiciXtRcM+j0jiCe8WKPQHoRgQiRTnfcLY=
 github.com/mattn/kinako v0.0.0-20170717041458-332c0a7e205a/go.mod h1:CdTTBOYzS5E4mWS1N8NWP6AHI19MP0A2B18n3hLzRMk=
 github.com/peteole/testdata-loader v0.3.0 h1:8jckE9KcyNHgyv/VPoaljvKZE0Rqr8+dPVYH6rfNr9I=

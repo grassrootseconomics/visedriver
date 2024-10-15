@@ -15,6 +15,8 @@ import (
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/resource"
 
+	"git.grassecon.net/urdt/ussd/config"
+	"git.grassecon.net/urdt/ussd/initializers"
 	"git.grassecon.net/urdt/ussd/internal/handlers"
 	httpserver "git.grassecon.net/urdt/ussd/internal/http"
 	"git.grassecon.net/urdt/ussd/internal/storage"
@@ -25,7 +27,13 @@ var (
 	scriptDir = path.Join("services", "registration")
 )
 
+func init() {
+	initializers.LoadEnvVariables()
+}
+
 func main() {
+	config.LoadConfig()
+
 	var dbDir string
 	var resourceDir string
 	var size uint
@@ -36,8 +44,8 @@ func main() {
 	flag.StringVar(&resourceDir, "resourcedir", path.Join("services", "registration"), "resource dir")
 	flag.BoolVar(&engineDebug, "d", false, "use engine debug output")
 	flag.UintVar(&size, "s", 160, "max size of output")
-	flag.StringVar(&host, "h", "127.0.0.1", "http host")
-	flag.UintVar(&port, "p", 7123, "http port")
+	flag.StringVar(&host, "h", initializers.GetEnv("HOST", "127.0.0.1"), "http host")
+	flag.UintVar(&port, "p", initializers.GetEnvUint("PORT", 7123), "http port")
 	flag.Parse()
 
 	logg.Infof("start command", "dbdir", dbDir, "resourcedir", resourceDir, "outputsize", size)

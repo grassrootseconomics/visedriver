@@ -10,6 +10,8 @@ import (
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/resource"
+	"git.grassecon.net/urdt/ussd/config"
+	"git.grassecon.net/urdt/ussd/initializers"
 	"git.grassecon.net/urdt/ussd/internal/handlers"
 	"git.grassecon.net/urdt/ussd/internal/storage"
 )
@@ -19,7 +21,13 @@ var (
 	scriptDir = path.Join("services", "registration")
 )
 
+func init() {
+	initializers.LoadEnvVariables()
+}
+
 func main() {
+	config.LoadConfig()
+
 	var dbDir string
 	var size uint
 	var sessionId string

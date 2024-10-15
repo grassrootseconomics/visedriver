@@ -13,6 +13,8 @@ import (
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/resource"
 
+	"git.grassecon.net/urdt/ussd/config"
+	"git.grassecon.net/urdt/ussd/initializers"
 	"git.grassecon.net/urdt/ussd/internal/handlers"
 	"git.grassecon.net/urdt/ussd/internal/storage"
 )
@@ -21,6 +23,10 @@ var (
 	logg      = logging.NewVanilla()
 	scriptDir = path.Join("services", "registration")
 )
+
+func init() {
+	initializers.LoadEnvVariables()
+}
 
 type asyncRequestParser struct {
 	sessionId string
@@ -36,6 +42,8 @@ func (p *asyncRequestParser) GetInput(r any) ([]byte, error) {
 }
 
 func main() {
+	config.LoadConfig()
+
 	var sessionId string
 	var dbDir string
 	var resourceDir string
@@ -48,8 +56,8 @@ func main() {
 	flag.StringVar(&resourceDir, "resourcedir", path.Join("services", "registration"), "resource dir")
 	flag.BoolVar(&engineDebug, "d", false, "use engine debug output")
 	flag.UintVar(&size, "s", 160, "max size of output")
-	flag.StringVar(&host, "h", "127.0.0.1", "http host")
-	flag.UintVar(&port, "p", 7123, "http port")
+	flag.StringVar(&host, "h", initializers.GetEnv("HOST", "127.0.0.1"), "http host")
+	flag.UintVar(&port, "p", initializers.GetEnvUint("PORT", 7123), "http port")
 	flag.Parse()
 
 	logg.Infof("start command", "dbdir", dbDir, "resourcedir", resourceDir, "outputsize", size, "sessionId", sessionId)

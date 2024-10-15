@@ -988,8 +988,6 @@ func (h *Handlers) SetDefaultVoucher(ctx context.Context, sym string, input []by
 		return res, fmt.Errorf("missing session")
 	}
 
-	fmt.Println("Running SetDefaultVoucher")
-
 	// check if the user has an active sym
 	_, err = store.ReadEntry(ctx, sessionId, utils.DATA_ACTIVE_SYM)
 
@@ -1030,8 +1028,6 @@ func (h *Handlers) SetDefaultVoucher(ctx context.Context, sym string, input []by
 
 			return res, nil
 		}
-
-		fmt.Println("Nothing will happen as the error in not 404")
 
 		return res, err
 	}

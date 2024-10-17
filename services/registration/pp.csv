@@ -14,3 +14,4 @@ flag,flag_valid_pin,20,this is set when the given PIN is valid
 flag,flag_allow_update,21,this is set to allow a user to update their profile data
 flag,flag_single_edit,22,this is set to allow a user to edit a single profile item such as year of birth
 flag,flag_incorrect_date_format,23,this is set when the given year of birth is invalid
+flag,flag_api_call_error,25,this is set when communication  to an external service fails

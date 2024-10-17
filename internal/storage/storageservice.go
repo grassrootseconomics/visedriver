@@ -8,14 +8,15 @@ import (
 
 	"git.defalsify.org/vise.git/db"
 	fsdb "git.defalsify.org/vise.git/db/fs"
+	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
-	"git.defalsify.org/vise.git/logging"
+	"git.grassecon.net/urdt/ussd/initializers"
 )
 
 var (
 	logg = logging.NewVanilla().WithDomain("storage")
-)	
+)
 
 type StorageService interface {
 	GetPersister(ctx context.Context) (*persist.Persister, error)
@@ -24,17 +25,30 @@ type StorageService interface {
 	EnsureDbDir() error
 }
 
-type MenuStorageService struct{
-	dbDir string
-	resourceDir string
+type MenuStorageService struct {
+	dbDir         string
+	resourceDir   string
 	resourceStore db.Db
-	stateStore db.Db
+	stateStore    db.Db
 	userDataStore db.Db
+}
+
+func buildConnStr() string {
+	host := initializers.GetEnv("DB_HOST", "localhost")
+	user := initializers.GetEnv("DB_USER", "postgres")
+	password := initializers.GetEnv("DB_PASSWORD", "")
+	dbName := initializers.GetEnv("DB_NAME", "")
+	port := initializers.GetEnv("DB_PORT", "5432")
+
+	return fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s",
+		user, password, host, port, dbName,
+	)
 }
 
 func NewMenuStorageService(dbDir string, resourceDir string) *MenuStorageService {
 	return &MenuStorageService{
-		dbDir: dbDir,
+		dbDir:       dbDir,
 		resourceDir: resourceDir,
 	}
 }
@@ -52,12 +66,27 @@ func (ms *MenuStorageService) GetPersister(ctx context.Context) (*persist.Persis
 }
 
 func (ms *MenuStorageService) GetUserdataDb(ctx context.Context) (db.Db, error) {
-	ms.userDataStore = NewThreadGdbmDb()
-	storeFile := path.Join(ms.dbDir, "userdata.gdbm")
-	err := ms.userDataStore.Connect(ctx, storeFile)
-	if err != nil {
-		return nil, err
+	database, ok := ctx.Value("Database").(string)
+	if !ok {
+		fmt.Println("The database is not set")
 	}
+
+	if database == "postgres" {
+		ms.userDataStore = NewThreadPostgresDb()
+		connStr := buildConnStr()
+		err := ms.userDataStore.Connect(ctx, connStr)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		ms.userDataStore = NewThreadGdbmDb()
+		storeFile := path.Join(ms.dbDir, "userdata.gdbm")
+		err := ms.userDataStore.Connect(ctx, storeFile)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return ms.userDataStore, nil
 }
 

@@ -29,7 +29,6 @@ var (
 )
 
 func init() {
-	fmt.Println("Running init")
 	initializers.LoadEnvVariables()
 }
 

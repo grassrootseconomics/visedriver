@@ -68,7 +68,7 @@ func (ms *MenuStorageService) GetPersister(ctx context.Context) (*persist.Persis
 func (ms *MenuStorageService) GetUserdataDb(ctx context.Context) (db.Db, error) {
 	database, ok := ctx.Value("Database").(string)
 	if !ok {
-		fmt.Println("The database is not set")
+		return nil, fmt.Errorf("failed to select the database")
 	}
 
 	if database == "postgres" {

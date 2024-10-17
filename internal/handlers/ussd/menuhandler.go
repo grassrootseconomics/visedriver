@@ -272,7 +272,6 @@ func (h *Handlers) VerifyCreatePin(ctx context.Context, sym string, input []byte
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-
 	store := h.userdataStore
 	temporaryPin, err := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_PIN)
 	if err != nil {
@@ -511,9 +510,7 @@ func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (res
 // ResetIncorrectPin resets the incorrect pin flag  after a new PIN attempt.
 func (h *Handlers) ResetIncorrectPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
-
 	flag_incorrect_pin, _ := h.flagManager.GetFlag("flag_incorrect_pin")
-
 	res.FlagReset = append(res.FlagReset, flag_incorrect_pin)
 	return res, nil
 }
@@ -525,6 +522,7 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 
 	flag_account_success, _ := h.flagManager.GetFlag("flag_account_success")
 	flag_account_pending, _ := h.flagManager.GetFlag("flag_account_pending")
+	flag_api_error, _ := h.flagManager.GetFlag("flag_api_call_error")
 
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
@@ -536,18 +534,23 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 		return res, err
 	}
 
-	status, err := h.accountService.CheckAccountStatus(string(trackingId))
+	accountStatus, err := h.accountService.CheckAccountStatus(string(trackingId))
 	if err != nil {
 		fmt.Println("Error checking account status:", err)
 		return res, err
 	}
+	if !accountStatus.Ok {
+		res.FlagSet = append(res.FlagSet, flag_api_error)
+		return res, err
+	}
+	res.FlagReset = append(res.FlagReset, flag_api_error)
+	status := accountStatus.Result.Transaction.Status
 
 	err = store.WriteEntry(ctx, sessionId, utils.DATA_ACCOUNT_STATUS, []byte(status))
 	if err != nil {
 		return res, nil
 	}
-
-	if status == "SUCCESS" {
+	if accountStatus.Result.Transaction.Status == "SUCCESS" {
 		res.FlagSet = append(res.FlagSet, flag_account_success)
 		res.FlagReset = append(res.FlagReset, flag_account_pending)
 	} else {
@@ -647,6 +650,45 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 
 	res.Content = fmt.Sprintf("%s %s", activeBal, activeSym)
 
+	return res, nil
+}
+
+func (h *Handlers) FetchCustodialBalances(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	flag_api_error, _ := h.flagManager.GetFlag("flag_api_call_error")
+
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+	symbol, _ := h.st.Where()
+	balanceType := strings.Split(symbol, "_")[0]
+
+	store := h.userdataStore
+	publicKey, err := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
+	if err != nil {
+		return res, err
+	}
+
+	balanceResponse, err := h.accountService.CheckBalance(string(publicKey))
+	if err != nil {
+		return res, nil
+	}
+	if !balanceResponse.Ok {
+		res.FlagSet = append(res.FlagSet, flag_api_error)
+		return res, nil
+	}
+	res.FlagReset = append(res.FlagReset, flag_api_error)
+	balance := balanceResponse.Result.Balance
+
+	switch balanceType {
+	case "my":
+		res.Content = fmt.Sprintf("Your balance is %s", balance)
+	case "community":
+		res.Content = fmt.Sprintf("Your community balance is %s", balance)
+	default:
+		break
+	}
 	return res, nil
 }
 
@@ -830,36 +872,6 @@ func (h *Handlers) GetAmount(ctx context.Context, sym string, input []byte) (res
 	return res, nil
 }
 
-// QuickWithBalance retrieves the balance for a given public key from the custodial balance API endpoint before
-// gracefully exiting the session.
-func (h *Handlers) QuitWithBalance(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	var res resource.Result
-	var err error
-	sessionId, ok := ctx.Value("SessionId").(string)
-	if !ok {
-		return res, fmt.Errorf("missing session")
-	}
-
-	flag_account_authorized, _ := h.flagManager.GetFlag("flag_account_authorized")
-
-	code := codeFromCtx(ctx)
-	l := gotext.NewLocale(translationDir, code)
-	l.AddDomain("default")
-
-	store := h.userdataStore
-	publicKey, err := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
-	if err != nil {
-		return res, err
-	}
-	balance, err := h.accountService.CheckBalance(string(publicKey))
-	if err != nil {
-		return res, nil
-	}
-	res.Content = l.Get("Your account balance is %s", balance)
-	res.FlagReset = append(res.FlagReset, flag_account_authorized)
-	return res, nil
-}
-
 // InitiateTransaction returns a confirmation and resets the transaction data
 // on the gdbm store.
 func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []byte) (resource.Result, error) {
@@ -893,16 +905,23 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 	return res, nil
 }
 
-// GetProfileInfo retrieves and formats the profile information of a user from a Gdbm backed storage.
 func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
+	var defaultValue string
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-
-	// Default value when an entry is not found
-	defaultValue := "Not Provided"
+	language, ok := ctx.Value("Language").(lang.Language)
+	if !ok {
+		return res, fmt.Errorf("value for 'Language' is not of type lang.Language")
+	}
+	code := language.Code
+	if code == "swa" {
+		defaultValue = "Haipo"
+	} else {
+		defaultValue = "Not Provided"
+	}
 
 	// Helper function to handle nil byte slices and convert them to string
 	getEntryOrDefault := func(entry []byte, err error) string {
@@ -939,12 +958,23 @@ func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte)
 			return res, fmt.Errorf("invalid year of birth: %v", err)
 		}
 	}
-
-	// Format the result
-	res.Content = fmt.Sprintf(
-		"Name: %s\nGender: %s\nAge: %s\nLocation: %s\nYou provide: %s\n",
-		name, gender, age, location, offerings,
-	)
+	switch language.Code {
+	case "eng":
+		res.Content = fmt.Sprintf(
+			"Name: %s\nGender: %s\nAge: %s\nLocation: %s\nYou provide: %s\n",
+			name, gender, age, location, offerings,
+		)
+	case "swa":
+		res.Content = fmt.Sprintf(
+			"Jina: %s\nJinsia: %s\nUmri: %s\nEneo: %s\nUnauza: %s\n",
+			name, gender, age, location, offerings,
+		)
+	default:
+		res.Content = fmt.Sprintf(
+			"Name: %s\nGender: %s\nAge: %s\nLocation: %s\nYou provide: %s\n",
+			name, gender, age, location, offerings,
+		)
+	}
 
 	return res, nil
 }

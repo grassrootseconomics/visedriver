@@ -11,9 +11,9 @@ import (
 )
 
 type AccountServiceInterface interface {
-	CheckBalance(publicKey string) (string, error)
+	CheckBalance(publicKey string) (*models.BalanceResponse, error)
 	CreateAccount() (*models.AccountResponse, error)
-	CheckAccountStatus(trackingId string) (string, error)
+	CheckAccountStatus(trackingId string) (*models.TrackStatusResponse, error)
 	FetchVouchers(publicKey string) (*models.VoucherHoldingResponse, error)
 }
 
@@ -31,53 +31,44 @@ type AccountService struct {
 //   - string: The status of the transaction as a string. If there is an error during the request or processing, this will be an empty string.
 //   - error: An error if any occurred during the HTTP request, reading the response, or unmarshalling the JSON data.
 //     If no error occurs, this will be nil.
-func (as *AccountService) CheckAccountStatus(trackingId string) (string, error) {
+func (as *AccountService) CheckAccountStatus(trackingId string) (*models.TrackStatusResponse, error) {
 	resp, err := http.Get(config.TrackStatusURL + trackingId)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-
 	var trackResp models.TrackStatusResponse
 	err = json.Unmarshal(body, &trackResp)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-
-	status := trackResp.Result.Transaction.Status
-
-	return status, nil
+	return &trackResp, nil
 }
 
 // CheckBalance retrieves the balance for a given public key from the custodial balance API endpoint.
 // Parameters:
 //   - publicKey: The public key associated with the account whose balance needs to be checked.
-func (as *AccountService) CheckBalance(publicKey string) (string, error) {
-
+func (as *AccountService) CheckBalance(publicKey string) (*models.BalanceResponse, error) {
 	resp, err := http.Get(config.BalanceURL + publicKey)
 	if err != nil {
-		return "0.0", err
+		return nil, err
 	}
 	defer resp.Body.Close()
-
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "0.0", err
+		return nil, err
 	}
-
 	var balanceResp models.BalanceResponse
 	err = json.Unmarshal(body, &balanceResp)
 	if err != nil {
-		return "0.0", err
+		return nil, err
 	}
-
-	balance := balanceResp.Result.Balance
-	return balance, nil
+	return &balanceResp, nil
 }
 
 // CreateAccount creates a new account in the custodial system.
@@ -92,18 +83,15 @@ func (as *AccountService) CreateAccount() (*models.AccountResponse, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
-
 	var accountResp models.AccountResponse
 	err = json.Unmarshal(body, &accountResp)
 	if err != nil {
 		return nil, err
 	}
-
 	return &accountResp, nil
 }
 
@@ -123,4 +111,3 @@ func (as *AccountService) FetchVouchers(publicKey string) (*models.VoucherHoldin
 	}
 	return &holdings, nil
 }
-

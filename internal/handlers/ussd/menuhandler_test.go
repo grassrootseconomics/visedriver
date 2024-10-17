@@ -1440,7 +1440,6 @@ func TestValidateAmount(t *testing.T) {
 		t.Logf(err.Error())
 	}
 	flag_invalid_amount, _ := fm.parser.GetFlag("flag_invalid_amount")
-	flag_api_error, _ := fm.GetFlag("flag_api_call_error")
 	mockDataStore := new(mocks.MockUserDataStore)
 	mockCreateAccountService := new(mocks.MockAccountService)
 
@@ -1466,7 +1465,6 @@ func TestValidateAmount(t *testing.T) {
 			activeBal: []byte("0.003"),
 			expectedResult: resource.Result{
 				Content:   "0.001",
-				FlagReset: []uint32{flag_api_error},
 			},
 		},
 		{
@@ -1475,7 +1473,6 @@ func TestValidateAmount(t *testing.T) {
 			activeBal: []byte("0.003"),
 			expectedResult: resource.Result{
 				FlagSet:   []uint32{flag_invalid_amount},
-				FlagReset: []uint32{flag_api_error},
 				Content:   "0.02",
 			},
 		},
@@ -1485,7 +1482,6 @@ func TestValidateAmount(t *testing.T) {
 			balance:   "0.003 CELO",
 			expectedResult: resource.Result{
 				FlagSet:   []uint32{flag_invalid_amount},
-				FlagReset: []uint32{flag_api_error},
 				Content:   "0.02ms",
 			},
 		},

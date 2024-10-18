@@ -61,7 +61,7 @@ type Handlers struct {
 	accountService server.AccountServiceInterface
 }
 
-func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db) (*Handlers, error) {
+func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, accountService server.AccountServiceInterface) (*Handlers, error) {
 	if userdataStore == nil {
 		return nil, fmt.Errorf("cannot create handler with nil userdata store")
 	}
@@ -71,7 +71,7 @@ func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db) (*Handlers, erro
 	h := &Handlers{
 		userdataStore:  userDb,
 		flagManager:    appFlags,
-		accountService: &server.AccountService{},
+		accountService: accountService,
 	}
 	return h, nil
 }

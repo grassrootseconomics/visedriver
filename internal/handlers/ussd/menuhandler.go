@@ -624,7 +624,7 @@ func (h *Handlers) ResetIncorrectYob(ctx context.Context, sym string, input []by
 	return res, nil
 }
 
-// CheckBalance retrieves the balance from the API using the "PublicKey" and sets
+// CheckBalance retrieves the balance of the active voucher and sets
 // the balance as the result content
 func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
@@ -640,12 +640,13 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 	// get the active sym and active balance
 	activeSym, err := store.ReadEntry(ctx, sessionId, utils.DATA_ACTIVE_SYM)
 	if err != nil {
-		return res, err
+		res.Content = "0.00"
+		return res, nil
 	}
 
 	activeBal, err := store.ReadEntry(ctx, sessionId, utils.DATA_ACTIVE_BAL)
 	if err != nil {
-		return res, err
+		return res, nil
 	}
 
 	res.Content = fmt.Sprintf("%s %s", activeBal, activeSym)
@@ -991,6 +992,8 @@ func (h *Handlers) SetDefaultVoucher(ctx context.Context, sym string, input []by
 		return res, fmt.Errorf("missing session")
 	}
 
+	flag_no_active_voucher, _ := h.flagManager.GetFlag("flag_no_active_voucher")
+
 	// check if the user has an active sym
 	_, err = store.ReadEntry(ctx, sessionId, utils.DATA_ACTIVE_SYM)
 
@@ -1008,9 +1011,10 @@ func (h *Handlers) SetDefaultVoucher(ctx context.Context, sym string, input []by
 				return res, nil
 			}
 
-			// Ensure there is at least one voucher
+			// Return if there is no voucher
 			if len(vouchersResp.Result.Holdings) == 0 {
-				return res, err
+				res.FlagSet = append(res.FlagSet, flag_no_active_voucher)
+				return res, nil
 			}
 
 			// Use only the first voucher
@@ -1034,6 +1038,8 @@ func (h *Handlers) SetDefaultVoucher(ctx context.Context, sym string, input []by
 
 		return res, err
 	}
+
+	res.FlagReset = append(res.FlagReset, flag_no_active_voucher)
 
 	return res, nil
 }
@@ -1160,7 +1166,7 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 		if err != nil {
 			return res, err
 		}
-		
+
 		res.FlagReset = append(res.FlagReset, flag_incorrect_voucher)
 		res.Content = fmt.Sprintf("%s\n%s", matchedSymbol, matchedBalance)
 	} else {

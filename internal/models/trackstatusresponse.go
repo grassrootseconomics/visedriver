@@ -5,7 +5,6 @@ import (
 	"time"
 )
 
-
 type TrackStatusResponse struct {
 	Ok     bool `json:"ok"`
 	Result struct {

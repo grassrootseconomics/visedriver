@@ -1082,7 +1082,7 @@ func TestCheckAccountStatus(t *testing.T) {
 			input: []byte("TrackingId1234"),
 			serverResponse: &server.OKResponse{
 				Ok:          true,
-				Description: "Account creation successed",
+				Description: "Account creation succeeded",
 				Result: map[string]any{
 					"active": true,
 				},
@@ -1137,7 +1137,7 @@ func TestCheckAccountStatus(t *testing.T) {
 			},
 			serverResponse: &server.OKResponse{
 				Ok:          true,
-				Description: "Account creation successed",
+				Description: "Account creation succeeded",
 				Result: map[string]any{
 					"active": false,
 				},

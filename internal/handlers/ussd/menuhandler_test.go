@@ -72,68 +72,75 @@ func TestCreateAccount(t *testing.T) {
 	if err != nil {
 		t.Logf(err.Error())
 	}
-
 	// Create required mocks
-	mockDataStore := new(mocks.MockUserDataStore)
-	mockCreateAccountService := new(mocks.MockAccountService)
-	expectedResult := resource.Result{}
-	accountCreatedFlag, err := fm.GetFlag("flag_account_created")
-
+	flag_account_created, err := fm.GetFlag("flag_account_created")
 	if err != nil {
 		t.Logf(err.Error())
 	}
-	expectedResult.FlagSet = append(expectedResult.FlagSet, accountCreatedFlag)
 
 	// Define session ID and mock data
 	sessionId := "session123"
-	typ := utils.DATA_ACCOUNT_CREATED
-	fakeError := db.ErrNotFound{}
-	// Create context with session ID
+	notFoundErr := db.ErrNotFound{}
 	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
 
-	// Define expected interactions with the mock
-	mockDataStore.On("ReadEntry", ctx, sessionId, typ).Return([]byte("123"), fakeError)
-	expectedAccountResp := &models.AccountResponse{
-		Ok: true,
-		Result: struct {
-			CustodialId json.Number `json:"custodialId"`
-			PublicKey   string      `json:"publicKey"`
-			TrackingId  string      `json:"trackingId"`
-		}{
-			CustodialId: "12",
-			PublicKey:   "0x8E0XSCSVA",
-			TrackingId:  "d95a7e83-196c-4fd0-866fSGAGA",
+	tests := []struct {
+		name           string
+		serverResponse *server.OKResponse
+		expectedResult resource.Result
+	}{
+		{
+			name: "Test account creation success",
+			serverResponse: &server.OKResponse{
+				Ok:          true,
+				Description: "Account creation successed",
+				Result: map[string]any{
+					"trackingId": "1234567890",
+					"publicKey":  "1235QERYU",
+				},
+			},
+			expectedResult: resource.Result{
+				FlagSet: []uint32{flag_account_created},
+			},
 		},
 	}
-	mockCreateAccountService.On("CreateAccount").Return(expectedAccountResp, nil)
-	data := map[utils.DataTyp]string{
-		utils.DATA_TRACKING_ID:  expectedAccountResp.Result.TrackingId,
-		utils.DATA_PUBLIC_KEY:   expectedAccountResp.Result.PublicKey,
-		utils.DATA_CUSTODIAL_ID: expectedAccountResp.Result.CustodialId.String(),
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			mockDataStore := new(mocks.MockUserDataStore)
+			mockCreateAccountService := new(mocks.MockAccountService)
+
+			// Create a Handlers instance with the mock data store
+			h := &Handlers{
+				userdataStore:  mockDataStore,
+				accountService: mockCreateAccountService,
+				flagManager:    fm.parser,
+			}
+
+			data := map[utils.DataTyp]string{
+				utils.DATA_TRACKING_ID: tt.serverResponse.Result["trackingId"].(string),
+				utils.DATA_PUBLIC_KEY:  tt.serverResponse.Result["publicKey"].(string),
+			}
+
+			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_ACCOUNT_CREATED).Return([]byte(""), notFoundErr)
+			mockCreateAccountService.On("CreateAccount").Return(tt.serverResponse, nil)
+
+			for key, value := range data {
+				mockDataStore.On("WriteEntry", ctx, sessionId, key, []byte(value)).Return(nil)
+			}
+
+			// Call the method you want to test
+			res, err := h.CreateAccount(ctx, "create_account", []byte("some-input"))
+
+			// Assert that no errors occurred
+			assert.NoError(t, err)
+
+			// Assert that the account created flag has been set to the result
+			assert.Equal(t, res, tt.expectedResult, "Expected result should be equal to the actual result")
+
+			// Assert that expectations were met
+			mockDataStore.AssertExpectations(t)
+		})
 	}
-
-	for key, value := range data {
-		mockDataStore.On("WriteEntry", ctx, sessionId, key, []byte(value)).Return(nil)
-	}
-
-	// Create a Handlers instance with the mock data store
-	h := &Handlers{
-		userdataStore:  mockDataStore,
-		accountService: mockCreateAccountService,
-		flagManager:    fm.parser,
-	}
-
-	// Call the method you want to test
-	res, err := h.CreateAccount(ctx, "create_account", []byte("some-input"))
-
-	// Assert that no errors occurred
-	assert.NoError(t, err)
-
-	//Assert that the account created flag has been set to the result
-	assert.Equal(t, res, expectedResult, "Expected result should be equal to the actual result")
-
-	// Assert that expectations were met
-	mockDataStore.AssertExpectations(t)
 }
 
 func TestWithPersister(t *testing.T) {
@@ -1066,12 +1073,20 @@ func TestCheckAccountStatus(t *testing.T) {
 	tests := []struct {
 		name           string
 		input          []byte
+		serverResponse *server.OKResponse
 		response       *models.TrackStatusResponse
 		expectedResult resource.Result
 	}{
 		{
-			name:  "Test when account status is Success",
+			name:  "Test when account is on the Sarafu network",
 			input: []byte("TrackingId1234"),
+			serverResponse: &server.OKResponse{
+				Ok:          true,
+				Description: "Account creation successed",
+				Result: map[string]any{
+					"active": true,
+				},
+			},
 			response: &models.TrackStatusResponse{
 				Ok: true,
 				Result: struct {
@@ -1098,17 +1113,7 @@ func TestCheckAccountStatus(t *testing.T) {
 			},
 		},
 		{
-			name:  "Test when fetching  account status is not  Success",
-			input: []byte("TrackingId1234"),
-			response: &models.TrackStatusResponse{
-				Ok: false,
-			},
-			expectedResult: resource.Result{
-				FlagSet: []uint32{flag_api_error},
-			},
-		},
-		{
-			name:  "Test when checking account status api call is a SUCCESS but an account is not yet ready",
+			name:  "Test when the account is not  yet on the sarafu network",
 			input: []byte("TrackingId1234"),
 			response: &models.TrackStatusResponse{
 				Ok: true,
@@ -1123,11 +1128,18 @@ func TestCheckAccountStatus(t *testing.T) {
 				}{
 					Transaction: models.Transaction{
 						CreatedAt:     time.Now(),
-						Status:        "IN_NETWORK",
+						Status:        "SUCCESS",
 						TransferValue: json.Number("0.5"),
 						TxHash:        "0x123abc456def",
 						TxType:        "transfer",
 					},
+				},
+			},
+			serverResponse: &server.OKResponse{
+				Ok:          true,
+				Description: "Account creation successed",
+				Result: map[string]any{
+					"active": false,
 				},
 			},
 			expectedResult: resource.Result{
@@ -1149,9 +1161,10 @@ func TestCheckAccountStatus(t *testing.T) {
 
 			status := tt.response.Result.Transaction.Status
 			// Define expected interactions with the mock
-			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TRACKING_ID).Return(tt.input, nil)
+			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_PUBLIC_KEY).Return(tt.input, nil)
 
 			mockCreateAccountService.On("CheckAccountStatus", string(tt.input)).Return(tt.response, nil)
+			mockCreateAccountService.On("TrackAccountStatus", string(tt.input)).Return(tt.serverResponse, nil)
 			mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_ACCOUNT_STATUS, []byte(status)).Return(nil).Maybe()
 
 			// Call the method under test

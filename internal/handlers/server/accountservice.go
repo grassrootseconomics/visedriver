@@ -187,19 +187,13 @@ func (as *AccountService) CreateAccount() (*OKResponse, *ErrResponse) {
 	}
 }
 
-func (tas *TestAccountService) CreateAccount() (*models.AccountResponse, error) {
-	return &models.AccountResponse{
-		Ok: true,
-		Result: struct {
-			CustodialId json.Number `json:"custodialId"`
-			PublicKey   string      `json:"publicKey"`
-			TrackingId  string      `json:"trackingId"`
-		}{
-			CustodialId: json.Number("182"),
-			PublicKey:   "0x48ADca309b5085852207FAaf2816eD72B52F527C",
-			TrackingId:  "28ebe84d-b925-472c-87ae-bbdfa1fb97be",
-		},
+func (tas *TestAccountService) CreateAccount() (*OKResponse, *ErrResponse) {
+	return &OKResponse{
+		Ok:          true,
+		Description: "Account creation request received successfully",
+		Result:      map[string]any{"publicKey": "0x48ADca309b5085852207FAaf2816eD72B52F527C", "trackingId": "28ebe84d-b925-472c-87ae-bbdfa1fb97be"},
 	}, nil
+
 }
 
 func (tas *TestAccountService) CheckBalance(publicKey string) (*models.BalanceResponse, error) {
@@ -216,6 +210,16 @@ func (tas *TestAccountService) CheckBalance(publicKey string) (*models.BalanceRe
 	}
 
 	return balanceResponse, nil
+}
+
+func (tas *TestAccountService) TrackAccountStatus(publicKey string) (*OKResponse, *ErrResponse) {
+	return &OKResponse{
+		Ok:          true,
+		Description: "Account creation succeeded",
+		Result: map[string]any{
+			"active": true,
+		},
+	}, nil
 }
 
 func (tas *TestAccountService) CheckAccountStatus(trackingId string) (*models.TrackStatusResponse, error) {

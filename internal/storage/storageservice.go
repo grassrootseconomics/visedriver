@@ -8,6 +8,7 @@ import (
 
 	"git.defalsify.org/vise.git/db"
 	fsdb "git.defalsify.org/vise.git/db/fs"
+	"git.defalsify.org/vise.git/db/postgres"
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
@@ -67,7 +68,7 @@ func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.D
 	var err error
 
 	if database == "postgres" {
-		newDb = NewPostgresDb()
+		newDb = postgres.NewPgDb()
 		connStr := buildConnStr()
 		err = newDb.Connect(ctx, connStr)
 	} else {

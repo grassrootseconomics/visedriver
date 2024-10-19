@@ -72,7 +72,7 @@ func (ms *MenuStorageService) GetUserdataDb(ctx context.Context) (db.Db, error) 
 	}
 
 	if database == "postgres" {
-		ms.userDataStore = NewThreadPostgresDb()
+		ms.userDataStore = NewPostgresDb()
 		connStr := buildConnStr()
 		err := ms.userDataStore.Connect(ctx, connStr)
 		if err != nil {

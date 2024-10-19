@@ -8,27 +8,18 @@ import (
 	"git.defalsify.org/vise.git/lang"
 )
 
-var (
-	pdbC map[string]chan db.Db
-)
-
-type ThreadPostgresDb struct {
+type PostgresDb struct {
 	db      db.Db
 	connStr string
 }
 
-func NewThreadPostgresDb() *ThreadPostgresDb {
-	if pdbC == nil {
-		pdbC = make(map[string]chan db.Db)
-	}
-	return &ThreadPostgresDb{}
+func NewPostgresDb() *PostgresDb {
+	return &PostgresDb{}
 }
 
-func (tpdb *ThreadPostgresDb) Connect(ctx context.Context, connStr string) error {
-	var ok bool
-	_, ok = pdbC[connStr]
-	if ok {
-		logg.WarnCtxf(ctx, "already registered thread postgres, skipping", "connStr", connStr)
+func (pdb *PostgresDb) Connect(ctx context.Context, connStr string) error {
+	if pdb.db != nil {
+		logg.WarnCtxf(ctx, "already connected, skipping", "connStr", connStr)
 		return nil
 	}
 	postgresdb := postgres.NewPgDb().WithSchema("public")
@@ -36,80 +27,48 @@ func (tpdb *ThreadPostgresDb) Connect(ctx context.Context, connStr string) error
 	if err != nil {
 		return err
 	}
-	pdbC[connStr] = make(chan db.Db, 1)
-	pdbC[connStr] <- postgresdb
-	tpdb.connStr = connStr
+	pdb.db = postgresdb
+	pdb.connStr = connStr
 	return nil
 }
 
-func (tpdb *ThreadPostgresDb) reserve() {
-	if tpdb.db == nil {
-		tpdb.db = <-pdbC[tpdb.connStr]
+func (pdb *PostgresDb) SetPrefix(pfx uint8) {
+	pdb.db.SetPrefix(pfx)
+}
+
+func (pdb *PostgresDb) SetSession(sessionId string) {
+	pdb.db.SetSession(sessionId)
+}
+
+func (pdb *PostgresDb) SetLanguage(lng *lang.Language) {
+	pdb.db.SetLanguage(lng)
+}
+
+func (pdb *PostgresDb) Safe() bool {
+	return pdb.db.Safe()
+}
+
+func (pdb *PostgresDb) Prefix() uint8 {
+	return pdb.db.Prefix()
+}
+
+func (pdb *PostgresDb) SetLock(typ uint8, locked bool) error {
+	return pdb.db.SetLock(typ, locked)
+}
+
+func (pdb *PostgresDb) Put(ctx context.Context, key []byte, val []byte) error {
+	return pdb.db.Put(ctx, key, val)
+}
+
+func (pdb *PostgresDb) Get(ctx context.Context, key []byte) ([]byte, error) {
+	return pdb.db.Get(ctx, key)
+}
+
+func (pdb *PostgresDb) Close() error {
+	if pdb.db == nil {
+		return nil
 	}
-}
-
-func (tpdb *ThreadPostgresDb) release() {
-	if tpdb.db == nil {
-		return
-	}
-	pdbC[tpdb.connStr] <- tpdb.db
-	tpdb.db = nil
-}
-
-func (tpdb *ThreadPostgresDb) SetPrefix(pfx uint8) {
-	tpdb.reserve()
-	tpdb.db.SetPrefix(pfx)
-}
-
-func (tpdb *ThreadPostgresDb) SetSession(sessionId string) {
-	tpdb.reserve()
-	tpdb.db.SetSession(sessionId)
-}
-
-func (tpdb *ThreadPostgresDb) SetLanguage(lng *lang.Language) {
-	tpdb.reserve()
-	tpdb.db.SetLanguage(lng)
-}
-
-func (tpdb *ThreadPostgresDb) Safe() bool {
-	tpdb.reserve()
-	v := tpdb.db.Safe()
-	tpdb.release()
-	return v
-}
-
-func (tpdb *ThreadPostgresDb) Prefix() uint8 {
-	tpdb.reserve()
-	v := tpdb.db.Prefix()
-	tpdb.release()
-	return v
-}
-
-func (tpdb *ThreadPostgresDb) SetLock(typ uint8, locked bool) error {
-	tpdb.reserve()
-	err := tpdb.db.SetLock(typ, locked)
-	tpdb.release()
-	return err
-}
-
-func (tpdb *ThreadPostgresDb) Put(ctx context.Context, key []byte, val []byte) error {
-	tpdb.reserve()
-	err := tpdb.db.Put(ctx, key, val)
-	tpdb.release()
-	return err
-}
-
-func (tpdb *ThreadPostgresDb) Get(ctx context.Context, key []byte) ([]byte, error) {
-	tpdb.reserve()
-	v, err := tpdb.db.Get(ctx, key)
-	tpdb.release()
-	return v, err
-}
-
-func (tpdb *ThreadPostgresDb) Close() error {
-	tpdb.reserve()
-	close(pdbC[tpdb.connStr])
-	err := tpdb.db.Close()
-	tpdb.db = nil
+	err := pdb.db.Close()
+	pdb.db = nil
 	return err
 }

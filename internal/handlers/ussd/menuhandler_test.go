@@ -15,6 +15,7 @@ import (
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/state"
+	"git.grassecon.net/urdt/ussd/internal/handlers/server"
 	"git.grassecon.net/urdt/ussd/internal/mocks"
 	"git.grassecon.net/urdt/ussd/internal/models"
 	"git.grassecon.net/urdt/ussd/internal/utils"
@@ -28,22 +29,15 @@ var (
 	flagsPath = path.Join(baseDir, "services", "registration", "pp.csv")
 )
 
-type Transaction struct {
-	CreatedAt     time.Time   `json:"createdAt"`
-	Status        string      `json:"status"`
-	TransferValue json.Number `json:"transferValue"`
-	TxHash        string      `json:"txHash"`
-	TxType        string      `json:"txType"`
-}
-
 func TestNewHandlers(t *testing.T) {
 	fm, err := NewFlagManager(flagsPath)
+	accountService := server.TestAccountService{}
 	if err != nil {
 		t.Logf(err.Error())
 	}
 	t.Run("Valid UserDataStore", func(t *testing.T) {
 		mockStore := &mocks.MockUserDataStore{}
-		handlers, err := NewHandlers(fm.parser, mockStore)
+		handlers, err := NewHandlers(fm.parser, mockStore, &accountService)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -59,7 +53,7 @@ func TestNewHandlers(t *testing.T) {
 	t.Run("Nil UserDataStore", func(t *testing.T) {
 		appFlags := &asm.FlagParser{}
 
-		handlers, err := NewHandlers(appFlags, nil)
+		handlers, err := NewHandlers(appFlags, nil, &accountService)
 
 		if err == nil {
 			t.Fatal("expected an error, got none")
@@ -1061,7 +1055,7 @@ func TestCheckAccountStatus(t *testing.T) {
 						TxType        string      "json:\"txType\""
 					}
 				}{
-					Transaction: Transaction{
+					Transaction: models.Transaction{
 						CreatedAt:     time.Now(),
 						Status:        "SUCCESS",
 						TransferValue: json.Number("0.5"),
@@ -1099,7 +1093,7 @@ func TestCheckAccountStatus(t *testing.T) {
 						TxType        string      "json:\"txType\""
 					}
 				}{
-					Transaction: Transaction{
+					Transaction: models.Transaction{
 						CreatedAt:     time.Now(),
 						Status:        "IN_NETWORK",
 						TransferValue: json.Number("0.5"),

@@ -1,11 +1,11 @@
-package main
+package testutil
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"os"
 	"path"
+	"time"
 
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/logging"
@@ -13,37 +13,30 @@ import (
 	"git.grassecon.net/urdt/ussd/internal/handlers"
 	"git.grassecon.net/urdt/ussd/internal/handlers/server"
 	"git.grassecon.net/urdt/ussd/internal/storage"
+	testdataloader "github.com/peteole/testdata-loader"
 )
 
 var (
+	baseDir   = testdataloader.GetBasePath()
 	logg      = logging.NewVanilla()
-	scriptDir = path.Join("services", "registration")
+	scriptDir = path.Join(baseDir, "services", "registration")
 )
 
-func main() {
-	var dbDir string
-	var size uint
-	var sessionId string
-	var engineDebug bool
-	flag.StringVar(&sessionId, "session-id", "075xx2123", "session id")
-	flag.StringVar(&dbDir, "dbdir", ".state", "database dir to read from")
-	flag.BoolVar(&engineDebug, "d", false, "use engine debug output")
-	flag.UintVar(&size, "s", 160, "max size of output")
-	flag.Parse()
-
-	logg.Infof("start command", "dbdir", dbDir, "outputsize", size)
-
+func TestEngine(sessionId string) (engine.Engine, func(), chan bool) {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
 	pfp := path.Join(scriptDir, "pp.csv")
 
+	var eventChannel = make(chan bool)
+
 	cfg := engine.Config{
 		Root:       "root",
 		SessionId:  sessionId,
-		OutputSize: uint32(size),
+		OutputSize: uint32(160),
 		FlagCount:  uint32(128),
 	}
 
+	dbDir := ".test_state"
 	resourceDir := scriptDir
 	menuStorageService := storage.NewMenuStorageService(dbDir, resourceDir)
 
@@ -65,7 +58,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	userdatastore, err := menuStorageService.GetUserdataDb(ctx)
+	userDataStore, err := menuStorageService.GetUserdataDb(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
@@ -78,7 +71,7 @@ func main() {
 	}
 
 	lhs, err := handlers.NewLocalHandlerService(pfp, true, dbResource, cfg, rs)
-	lhs.SetDataStore(&userdatastore)
+	lhs.SetDataStore(&userDataStore)
 	lhs.SetPersister(pe)
 
 	if err != nil {
@@ -86,8 +79,25 @@ func main() {
 		os.Exit(1)
 	}
 
-	accountService := server.AccountService{}
-	hl, err := lhs.GetHandler(&accountService)
+	if AccountService == nil {
+		AccountService = &server.AccountService{}
+	}
+
+	switch AccountService.(type) {
+	case *server.TestAccountService:
+		go func() {
+			eventChannel <- false
+		}()
+	case *server.AccountService:
+		go func() {
+			time.Sleep(5 * time.Second) // Wait for 5 seconds
+			eventChannel <- true
+		}()
+	default:
+		panic("Unknown account service type")
+	}
+
+	hl, err := lhs.GetHandler(AccountService)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
@@ -95,13 +105,17 @@ func main() {
 
 	en := lhs.GetEngine()
 	en = en.WithFirst(hl.Init)
-	if engineDebug {
-		en = en.WithDebug(nil)
-	}
+	cleanFn := func() {
+		err := en.Finish()
+		if err != nil {
+			logg.Errorf(err.Error())
+		}
 
-	err = engine.Loop(ctx, en, os.Stdin, os.Stdout, nil)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "loop exited with error: %v\n", err)
-		os.Exit(1)
+		err = menuStorageService.Close()
+		if err != nil {
+			logg.Errorf(err.Error())
+		}
+		logg.Infof("testengine storage closed")
 	}
+	return en, cleanFn, eventChannel
 }

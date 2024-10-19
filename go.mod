@@ -15,6 +15,7 @@ require (
 	github.com/barbashov/iso639-3 v0.0.0-20211020172741-1f4ffb2d8d1c // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fxamacker/cbor/v2 v2.4.0 // indirect
+	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/graygnuorg/go-gdbm v0.0.0-20220711140707-71387d66dce4 // indirect
 	github.com/hexops/gotextdiff v1.0.3 // indirect
 	github.com/mattn/kinako v0.0.0-20170717041458-332c0a7e205a // indirect

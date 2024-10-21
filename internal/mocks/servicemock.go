@@ -1,8 +1,8 @@
 package mocks
 
 import (
-	"git.grassecon.net/urdt/ussd/internal/handlers/server"
 	"git.grassecon.net/urdt/ussd/internal/models"
+	"github.com/grassrootseconomics/eth-custodial/pkg/api"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -11,10 +11,10 @@ type MockAccountService struct {
 	mock.Mock
 }
 
-func (m *MockAccountService) CreateAccount() (*server.OKResponse, *server.ErrResponse) {
+func (m *MockAccountService) CreateAccount() (*api.OKResponse, *api.ErrResponse) {
 	args := m.Called()
-	okResponse, ok := args.Get(0).(*server.OKResponse)
-	errResponse, err := args.Get(1).(*server.ErrResponse)
+	okResponse, ok := args.Get(0).(*api.OKResponse)
+	errResponse, err := args.Get(1).(*api.ErrResponse)
 
 	if ok {
 		return okResponse, nil
@@ -36,10 +36,10 @@ func (m *MockAccountService) CheckAccountStatus(trackingId string) (*models.Trac
 	return args.Get(0).(*models.TrackStatusResponse), args.Error(1)
 }
 
-func (m *MockAccountService) TrackAccountStatus(publicKey string) (*server.OKResponse, *server.ErrResponse) {
+func (m *MockAccountService) TrackAccountStatus(publicKey string) (*api.OKResponse, *api.ErrResponse) {
 	args := m.Called(publicKey)
-	okResponse, ok := args.Get(0).(*server.OKResponse)
-	errResponse, err := args.Get(1).(*server.ErrResponse)
+	okResponse, ok := args.Get(0).(*api.OKResponse)
+	errResponse, err := args.Get(1).(*api.ErrResponse)
 	if ok {
 		return okResponse, nil
 	}

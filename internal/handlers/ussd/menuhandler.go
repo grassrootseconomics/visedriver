@@ -3,6 +3,7 @@ package ussd
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"path"
 	"regexp"
@@ -10,6 +11,7 @@ import (
 	"strings"
 
 	"git.defalsify.org/vise.git/asm"
+	"github.com/grassrootseconomics/eth-custodial/pkg/api"
 
 	"git.defalsify.org/vise.git/cache"
 	"git.defalsify.org/vise.git/db"
@@ -27,8 +29,8 @@ var (
 	logg           = logging.NewVanilla().WithDomain("ussdmenuhandler")
 	scriptDir      = path.Join("services", "registration")
 	translationDir = path.Join(scriptDir, "locale")
-	okResponse     *server.OKResponse
-	errResponse    *server.ErrResponse
+	okResponse     *api.OKResponse
+	errResponse    *api.ErrResponse
 )
 
 // FlagManager handles centralized flag management
@@ -138,12 +140,19 @@ func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (r
 }
 
 func (h *Handlers) createAccountNoExist(ctx context.Context, sessionId string, res *resource.Result) error {
+	flag_account_created, _ := h.flagManager.GetFlag("flag_account_created")
+	flag_api_call_error, _ := h.flagManager.GetFlag("flag_api_call_error")
 	okResponse, errResponse := h.accountService.CreateAccount()
 	if errResponse != nil {
-		return nil
+		if !errResponse.Ok {
+			res.FlagSet = append(res.FlagSet, flag_api_call_error)
+			return nil
+		}
+		return errors.New(errResponse.Description)
 	}
 	trackingId := okResponse.Result["trackingId"].(string)
 	publicKey := okResponse.Result["publicKey"].(string)
+	res.FlagReset = append(res.FlagReset, flag_api_call_error)
 
 	data := map[utils.DataTyp]string{
 		utils.DATA_TRACKING_ID: trackingId,
@@ -157,7 +166,6 @@ func (h *Handlers) createAccountNoExist(ctx context.Context, sessionId string, r
 			return err
 		}
 	}
-	flag_account_created, _ := h.flagManager.GetFlag("flag_account_created")
 	res.FlagSet = append(res.FlagSet, flag_account_created)
 	return nil
 
@@ -546,6 +554,9 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 	}
 	okResponse, errResponse = h.accountService.TrackAccountStatus(string(publicKey))
 	if errResponse != nil {
+		if !errResponse.Ok {
+			res.FlagSet = append(res.FlagSet, flag_api_error)
+		}
 		return res, err
 	}
 	res.FlagReset = append(res.FlagReset, flag_api_error)

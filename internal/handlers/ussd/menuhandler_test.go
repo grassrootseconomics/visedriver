@@ -75,7 +75,6 @@ func TestCreateAccount(t *testing.T) {
 	}
 	// Create required mocks
 	flag_account_created, err := fm.GetFlag("flag_account_created")
-	//flag_api_call_error, err := fm.GetFlag("flag_api_call_error,")
 	flag_api_call_error, _ := fm.GetFlag("flag_api_call_error")
 	if err != nil {
 		t.Logf(err.Error())
@@ -102,7 +101,7 @@ func TestCreateAccount(t *testing.T) {
 				},
 			},
 			expectedResult: resource.Result{
-				FlagSet: []uint32{flag_account_created},
+				FlagSet:   []uint32{flag_account_created},
 				FlagReset: []uint32{flag_api_call_error},
 			},
 		},

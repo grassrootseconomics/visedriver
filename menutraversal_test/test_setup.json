@@ -57,7 +57,7 @@
                 "steps": [
                     {
                         "input": "",
-                        "expectedContent": "Balance: 0.003 CELO\n\n1:Send\n2:My Vouchers\n3:My Account\n4:Help\n9:Quit"
+                        "expectedContent": "{balance}\n\n1:Send\n2:My Vouchers\n3:My Account\n4:Help\n9:Quit"
                     },
                     {
                         "input": "1",
@@ -106,7 +106,7 @@
                 "steps": [
                     {
                         "input": "",
-                        "expectedContent": "Balance: 0.003 CELO\n\n1:Send\n2:My Vouchers\n3:My Account\n4:Help\n9:Quit"
+                        "expectedContent": "{balance}\n\n1:Send\n2:My Vouchers\n3:My Account\n4:Help\n9:Quit"
                     },
                     {
                         "input": "4",
@@ -119,7 +119,7 @@
                 "steps": [
                     {
                         "input": "",
-                        "expectedContent": "Balance: 0.003 CELO\n\n1:Send\n2:My Vouchers\n3:My Account\n4:Help\n9:Quit"
+                        "expectedContent": "{balance}\n\n1:Send\n2:My Vouchers\n3:My Account\n4:Help\n9:Quit"
                     },
                     {
                         "input": "9",
@@ -132,7 +132,7 @@
                 "steps": [
                     {
                         "input": "",
-                        "expectedContent": "Balance: 0.003 CELO\n\n1:Send\n2:My Vouchers\n3:My Account\n4:Help\n9:Quit"
+                        "expectedContent": "{balance}\n\n1:Send\n2:My Vouchers\n3:My Account\n4:Help\n9:Quit"
                     },
                     {
                         "input": "3",

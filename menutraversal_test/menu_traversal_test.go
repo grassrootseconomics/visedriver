@@ -43,6 +43,17 @@ func extractPublicKey(response []byte) string {
 	return ""
 }
 
+// Extracts the balance value from the engine response.
+func extractBalance(response []byte) string {
+	// Regex to match "Balance: <amount> <symbol>" followed by a newline
+	re := regexp.MustCompile(`(?m)^Balance:\s+(\d+(\.\d+)?)\s+([A-Z]+)`)
+	match := re.FindSubmatch(response)
+	if match != nil && len(match) > 0 {
+		return string(match[1]) + " " + string(match[3]) // "<amount> <symbol>"
+	}
+	return ""
+}
+
 func TestMain(m *testing.M) {
 	sessionID = GenerateSessionId()
 	defer func() {
@@ -154,6 +165,12 @@ func TestMainMenuHelp(t *testing.T) {
 				}
 
 				b := w.Bytes()
+				balance := extractBalance(b)
+
+				expectedContent := []byte(step.ExpectedContent)
+				expectedContent = bytes.Replace(expectedContent, []byte("{balance}"), []byte(balance), -1)
+
+				step.ExpectedContent = string(expectedContent)
 				match, err := step.MatchesExpectedContent(b)
 				if err != nil {
 					t.Fatalf("Error compiling regex for step '%s': %v", step.Input, err)
@@ -189,6 +206,12 @@ func TestMainMenuQuit(t *testing.T) {
 				}
 
 				b := w.Bytes()
+				balance := extractBalance(b)
+
+				expectedContent := []byte(step.ExpectedContent)
+				expectedContent = bytes.Replace(expectedContent, []byte("{balance}"), []byte(balance), -1)
+
+				step.ExpectedContent = string(expectedContent)
 				match, err := step.MatchesExpectedContent(b)
 				if err != nil {
 					t.Fatalf("Error compiling regex for step '%s': %v", step.Input, err)
@@ -225,8 +248,13 @@ func TestMyAccount_MyAddress(t *testing.T) {
 				}
 				b := w.Bytes()
 
+				balance := extractBalance(b)
 				publicKey := extractPublicKey(b)
-				expectedContent := bytes.Replace([]byte(step.ExpectedContent), []byte("{public_key}"), []byte(publicKey), -1)
+
+				expectedContent := []byte(step.ExpectedContent)
+				expectedContent = bytes.Replace(expectedContent, []byte("{balance}"), []byte(balance), -1)
+				expectedContent = bytes.Replace(expectedContent, []byte("{public_key}"), []byte(publicKey), -1)
+
 				step.ExpectedContent = string(expectedContent)
 				match, err := step.MatchesExpectedContent(b)
 				if err != nil {
@@ -265,6 +293,13 @@ func TestGroups(t *testing.T) {
 				t.Errorf("Test case '%s' failed during Flush: %v", tt.Name, err)
 			}
 			b := w.Bytes()
+			balance := extractBalance(b)
+
+			expectedContent := []byte(tt.ExpectedContent)
+			expectedContent = bytes.Replace(expectedContent, []byte("{balance}"), []byte(balance), -1)
+
+			tt.ExpectedContent = string(expectedContent)
+
 			match, err := tt.MatchesExpectedContent(b)
 			if err != nil {
 				t.Fatalf("Error compiling regex for step '%s': %v", tt.Input, err)
@@ -272,7 +307,6 @@ func TestGroups(t *testing.T) {
 			if !match {
 				t.Fatalf("expected:\n\t%s\ngot:\n\t%s\n", tt.ExpectedContent, b)
 			}
-
 		})
 	}
 }

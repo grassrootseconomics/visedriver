@@ -25,6 +25,7 @@ var (
 func TestEngine(sessionId string) (engine.Engine, func(), chan bool) {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
+	ctx = context.WithValue(ctx, "Database", "gdbm")
 	pfp := path.Join(scriptDir, "pp.csv")
 
 	var eventChannel = make(chan bool)

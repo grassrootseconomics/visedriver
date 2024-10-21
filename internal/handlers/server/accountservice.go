@@ -9,18 +9,19 @@ import (
 
 	"git.grassecon.net/urdt/ussd/config"
 	"git.grassecon.net/urdt/ussd/internal/models"
+	"github.com/grassrootseconomics/eth-custodial/pkg/api"
 )
 
-var apiResponse struct {
+type ApiResponse struct {
 	Ok          bool   `json:"ok"`
 	Description string `json:"description"`
 }
 
 type AccountServiceInterface interface {
 	CheckBalance(publicKey string) (*models.BalanceResponse, error)
-	CreateAccount() (*OKResponse, *ErrResponse)
+	CreateAccount() (*api.OKResponse, *api.ErrResponse)
 	CheckAccountStatus(trackingId string) (*models.TrackStatusResponse, error)
-	TrackAccountStatus(publicKey string) (*OKResponse, *ErrResponse)
+	TrackAccountStatus(publicKey string) (*api.OKResponse, *api.ErrResponse)
 }
 
 type AccountService struct {
@@ -59,9 +60,9 @@ func (as *AccountService) CheckAccountStatus(trackingId string) (*models.TrackSt
 
 }
 
-func (as *AccountService) TrackAccountStatus(publicKey string) (*OKResponse, *ErrResponse) {
-	var errResponse ErrResponse
-	var okResponse OKResponse
+func (as *AccountService) TrackAccountStatus(publicKey string) (*api.OKResponse, *api.ErrResponse) {
+	var errResponse api.ErrResponse
+	var okResponse api.OKResponse
 	var err error
 	// Construct the URL with the path parameter
 	url := fmt.Sprintf("%s/%s", config.TrackURL, publicKey)
@@ -90,6 +91,7 @@ func (as *AccountService) TrackAccountStatus(publicKey string) (*OKResponse, *Er
 	}
 
 	// Step 2: Unmarshal into the generic struct
+	var apiResponse ApiResponse
 	err = json.Unmarshal([]byte(body), &apiResponse)
 	if err != nil {
 		errResponse.Description = err.Error()
@@ -139,10 +141,10 @@ func (as *AccountService) CheckBalance(publicKey string) (*models.BalanceRespons
 //     If there is an error during the request or processing, this will be nil.
 //   - error: An error if any occurred during the HTTP request, reading the response, or unmarshalling the JSON data.
 //     If no error occurs, this will be nil.
-func (as *AccountService) CreateAccount() (*OKResponse, *ErrResponse) {
+func (as *AccountService) CreateAccount() (*api.OKResponse, *api.ErrResponse) {
 
-	var errResponse ErrResponse
-	var okResponse OKResponse
+	var errResponse api.ErrResponse
+	var okResponse api.OKResponse
 	var err error
 
 	// Create a new request
@@ -166,6 +168,7 @@ func (as *AccountService) CreateAccount() (*OKResponse, *ErrResponse) {
 		errResponse.Description = err.Error()
 		return nil, &errResponse
 	}
+	var apiResponse ApiResponse
 	err = json.Unmarshal([]byte(body), &apiResponse)
 	if err != nil {
 		return nil, &errResponse
@@ -187,8 +190,8 @@ func (as *AccountService) CreateAccount() (*OKResponse, *ErrResponse) {
 	}
 }
 
-func (tas *TestAccountService) CreateAccount() (*OKResponse, *ErrResponse) {
-	return &OKResponse{
+func (tas *TestAccountService) CreateAccount() (*api.OKResponse, *api.ErrResponse) {
+	return &api.OKResponse{
 		Ok:          true,
 		Description: "Account creation request received successfully",
 		Result:      map[string]any{"publicKey": "0x48ADca309b5085852207FAaf2816eD72B52F527C", "trackingId": "28ebe84d-b925-472c-87ae-bbdfa1fb97be"},
@@ -212,8 +215,8 @@ func (tas *TestAccountService) CheckBalance(publicKey string) (*models.BalanceRe
 	return balanceResponse, nil
 }
 
-func (tas *TestAccountService) TrackAccountStatus(publicKey string) (*OKResponse, *ErrResponse) {
-	return &OKResponse{
+func (tas *TestAccountService) TrackAccountStatus(publicKey string) (*api.OKResponse, *api.ErrResponse) {
+	return &api.OKResponse{
 		Ok:          true,
 		Description: "Account creation succeeded",
 		Result: map[string]any{

@@ -20,6 +20,7 @@ import (
 	"git.grassecon.net/urdt/ussd/internal/models"
 	"git.grassecon.net/urdt/ussd/internal/utils"
 	"github.com/alecthomas/assert/v2"
+	"github.com/grassrootseconomics/eth-custodial/pkg/api"
 	testdataloader "github.com/peteole/testdata-loader"
 	"github.com/stretchr/testify/require"
 )
@@ -74,6 +75,8 @@ func TestCreateAccount(t *testing.T) {
 	}
 	// Create required mocks
 	flag_account_created, err := fm.GetFlag("flag_account_created")
+	//flag_api_call_error, err := fm.GetFlag("flag_api_call_error,")
+	flag_api_call_error, _ := fm.GetFlag("flag_api_call_error")
 	if err != nil {
 		t.Logf(err.Error())
 	}
@@ -85,12 +88,12 @@ func TestCreateAccount(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		serverResponse *server.OKResponse
+		serverResponse *api.OKResponse
 		expectedResult resource.Result
 	}{
 		{
 			name: "Test account creation success",
-			serverResponse: &server.OKResponse{
+			serverResponse: &api.OKResponse{
 				Ok:          true,
 				Description: "Account creation successed",
 				Result: map[string]any{
@@ -100,6 +103,7 @@ func TestCreateAccount(t *testing.T) {
 			},
 			expectedResult: resource.Result{
 				FlagSet: []uint32{flag_account_created},
+				FlagReset: []uint32{flag_api_call_error},
 			},
 		},
 	}
@@ -1073,14 +1077,14 @@ func TestCheckAccountStatus(t *testing.T) {
 	tests := []struct {
 		name           string
 		input          []byte
-		serverResponse *server.OKResponse
+		serverResponse *api.OKResponse
 		response       *models.TrackStatusResponse
 		expectedResult resource.Result
 	}{
 		{
 			name:  "Test when account is on the Sarafu network",
 			input: []byte("TrackingId1234"),
-			serverResponse: &server.OKResponse{
+			serverResponse: &api.OKResponse{
 				Ok:          true,
 				Description: "Account creation succeeded",
 				Result: map[string]any{
@@ -1135,7 +1139,7 @@ func TestCheckAccountStatus(t *testing.T) {
 					},
 				},
 			},
-			serverResponse: &server.OKResponse{
+			serverResponse: &api.OKResponse{
 				Ok:          true,
 				Description: "Account creation succeeded",
 				Result: map[string]any{

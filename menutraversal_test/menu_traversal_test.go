@@ -48,7 +48,7 @@ func extractBalance(response []byte) string {
 	// Regex to match "Balance: <amount> <symbol>" followed by a newline
 	re := regexp.MustCompile(`(?m)^Balance:\s+(\d+(\.\d+)?)\s+([A-Z]+)`)
 	match := re.FindSubmatch(response)
-	if match != nil && len(match) > 0 {
+	if match != nil {
 		return string(match[1]) + " " + string(match[3]) // "<amount> <symbol>"
 	}
 	return ""
@@ -59,7 +59,7 @@ func extractMaxAmount(response []byte) string {
 	// Regex to match "Maximum amount: <amount> <symbol>" followed by a newline
 	re := regexp.MustCompile(`(?m)^Maximum amount:\s+(\d+(\.\d+)?)\s+([A-Z]+)`)
 	match := re.FindSubmatch(response)
-	if match != nil && len(match) > 0 {
+	if match != nil {
 		return string(match[1]) + " " + string(match[3]) // "<amount> <symbol>"
 	}
 	return ""
@@ -323,7 +323,6 @@ func TestMainMenuSend(t *testing.T) {
 		}
 	}
 }
-
 
 func TestGroups(t *testing.T) {
 	groups, err := driver.LoadTestGroups(groupTestFile)

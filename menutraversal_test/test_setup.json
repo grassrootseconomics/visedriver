@@ -73,15 +73,15 @@
                     },
                     {
                         "input": "065656",
-                        "expectedContent": "Maximum amount: 0.003 CELO\nEnter amount:\n0:Back"
+                        "expectedContent": "{max_amount}\nEnter amount:\n0:Back"
                     },
                     {
-                        "input": "0.1",
-                        "expectedContent": "Amount 0.1 is invalid, please try again:\n1:retry\n9:Quit"
+                        "input": "10000000",
+                        "expectedContent": "Amount 10000000 is invalid, please try again:\n1:retry\n9:Quit"
                     },
                     {
                         "input": "1",
-                        "expectedContent": "Maximum amount: 0.003 CELO\nEnter amount:\n0:Back"
+                        "expectedContent": "{max_amount}\nEnter amount:\n0:Back"
                     },
                     {
                         "input": "0.001",

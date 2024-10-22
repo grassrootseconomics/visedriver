@@ -5,12 +5,14 @@ go 1.23.0
 toolchain go1.23.2
 
 require (
-	git.defalsify.org/vise.git v0.1.0-rc.3.0.20240923162317-c20d557a3dbb
+	git.defalsify.org/vise.git v0.2.1-0.20241017112704-307fa6fcdc6b
 	github.com/alecthomas/assert/v2 v2.2.2
 	github.com/peteole/testdata-loader v0.3.0
 	gopkg.in/leonelquinteros/gotext.v1 v1.3.1
 
 )
+
+require github.com/joho/godotenv v1.5.1 // indirect
 
 require github.com/grassrootseconomics/eth-custodial v1.3.0-beta // indirect
 

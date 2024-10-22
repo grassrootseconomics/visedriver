@@ -1,5 +1,9 @@
 git.defalsify.org/vise.git v0.1.0-rc.3.0.20240923162317-c20d557a3dbb h1:6P4kxihcwMjDKzvUFC6t2zGNb7MDW+l/ACGlSAN1N8Y=
 git.defalsify.org/vise.git v0.1.0-rc.3.0.20240923162317-c20d557a3dbb/go.mod h1:JDguWmcoWBdsnpw7PUjVZAEpdC/ubBmjdUBy3tjP63M=
+git.defalsify.org/vise.git v0.2.0 h1:X2ZgiGRq4C+9qOlDMP0b/oE5QHjVQNT4aEFZB88ST0Q=
+git.defalsify.org/vise.git v0.2.0/go.mod h1:JDguWmcoWBdsnpw7PUjVZAEpdC/ubBmjdUBy3tjP63M=
+git.defalsify.org/vise.git v0.2.1-0.20241017112704-307fa6fcdc6b h1:dxBplsIlzJHV+5EH+gzB+w08Blt7IJbb2jeRe1OEjLU=
+git.defalsify.org/vise.git v0.2.1-0.20241017112704-307fa6fcdc6b/go.mod h1:jyBMe1qTYUz3mmuoC9JQ/TvFeW0vTanCUcPu3H8p4Ck=
 github.com/alecthomas/assert/v2 v2.2.2 h1:Z/iVC0xZfWTaFNE6bA3z07T86hd45Xe2eLt6WVy2bbk=
 github.com/alecthomas/assert/v2 v2.2.2/go.mod h1:pXcQ2Asjp247dahGEmsZ6ru0UVwnkhktn7S0bBDLxvQ=
 github.com/alecthomas/participle/v2 v2.0.0 h1:Fgrq+MbuSsJwIkw3fEj9h75vDP0Er5JzepJ0/HNHv0g=
@@ -18,6 +22,8 @@ github.com/graygnuorg/go-gdbm v0.0.0-20220711140707-71387d66dce4 h1:U4kkNYryi/qf
 github.com/graygnuorg/go-gdbm v0.0.0-20220711140707-71387d66dce4/go.mod h1:zpZDgZFzeq9s0MIeB1P50NIEWDFFHSFBohI/NbaTD/Y=
 github.com/hexops/gotextdiff v1.0.3 h1:gitA9+qJrrTCsiCl7+kh75nPqQt1cx4ZkudSTLoUqJM=
 github.com/hexops/gotextdiff v1.0.3/go.mod h1:pSWU5MAI3yDq+fZBTazCSJysOMbxWL1BSow5/V2vxeg=
+github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
+github.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=
 github.com/mattn/kinako v0.0.0-20170717041458-332c0a7e205a h1:0Q3H0YXzMHiciXtRcM+j0jiCe8WKPQHoRgQiRTnfcLY=
 github.com/mattn/kinako v0.0.0-20170717041458-332c0a7e205a/go.mod h1:CdTTBOYzS5E4mWS1N8NWP6AHI19MP0A2B18n3hLzRMk=
 github.com/peteole/testdata-loader v0.3.0 h1:8jckE9KcyNHgyv/VPoaljvKZE0Rqr8+dPVYH6rfNr9I=

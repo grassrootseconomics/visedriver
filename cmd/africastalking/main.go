@@ -16,6 +16,8 @@ import (
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/resource"
 
+	"git.grassecon.net/urdt/ussd/config"
+	"git.grassecon.net/urdt/ussd/initializers"
 	"git.grassecon.net/urdt/ussd/internal/handlers"
 	"git.grassecon.net/urdt/ussd/internal/handlers/server"
 	httpserver "git.grassecon.net/urdt/ussd/internal/http"
@@ -26,6 +28,10 @@ var (
 	logg      = logging.NewVanilla()
 	scriptDir = path.Join("services", "registration")
 )
+
+func init() {
+	initializers.LoadEnvVariables()
+}
 
 type atRequestParser struct{}
 
@@ -66,23 +72,28 @@ func (arp *atRequestParser) GetInput(rq any) ([]byte, error) {
 }
 
 func main() {
+	config.LoadConfig()
+
 	var dbDir string
 	var resourceDir string
 	var size uint
+	var database string
 	var engineDebug bool
 	var host string
 	var port uint
 	flag.StringVar(&dbDir, "dbdir", ".state", "database dir to read from")
 	flag.StringVar(&resourceDir, "resourcedir", path.Join("services", "registration"), "resource dir")
+	flag.StringVar(&database, "db", "gdbm", "database to be used")
 	flag.BoolVar(&engineDebug, "d", false, "use engine debug output")
 	flag.UintVar(&size, "s", 160, "max size of output")
-	flag.StringVar(&host, "h", "127.0.0.1", "http host")
-	flag.UintVar(&port, "p", 7123, "http port")
+	flag.StringVar(&host, "h", initializers.GetEnv("HOST", "127.0.0.1"), "http host")
+	flag.UintVar(&port, "p", initializers.GetEnvUint("PORT", 7123), "http port")
 	flag.Parse()
 
 	logg.Infof("start command", "dbdir", dbDir, "resourcedir", resourceDir, "outputsize", size)
 
 	ctx := context.Background()
+	ctx = context.WithValue(ctx, "Database", database)
 	pfp := path.Join(scriptDir, "pp.csv")
 
 	cfg := engine.Config{

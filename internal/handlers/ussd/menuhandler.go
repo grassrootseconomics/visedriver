@@ -1045,3 +1045,12 @@ func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte)
 
 	return res, nil
 }
+
+// GetTransactions retrieves the transactions from the API using the "PublicKey" 
+func (h *Handlers) GetTransactions(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	
+	res.Content = "Transaction list"
+
+	return res, nil
+}

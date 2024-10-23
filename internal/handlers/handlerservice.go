@@ -94,6 +94,7 @@ func (ls *LocalHandlerService) GetHandler(accountService server.AccountServiceIn
 	ls.DbRs.AddLocalFunc("confirm_pin_change", ussdHandlers.ConfirmPinChange)
 	ls.DbRs.AddLocalFunc("quit_with_help", ussdHandlers.QuitWithHelp)
 	ls.DbRs.AddLocalFunc("fetch_custodial_balances", ussdHandlers.FetchCustodialBalances)
+	ls.DbRs.AddLocalFunc("get_transactions", ussdHandlers.GetTransactions)
 
 	return ussdHandlers, nil
 }

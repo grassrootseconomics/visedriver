@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -11,9 +12,9 @@ import (
 )
 
 type AccountServiceInterface interface {
-	CheckBalance(publicKey string) (*models.BalanceResponse, error)
-	CreateAccount() (*models.AccountResponse, error)
-	CheckAccountStatus(trackingId string) (*models.TrackStatusResponse, error)
+	CheckBalance(publicKey string, ctx context.Context) (*models.BalanceResponse, error)
+	CreateAccount(ctx context.Context) (*models.AccountResponse, error)
+	CheckAccountStatus(trackingId string, ctx context.Context) (*models.TrackStatusResponse, error)
 }
 
 type AccountService struct {
@@ -33,7 +34,7 @@ type TestAccountService struct {
 //   - string: The status of the transaction as a string. If there is an error during the request or processing, this will be an empty string.
 //   - error: An error if any occurred during the HTTP request, reading the response, or unmarshalling the JSON data.
 //     If no error occurs, this will be nil.
-func (as *AccountService) CheckAccountStatus(trackingId string) (*models.TrackStatusResponse, error) {
+func (as *AccountService) CheckAccountStatus(trackingId string, ctx context.Context) (*models.TrackStatusResponse, error) {
 	resp, err := http.Get(config.TrackStatusURL + trackingId)
 	if err != nil {
 		return nil, err
@@ -55,7 +56,7 @@ func (as *AccountService) CheckAccountStatus(trackingId string) (*models.TrackSt
 // CheckBalance retrieves the balance for a given public key from the custodial balance API endpoint.
 // Parameters:
 //   - publicKey: The public key associated with the account whose balance needs to be checked.
-func (as *AccountService) CheckBalance(publicKey string) (*models.BalanceResponse, error) {
+func (as *AccountService) CheckBalance(publicKey string, ctx context.Context) (*models.BalanceResponse, error) {
 	resp, err := http.Get(config.BalanceURL + publicKey)
 	if err != nil {
 		return nil, err
@@ -79,7 +80,7 @@ func (as *AccountService) CheckBalance(publicKey string) (*models.BalanceRespons
 //     If there is an error during the request or processing, this will be nil.
 //   - error: An error if any occurred during the HTTP request, reading the response, or unmarshalling the JSON data.
 //     If no error occurs, this will be nil.
-func (as *AccountService) CreateAccount() (*models.AccountResponse, error) {
+func (as *AccountService) CreateAccount(ctx context.Context) (*models.AccountResponse, error) {
 	resp, err := http.Post(config.CreateAccountURL, "application/json", nil)
 	if err != nil {
 		return nil, err
@@ -97,7 +98,7 @@ func (as *AccountService) CreateAccount() (*models.AccountResponse, error) {
 	return &accountResp, nil
 }
 
-func (tas *TestAccountService) CreateAccount() (*models.AccountResponse, error) {
+func (tas *TestAccountService) CreateAccount(ctx context.Context) (*models.AccountResponse, error) {
 	return &models.AccountResponse{
 		Ok: true,
 		Result: struct {
@@ -112,7 +113,7 @@ func (tas *TestAccountService) CreateAccount() (*models.AccountResponse, error) 
 	}, nil
 }
 
-func (tas *TestAccountService) CheckBalance(publicKey string) (*models.BalanceResponse, error) {
+func (tas *TestAccountService) CheckBalance(publicKey string, ctx context.Context) (*models.BalanceResponse, error) {
 
 	balanceResponse := &models.BalanceResponse{
 		Ok: true,
@@ -128,7 +129,7 @@ func (tas *TestAccountService) CheckBalance(publicKey string) (*models.BalanceRe
 	return balanceResponse, nil
 }
 
-func (tas *TestAccountService) CheckAccountStatus(trackingId string) (*models.TrackStatusResponse, error) {
+func (tas *TestAccountService) CheckAccountStatus(trackingId string, ctx context.Context) (*models.TrackStatusResponse, error) {
 	trackResponse := &models.TrackStatusResponse{
 		Ok: true,
 		Result: struct {

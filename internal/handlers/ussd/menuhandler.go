@@ -136,7 +136,7 @@ func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (r
 }
 
 func (h *Handlers) createAccountNoExist(ctx context.Context, sessionId string, res *resource.Result) error {
-	accountResp, err := h.accountService.CreateAccount()
+	accountResp, err := h.accountService.CreateAccount(ctx)
 	data := map[utils.DataTyp]string{
 		utils.DATA_TRACKING_ID:  accountResp.Result.TrackingId,
 		utils.DATA_PUBLIC_KEY:   accountResp.Result.PublicKey,
@@ -547,7 +547,7 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 		return res, err
 	}
 
-	accountStatus, err := h.accountService.CheckAccountStatus(string(trackingId))
+	accountStatus, err := h.accountService.CheckAccountStatus(string(trackingId),ctx)
 	if err != nil {
 		fmt.Println("Error checking account status:", err)
 		return res, err
@@ -656,7 +656,7 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 		return res, err
 	}
 
-	balanceResponse, err := h.accountService.CheckBalance(string(publicKey))
+	balanceResponse, err := h.accountService.CheckBalance(string(publicKey),ctx)
 	if err != nil {
 		return res, nil
 	}
@@ -688,7 +688,7 @@ func (h *Handlers) FetchCustodialBalances(ctx context.Context, sym string, input
 		return res, err
 	}
 
-	balanceResponse, err := h.accountService.CheckBalance(string(publicKey))
+	balanceResponse, err := h.accountService.CheckBalance(string(publicKey),ctx)
 	if err != nil {
 		return res, nil
 	}
@@ -806,7 +806,7 @@ func (h *Handlers) MaxAmount(ctx context.Context, sym string, input []byte) (res
 	store := h.userdataStore
 	publicKey, _ := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
 
-	balanceResp, err := h.accountService.CheckBalance(string(publicKey))
+	balanceResp, err := h.accountService.CheckBalance(string(publicKey),ctx)
 	if err != nil {
 		return res, nil
 	}
@@ -836,7 +836,7 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 
 	amountStr := string(input)
 
-	balanceRes, err := h.accountService.CheckBalance(string(publicKey))
+	balanceRes, err := h.accountService.CheckBalance(string(publicKey),ctx)
 	balanceStr := balanceRes.Result.Balance
 
 	if !balanceRes.Ok {

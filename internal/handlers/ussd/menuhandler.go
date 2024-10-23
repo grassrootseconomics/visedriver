@@ -1068,7 +1068,7 @@ func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) 
 	// process voucher data
 	voucherSymbolList, voucherBalanceList := ProcessVouchers(vouchersResp.Result.Holdings)
 
-	prefixdb := storage.NewSubPrefixDb(store, []byte("pfx"))
+	prefixdb := storage.NewSubPrefixDb(store, []byte("vouchers"))
 	err = prefixdb.Put(ctx, []byte("sym"), []byte(voucherSymbolList))
 	if err != nil {
 		return res, nil
@@ -1108,7 +1108,7 @@ func (h *Handlers) GetVoucherList(ctx context.Context, sym string, input []byte)
 
 	// Read vouchers from the store
 	store := h.userdataStore
-	prefixdb := storage.NewSubPrefixDb(store, []byte("pfx"))
+	prefixdb := storage.NewSubPrefixDb(store, []byte("vouchers"))
 
 	voucherData, err := prefixdb.Get(ctx, []byte("sym"))
 	if err != nil {
@@ -1139,7 +1139,7 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 		return res, nil
 	}
 
-	prefixdb := storage.NewSubPrefixDb(store, []byte("pfx"))
+	prefixdb := storage.NewSubPrefixDb(store, []byte("vouchers"))
 
 	// Retrieve the voucher symbol list
 	voucherSymbolList, err := prefixdb.Get(ctx, []byte("sym"))

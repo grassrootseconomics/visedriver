@@ -1004,7 +1004,6 @@ func (h *Handlers) SetDefaultVoucher(ctx context.Context, sym string, input []by
 	if err != nil {
 		if db.IsNotFound(err) {
 			publicKey, err := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
-
 			if err != nil {
 				return res, nil
 			}

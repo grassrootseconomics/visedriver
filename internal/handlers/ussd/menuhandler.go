@@ -640,8 +640,12 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 	// get the active sym and active balance
 	activeSym, err := store.ReadEntry(ctx, sessionId, utils.DATA_ACTIVE_SYM)
 	if err != nil {
-		res.Content = "0.00"
-		return res, nil
+		if db.IsNotFound(err) {
+			res.Content = "0.00"
+			return res, nil
+		}
+
+		return res, err
 	}
 
 	activeBal, err := store.ReadEntry(ctx, sessionId, utils.DATA_ACTIVE_BAL)

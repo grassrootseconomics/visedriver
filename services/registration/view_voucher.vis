@@ -1,4 +1,3 @@
-RELOAD view_voucher
 MAP view_voucher
 MOUT back 0
 MOUT quit 9

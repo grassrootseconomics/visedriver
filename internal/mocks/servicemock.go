@@ -11,19 +11,9 @@ type MockAccountService struct {
 	mock.Mock
 }
 
-func (m *MockAccountService) CreateAccount() (*api.OKResponse, *api.ErrResponse) {
+func (m *MockAccountService) CreateAccount() (*api.OKResponse, error) {
 	args := m.Called()
-	okResponse, ok := args.Get(0).(*api.OKResponse)
-	errResponse, err := args.Get(1).(*api.ErrResponse)
-
-	if ok {
-		return okResponse, nil
-	}
-
-	if err {
-		return nil, errResponse
-	}
-	return nil, nil
+	return args.Get(0).(*api.OKResponse), args.Error(1)
 }
 
 func (m *MockAccountService) CheckBalance(publicKey string) (*models.BalanceResponse, error) {
@@ -36,15 +26,7 @@ func (m *MockAccountService) CheckAccountStatus(trackingId string) (*models.Trac
 	return args.Get(0).(*models.TrackStatusResponse), args.Error(1)
 }
 
-func (m *MockAccountService) TrackAccountStatus(publicKey string) (*api.OKResponse, *api.ErrResponse) {
+func (m *MockAccountService) TrackAccountStatus(publicKey string) (*api.OKResponse, error) {
 	args := m.Called(publicKey)
-	okResponse, ok := args.Get(0).(*api.OKResponse)
-	errResponse, err := args.Get(1).(*api.ErrResponse)
-	if ok {
-		return okResponse, nil
-	}
-	if err {
-		return nil, errResponse
-	}
-	return nil, nil
+	return args.Get(0).(*api.OKResponse), args.Error(1)
 }

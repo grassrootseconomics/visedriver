@@ -18,17 +18,17 @@ func (m *MockAccountService) CreateAccount(ctx context.Context) (*api.OKResponse
 	return args.Get(0).(*api.OKResponse), args.Error(1)
 }
 
-func (m *MockAccountService) CheckBalance(publicKey string,ctx context.Context) (*models.BalanceResponse, error) {
+func (m *MockAccountService) CheckBalance(ctx context.Context, publicKey string) (*models.BalanceResponse, error) {
 	args := m.Called(publicKey)
 	return args.Get(0).(*models.BalanceResponse), args.Error(1)
 }
 
-func (m *MockAccountService) CheckAccountStatus(trackingId string,ctx context.Context) (*models.TrackStatusResponse, error) {
+func (m *MockAccountService) CheckAccountStatus(ctx context.Context, trackingId string) (*models.TrackStatusResponse, error) {
 	args := m.Called(trackingId)
 	return args.Get(0).(*models.TrackStatusResponse), args.Error(1)
 }
 
-func (m *MockAccountService) TrackAccountStatus(publicKey string) (*api.OKResponse, error) {
+func (m *MockAccountService) TrackAccountStatus(ctx context.Context,publicKey string) (*api.OKResponse, error) {
 	args := m.Called(publicKey)
 	return args.Get(0).(*api.OKResponse), args.Error(1)
 }

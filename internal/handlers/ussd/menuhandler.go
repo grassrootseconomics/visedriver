@@ -544,7 +544,7 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 	if err != nil {
 		return res, err
 	}
-	okResponse, err = h.accountService.TrackAccountStatus(string(publicKey),ctx)
+	okResponse, err = h.accountService.TrackAccountStatus(ctx, string(publicKey))
 	if err != nil {
 		res.FlagSet = append(res.FlagSet, flag_api_error)
 		return res, err
@@ -651,7 +651,7 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 		return res, err
 	}
 
-	balanceResponse, err := h.accountService.CheckBalance(string(publicKey),ctx)
+	balanceResponse, err := h.accountService.CheckBalance(ctx, string(publicKey))
 	if err != nil {
 		return res, nil
 	}
@@ -684,7 +684,7 @@ func (h *Handlers) FetchCustodialBalances(ctx context.Context, sym string, input
 		return res, err
 	}
 
-	balanceResponse, err := h.accountService.CheckBalance(string(publicKey),ctx)
+	balanceResponse, err := h.accountService.CheckBalance(ctx, string(publicKey))
 	if err != nil {
 		return res, nil
 	}
@@ -802,7 +802,7 @@ func (h *Handlers) MaxAmount(ctx context.Context, sym string, input []byte) (res
 	store := h.userdataStore
 	publicKey, _ := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
 
-	balanceResp, err := h.accountService.CheckBalance(string(publicKey),ctx)
+	balanceResp, err := h.accountService.CheckBalance(ctx, string(publicKey))
 	if err != nil {
 		return res, nil
 	}
@@ -832,7 +832,7 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 
 	amountStr := string(input)
 
-	balanceRes, err := h.accountService.CheckBalance(string(publicKey),ctx)
+	balanceRes, err := h.accountService.CheckBalance(ctx, string(publicKey))
 	balanceStr := balanceRes.Result.Balance
 
 	if !balanceRes.Ok {

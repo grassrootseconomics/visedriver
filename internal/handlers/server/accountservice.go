@@ -20,10 +20,10 @@ var (
 )
 
 type AccountServiceInterface interface {
-	CheckBalance(publicKey string, ctx context.Context) (*models.BalanceResponse, error)
+	CheckBalance(ctx context.Context, publicKey string) (*models.BalanceResponse, error)
 	CreateAccount(ctx context.Context) (*api.OKResponse, error)
-	CheckAccountStatus(trackingId string, ctx context.Context) (*models.TrackStatusResponse, error)
-	TrackAccountStatus(publicKey string) (*api.OKResponse, error)
+	CheckAccountStatus(ctx context.Context, trackingId string) (*models.TrackStatusResponse, error)
+	TrackAccountStatus(ctx context.Context, publicKey string) (*api.OKResponse, error)
 }
 
 type AccountService struct {
@@ -41,7 +41,7 @@ type TestAccountService struct {
 //   - string: The status of the transaction as a string. If there is an error during the request or processing, this will be an empty string.
 //   - error: An error if any occurred during the HTTP request, reading the response, or unmarshalling the JSON data.
 //     If no error occurs, this will be nil
-func (as *AccountService) CheckAccountStatus(trackingId string, ctx context.Context) (*models.TrackStatusResponse, error) {
+func (as *AccountService) CheckAccountStatus(ctx context.Context, trackingId string) (*models.TrackStatusResponse, error) {
 	resp, err := http.Get(config.BalanceURL + trackingId)
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func (as *AccountService) CheckAccountStatus(trackingId string, ctx context.Cont
 
 }
 
-func (as *AccountService) TrackAccountStatus(publicKey string) (*api.OKResponse, error) {
+func (as *AccountService) TrackAccountStatus(ctx context.Context, publicKey string) (*api.OKResponse, error) {
 	var err error
 	// Construct the URL with the path parameter
 	url := fmt.Sprintf("%s/%s", config.TrackURL, publicKey)
@@ -106,7 +106,7 @@ func (as *AccountService) TrackAccountStatus(publicKey string) (*api.OKResponse,
 // CheckBalance retrieves the balance for a given public key from the custodial balance API endpoint.
 // Parameters:
 //   - publicKey: The public key associated with the account whose balance needs to be checked.
-func (as *AccountService) CheckBalance(publicKey string, ctx context.Context) (*models.BalanceResponse, error) {
+func (as *AccountService) CheckBalance(ctx context.Context, publicKey string) (*models.BalanceResponse, error) {
 	resp, err := http.Get(config.BalanceURL + publicKey)
 	if err != nil {
 		return nil, err
@@ -178,7 +178,7 @@ func (tas *TestAccountService) CreateAccount(ctx context.Context) (*api.OKRespon
 
 }
 
-func (tas *TestAccountService) CheckBalance(publicKey string, ctx context.Context) (*models.BalanceResponse, error) {
+func (tas *TestAccountService) CheckBalance(ctx context.Context, publicKey string) (*models.BalanceResponse, error) {
 	balanceResponse := &models.BalanceResponse{
 		Ok: true,
 		Result: struct {
@@ -192,7 +192,7 @@ func (tas *TestAccountService) CheckBalance(publicKey string, ctx context.Contex
 	return balanceResponse, nil
 }
 
-func (tas *TestAccountService) TrackAccountStatus(publicKey string) (*api.OKResponse, error) {
+func (tas *TestAccountService) TrackAccountStatus(ctx context.Context, publicKey string) (*api.OKResponse, error) {
 	return &api.OKResponse{
 		Ok:          true,
 		Description: "Account creation succeeded",
@@ -202,17 +202,7 @@ func (tas *TestAccountService) TrackAccountStatus(publicKey string) (*api.OKResp
 	}, nil
 }
 
-func (tas *TestAccountService) TrackAccountStatus(publicKey ,) (*api.OKResponse, error) {
-	return &api.OKResponse{
-		Ok:          true,
-		Description: "Account creation succeeded",
-		Result: map[string]any{
-			"active": true,
-		},
-	}, nil
-}
-
-func (tas *TestAccountService) CheckAccountStatus(trackingId string, ctx context.Context) (*models.TrackStatusResponse, error) {
+func (tas *TestAccountService) CheckAccountStatus(ctx context.Context, trackingId string) (*models.TrackStatusResponse, error) {
 	trackResponse := &models.TrackStatusResponse{
 		Ok: true,
 		Result: struct {

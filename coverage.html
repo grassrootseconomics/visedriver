@@ -1,0 +1,2961 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>africastalking: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">git.grassecon.net/urdt/ussd/cmd/africastalking/main.go (0.0%)</option>
+				
+				<option value="file1">git.grassecon.net/urdt/ussd/cmd/async/main.go (0.0%)</option>
+				
+				<option value="file2">git.grassecon.net/urdt/ussd/cmd/http/main.go (0.0%)</option>
+				
+				<option value="file3">git.grassecon.net/urdt/ussd/cmd/main.go (0.0%)</option>
+				
+				<option value="file4">git.grassecon.net/urdt/ussd/internal/handlers/base.go (0.0%)</option>
+				
+				<option value="file5">git.grassecon.net/urdt/ussd/internal/handlers/handlerservice.go (0.0%)</option>
+				
+				<option value="file6">git.grassecon.net/urdt/ussd/internal/handlers/server/accountservice.go (0.0%)</option>
+				
+				<option value="file7">git.grassecon.net/urdt/ussd/internal/handlers/ussd/menuhandler.go (78.2%)</option>
+				
+				<option value="file8">git.grassecon.net/urdt/ussd/internal/http/at_session_handler.go (86.7%)</option>
+				
+				<option value="file9">git.grassecon.net/urdt/ussd/internal/http/server.go (88.1%)</option>
+				
+				<option value="file10">git.grassecon.net/urdt/ussd/internal/mocks/dbmock.go (0.0%)</option>
+				
+				<option value="file11">git.grassecon.net/urdt/ussd/internal/mocks/httpmocks/enginemock.go (25.0%)</option>
+				
+				<option value="file12">git.grassecon.net/urdt/ussd/internal/mocks/httpmocks/requesthandlermock.go (71.4%)</option>
+				
+				<option value="file13">git.grassecon.net/urdt/ussd/internal/mocks/httpmocks/requestparsermock.go (100.0%)</option>
+				
+				<option value="file14">git.grassecon.net/urdt/ussd/internal/mocks/httpmocks/writermock.go (100.0%)</option>
+				
+				<option value="file15">git.grassecon.net/urdt/ussd/internal/mocks/servicemock.go (100.0%)</option>
+				
+				<option value="file16">git.grassecon.net/urdt/ussd/internal/mocks/userdbmock.go (100.0%)</option>
+				
+				<option value="file17">git.grassecon.net/urdt/ussd/internal/storage/gdbm.go (0.0%)</option>
+				
+				<option value="file18">git.grassecon.net/urdt/ussd/internal/storage/storage.go (0.0%)</option>
+				
+				<option value="file19">git.grassecon.net/urdt/ussd/internal/storage/storageservice.go (0.0%)</option>
+				
+				<option value="file20">git.grassecon.net/urdt/ussd/internal/utils/age.go (14.3%)</option>
+				
+				<option value="file21">git.grassecon.net/urdt/ussd/internal/utils/db.go (0.0%)</option>
+				
+				<option value="file22">git.grassecon.net/urdt/ussd/internal/utils/isocode.go (100.0%)</option>
+				
+				<option value="file23">git.grassecon.net/urdt/ussd/internal/utils/userStore.go (0.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package main
+
+import (
+        "context"
+        "flag"
+        "fmt"
+        "net/http"
+        "os"
+        "os/signal"
+        "path"
+        "strconv"
+        "strings"
+        "syscall"
+
+        "git.defalsify.org/vise.git/engine"
+        "git.defalsify.org/vise.git/logging"
+        "git.defalsify.org/vise.git/resource"
+
+        "git.grassecon.net/urdt/ussd/internal/handlers"
+        httpserver "git.grassecon.net/urdt/ussd/internal/http"
+        "git.grassecon.net/urdt/ussd/internal/storage"
+)
+
+var (
+        logg      = logging.NewVanilla()
+        scriptDir = path.Join("services", "registration")
+)
+
+type atRequestParser struct{}
+
+func (arp *atRequestParser) GetSessionId(rq any) (string, error) <span class="cov0" title="0">{
+        rqv, ok := rq.(*http.Request)
+        if !ok </span><span class="cov0" title="0">{
+                return "", handlers.ErrInvalidRequest
+        }</span>
+        <span class="cov0" title="0">if err := rqv.ParseForm(); err != nil </span><span class="cov0" title="0">{
+                return "", fmt.Errorf("failed to parse form data: %v", err)
+        }</span>
+
+        <span class="cov0" title="0">phoneNumber := rqv.FormValue("phoneNumber")
+        if phoneNumber == "" </span><span class="cov0" title="0">{
+                return "", fmt.Errorf("no phone number found")
+        }</span>
+
+        <span class="cov0" title="0">return phoneNumber, nil</span>
+}
+
+func (arp *atRequestParser) GetInput(rq any) ([]byte, error) <span class="cov0" title="0">{
+        rqv, ok := rq.(*http.Request)
+        if !ok </span><span class="cov0" title="0">{
+                return nil, handlers.ErrInvalidRequest
+        }</span>
+        <span class="cov0" title="0">if err := rqv.ParseForm(); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to parse form data: %v", err)
+        }</span>
+
+        <span class="cov0" title="0">text := rqv.FormValue("text")
+
+        parts := strings.Split(text, "*")
+        if len(parts) == 0 </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("no input found")
+        }</span>
+
+        <span class="cov0" title="0">return []byte(parts[len(parts)-1]), nil</span>
+}
+
+func main() <span class="cov0" title="0">{
+        var dbDir string
+        var resourceDir string
+        var size uint
+        var engineDebug bool
+        var host string
+        var port uint
+        flag.StringVar(&amp;dbDir, "dbdir", ".state", "database dir to read from")
+        flag.StringVar(&amp;resourceDir, "resourcedir", path.Join("services", "registration"), "resource dir")
+        flag.BoolVar(&amp;engineDebug, "d", false, "use engine debug output")
+        flag.UintVar(&amp;size, "s", 160, "max size of output")
+        flag.StringVar(&amp;host, "h", "127.0.0.1", "http host")
+        flag.UintVar(&amp;port, "p", 7123, "http port")
+        flag.Parse()
+
+        logg.Infof("start command", "dbdir", dbDir, "resourcedir", resourceDir, "outputsize", size)
+
+        ctx := context.Background()
+        pfp := path.Join(scriptDir, "pp.csv")
+
+        cfg := engine.Config{
+                Root:       "root",
+                OutputSize: uint32(size),
+                FlagCount:  uint32(20),
+        }
+
+        if engineDebug </span><span class="cov0" title="0">{
+                cfg.EngineDebug = true
+        }</span>
+
+        <span class="cov0" title="0">menuStorageService := storage.NewMenuStorageService(dbDir, resourceDir)
+        rs, err := menuStorageService.GetResource(ctx)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, err.Error())
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">err = menuStorageService.EnsureDbDir()
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, err.Error())
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">userdataStore, err := menuStorageService.GetUserdataDb(ctx)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, err.Error())
+                os.Exit(1)
+        }</span>
+        <span class="cov0" title="0">defer userdataStore.Close()
+
+        dbResource, ok := rs.(*resource.DbResource)
+        if !ok </span><span class="cov0" title="0">{
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">lhs, err := handlers.NewLocalHandlerService(pfp, true, dbResource, cfg, rs)
+        lhs.SetDataStore(&amp;userdataStore)
+
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, err.Error())
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">hl, err := lhs.GetHandler()
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, err.Error())
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">stateStore, err := menuStorageService.GetStateStore(ctx)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, err.Error())
+                os.Exit(1)
+        }</span>
+        <span class="cov0" title="0">defer stateStore.Close()
+
+        rp := &amp;atRequestParser{}
+        bsh := handlers.NewBaseSessionHandler(cfg, rs, stateStore, userdataStore, rp, hl)
+        sh := httpserver.NewATSessionHandler(bsh)
+        s := &amp;http.Server{
+                Addr:    fmt.Sprintf("%s:%s", host, strconv.Itoa(int(port))),
+                Handler: sh,
+        }
+        s.RegisterOnShutdown(sh.Shutdown)
+
+        cint := make(chan os.Signal)
+        cterm := make(chan os.Signal)
+        signal.Notify(cint, os.Interrupt, syscall.SIGINT)
+        signal.Notify(cterm, os.Interrupt, syscall.SIGTERM)
+        go func() </span><span class="cov0" title="0">{
+                select </span>{
+                case _ = &lt;-cint:<span class="cov0" title="0"></span>
+                case _ = &lt;-cterm:<span class="cov0" title="0"></span>
+                }
+                <span class="cov0" title="0">s.Shutdown(ctx)</span>
+        }()
+        <span class="cov0" title="0">err = s.ListenAndServe()
+        if err != nil </span><span class="cov0" title="0">{
+                logg.Infof("Server closed with error", "err", err)
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package main
+
+import (
+        "context"
+        "flag"
+        "fmt"
+        "os"
+        "os/signal"
+        "path"
+        "syscall"
+
+        "git.defalsify.org/vise.git/engine"
+        "git.defalsify.org/vise.git/logging"
+        "git.defalsify.org/vise.git/resource"
+
+        "git.grassecon.net/urdt/ussd/internal/handlers"
+        "git.grassecon.net/urdt/ussd/internal/storage"
+)
+
+var (
+        logg      = logging.NewVanilla()
+        scriptDir = path.Join("services", "registration")
+)
+
+type asyncRequestParser struct {
+        sessionId string
+        input     []byte
+}
+
+func (p *asyncRequestParser) GetSessionId(r any) (string, error) <span class="cov0" title="0">{
+        return p.sessionId, nil
+}</span>
+
+func (p *asyncRequestParser) GetInput(r any) ([]byte, error) <span class="cov0" title="0">{
+        return p.input, nil
+}</span>
+
+func main() <span class="cov0" title="0">{
+        var sessionId string
+        var dbDir string
+        var resourceDir string
+        var size uint
+        var engineDebug bool
+        var host string
+        var port uint
+        flag.StringVar(&amp;sessionId, "session-id", "075xx2123", "session id")
+        flag.StringVar(&amp;dbDir, "dbdir", ".state", "database dir to read from")
+        flag.StringVar(&amp;resourceDir, "resourcedir", path.Join("services", "registration"), "resource dir")
+        flag.BoolVar(&amp;engineDebug, "d", false, "use engine debug output")
+        flag.UintVar(&amp;size, "s", 160, "max size of output")
+        flag.StringVar(&amp;host, "h", "127.0.0.1", "http host")
+        flag.UintVar(&amp;port, "p", 7123, "http port")
+        flag.Parse()
+
+        logg.Infof("start command", "dbdir", dbDir, "resourcedir", resourceDir, "outputsize", size, "sessionId", sessionId)
+
+        ctx := context.Background()
+        pfp := path.Join(scriptDir, "pp.csv")
+
+        cfg := engine.Config{
+                Root:       "root",
+                OutputSize: uint32(size),
+                FlagCount:  uint32(16),
+        }
+
+        if engineDebug </span><span class="cov0" title="0">{
+                cfg.EngineDebug = true
+        }</span>
+
+        <span class="cov0" title="0">menuStorageService := storage.NewMenuStorageService(dbDir, resourceDir)
+        rs, err := menuStorageService.GetResource(ctx)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, err.Error())
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">err = menuStorageService.EnsureDbDir()
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, err.Error())
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">userdataStore, err := menuStorageService.GetUserdataDb(ctx)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, err.Error())
+                os.Exit(1)
+        }</span>
+        <span class="cov0" title="0">defer userdataStore.Close()
+
+        dbResource, ok := rs.(*resource.DbResource)
+        if !ok </span><span class="cov0" title="0">{
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">lhs, err := handlers.NewLocalHandlerService(pfp, true, dbResource, cfg, rs)
+        lhs.SetDataStore(&amp;userdataStore)
+
+        hl, err := lhs.GetHandler()
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, err.Error())
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">stateStore, err := menuStorageService.GetStateStore(ctx)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, err.Error())
+                os.Exit(1)
+        }</span>
+        <span class="cov0" title="0">defer stateStore.Close()
+
+        rp := &amp;asyncRequestParser{
+                sessionId: sessionId,
+        }
+        sh := handlers.NewBaseSessionHandler(cfg, rs, stateStore, userdataStore, rp, hl)
+        cfg.SessionId = sessionId
+        rqs := handlers.RequestSession{
+                Ctx:    ctx,
+                Writer: os.Stdout,
+                Config: cfg,
+        }
+
+        cint := make(chan os.Signal)
+        cterm := make(chan os.Signal)
+        signal.Notify(cint, os.Interrupt, syscall.SIGINT)
+        signal.Notify(cterm, os.Interrupt, syscall.SIGTERM)
+        go func() </span><span class="cov0" title="0">{
+                select </span>{
+                case _ = &lt;-cint:<span class="cov0" title="0"></span>
+                case _ = &lt;-cterm:<span class="cov0" title="0"></span>
+                }
+                <span class="cov0" title="0">sh.Shutdown()</span>
+        }()
+
+        <span class="cov0" title="0">for true </span><span class="cov0" title="0">{
+                rqs, err = sh.Process(rqs)
+                if err != nil </span><span class="cov0" title="0">{
+                        logg.ErrorCtxf(ctx, "error in process: %v", "err", err)
+                        fmt.Errorf("error in process: %v", err)
+                        os.Exit(1)
+                }</span>
+                <span class="cov0" title="0">rqs, err = sh.Output(rqs)
+                if err != nil </span><span class="cov0" title="0">{
+                        logg.ErrorCtxf(ctx, "error in output: %v", "err", err)
+                        fmt.Errorf("error in output: %v", err)
+                        os.Exit(1)
+                }</span>
+                <span class="cov0" title="0">rqs, err = sh.Reset(rqs)
+                if err != nil </span><span class="cov0" title="0">{
+                        logg.ErrorCtxf(ctx, "error in reset: %v", "err", err)
+                        fmt.Errorf("error in reset: %v", err)
+                        os.Exit(1)
+                }</span>
+                <span class="cov0" title="0">fmt.Println("")
+                _, err = fmt.Scanln(&amp;rqs.Input)
+                if err != nil </span><span class="cov0" title="0">{
+                        logg.ErrorCtxf(ctx, "error in input", "err", err)
+                        fmt.Errorf("error in input: %v", err)
+                        os.Exit(1)
+                }</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package main
+
+import (
+        "context"
+        "flag"
+        "fmt"
+        "net/http"
+        "os"
+        "os/signal"
+        "path"
+        "strconv"
+        "syscall"
+
+        "git.defalsify.org/vise.git/engine"
+        "git.defalsify.org/vise.git/logging"
+        "git.defalsify.org/vise.git/resource"
+
+        "git.grassecon.net/urdt/ussd/internal/handlers"
+        httpserver "git.grassecon.net/urdt/ussd/internal/http"
+        "git.grassecon.net/urdt/ussd/internal/storage"
+)
+
+var (
+        logg      = logging.NewVanilla()
+        scriptDir = path.Join("services", "registration")
+)
+
+func main() <span class="cov0" title="0">{
+        var dbDir string
+        var resourceDir string
+        var size uint
+        var engineDebug bool
+        var host string
+        var port uint
+        flag.StringVar(&amp;dbDir, "dbdir", ".state", "database dir to read from")
+        flag.StringVar(&amp;resourceDir, "resourcedir", path.Join("services", "registration"), "resource dir")
+        flag.BoolVar(&amp;engineDebug, "d", false, "use engine debug output")
+        flag.UintVar(&amp;size, "s", 160, "max size of output")
+        flag.StringVar(&amp;host, "h", "127.0.0.1", "http host")
+        flag.UintVar(&amp;port, "p", 7123, "http port")
+        flag.Parse()
+
+        logg.Infof("start command", "dbdir", dbDir, "resourcedir", resourceDir, "outputsize", size)
+
+        ctx := context.Background()
+        pfp := path.Join(scriptDir, "pp.csv")
+
+        cfg := engine.Config{
+                Root:       "root",
+                OutputSize: uint32(size),
+                FlagCount:  uint32(16),
+        }
+
+        if engineDebug </span><span class="cov0" title="0">{
+                cfg.EngineDebug = true
+        }</span>
+
+        <span class="cov0" title="0">menuStorageService := storage.NewMenuStorageService(dbDir, resourceDir)
+        rs, err := menuStorageService.GetResource(ctx)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, err.Error())
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">err = menuStorageService.EnsureDbDir()
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, err.Error())
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">userdataStore, err := menuStorageService.GetUserdataDb(ctx)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, err.Error())
+                os.Exit(1)
+        }</span>
+        <span class="cov0" title="0">defer userdataStore.Close()
+
+        dbResource, ok := rs.(*resource.DbResource)
+        if !ok </span><span class="cov0" title="0">{
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">lhs, err := handlers.NewLocalHandlerService(pfp, true, dbResource, cfg, rs)
+        lhs.SetDataStore(&amp;userdataStore)
+
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, err.Error())
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">hl, err := lhs.GetHandler()
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, err.Error())
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">stateStore, err := menuStorageService.GetStateStore(ctx)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, err.Error())
+                os.Exit(1)
+        }</span>
+        <span class="cov0" title="0">defer stateStore.Close()
+
+        rp := &amp;httpserver.DefaultRequestParser{}
+        bsh := handlers.NewBaseSessionHandler(cfg, rs, stateStore, userdataStore, rp, hl)
+        sh := httpserver.ToSessionHandler(bsh)
+        s := &amp;http.Server{
+                Addr:    fmt.Sprintf("%s:%s", host, strconv.Itoa(int(port))),
+                Handler: sh,
+        }
+        s.RegisterOnShutdown(sh.Shutdown)
+
+        cint := make(chan os.Signal)
+        cterm := make(chan os.Signal)
+        signal.Notify(cint, os.Interrupt, syscall.SIGINT)
+        signal.Notify(cterm, os.Interrupt, syscall.SIGTERM)
+        go func() </span><span class="cov0" title="0">{
+                select </span>{
+                case _ = &lt;-cint:<span class="cov0" title="0"></span>
+                case _ = &lt;-cterm:<span class="cov0" title="0"></span>
+                }
+                <span class="cov0" title="0">s.Shutdown(ctx)</span>
+        }()
+        <span class="cov0" title="0">err = s.ListenAndServe()
+        if err != nil </span><span class="cov0" title="0">{
+                logg.Infof("Server closed with error", "err", err)
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package main
+
+import (
+        "context"
+        "flag"
+        "fmt"
+        "os"
+        "path"
+
+        "git.defalsify.org/vise.git/engine"
+        "git.defalsify.org/vise.git/logging"
+        "git.defalsify.org/vise.git/resource"
+        "git.grassecon.net/urdt/ussd/internal/handlers"
+        "git.grassecon.net/urdt/ussd/internal/storage"
+)
+
+var (
+        logg      = logging.NewVanilla()
+        scriptDir = path.Join("services", "registration")
+)
+
+func main() <span class="cov0" title="0">{
+        var dbDir string
+        var size uint
+        var sessionId string
+        var engineDebug bool
+        flag.StringVar(&amp;sessionId, "session-id", "075xx2123", "session id")
+        flag.StringVar(&amp;dbDir, "dbdir", ".state", "database dir to read from")
+        flag.BoolVar(&amp;engineDebug, "d", false, "use engine debug output")
+        flag.UintVar(&amp;size, "s", 160, "max size of output")
+        flag.Parse()
+
+        logg.Infof("start command", "dbdir", dbDir, "outputsize", size)
+
+        ctx := context.Background()
+        ctx = context.WithValue(ctx, "SessionId", sessionId)
+        pfp := path.Join(scriptDir, "pp.csv")
+
+        cfg := engine.Config{
+                Root:       "root",
+                SessionId:  sessionId,
+                OutputSize: uint32(size),
+                FlagCount:  uint32(20),
+        }
+
+        resourceDir := scriptDir
+        menuStorageService := storage.NewMenuStorageService(dbDir, resourceDir)
+
+        err := menuStorageService.EnsureDbDir()
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, err.Error())
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">rs, err := menuStorageService.GetResource(ctx)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, err.Error())
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">pe, err := menuStorageService.GetPersister(ctx)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, err.Error())
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">userdatastore, err := menuStorageService.GetUserdataDb(ctx)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, err.Error())
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">dbResource, ok := rs.(*resource.DbResource)
+        if !ok </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, err.Error())
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">lhs, err := handlers.NewLocalHandlerService(pfp, true, dbResource, cfg, rs)
+        lhs.SetDataStore(&amp;userdatastore)
+        lhs.SetPersister(pe)
+
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, err.Error())
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">hl, err := lhs.GetHandler()
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, err.Error())
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">en := lhs.GetEngine()
+        en = en.WithFirst(hl.Init)
+        if engineDebug </span><span class="cov0" title="0">{
+                en = en.WithDebug(nil)
+        }</span>
+
+        <span class="cov0" title="0">err = engine.Loop(ctx, en, os.Stdin, os.Stdout, nil)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, "loop exited with error: %v\n", err)
+                os.Exit(1)
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package handlers
+
+import (
+        "git.defalsify.org/vise.git/db"
+        "git.defalsify.org/vise.git/engine"
+        "git.defalsify.org/vise.git/persist"
+        "git.defalsify.org/vise.git/resource"
+
+        "git.grassecon.net/urdt/ussd/internal/handlers/ussd"
+        "git.grassecon.net/urdt/ussd/internal/storage"
+)
+
+type BaseSessionHandler struct {
+        cfgTemplate engine.Config
+        rp RequestParser
+        rs resource.Resource
+        hn *ussd.Handlers
+        provider storage.StorageProvider
+}
+
+func NewBaseSessionHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp RequestParser, hn *ussd.Handlers) *BaseSessionHandler <span class="cov0" title="0">{
+        return &amp;BaseSessionHandler{
+                cfgTemplate: cfg,
+                rs: rs,
+                hn: hn,
+                rp: rp,
+                provider: storage.NewSimpleStorageProvider(stateDb, userdataDb),
+        }
+}</span>
+
+func(f* BaseSessionHandler) Shutdown() <span class="cov0" title="0">{
+        err := f.provider.Close()
+        if err != nil </span><span class="cov0" title="0">{
+                logg.Errorf("handler shutdown error", "err", err)
+        }</span>
+}
+
+func(f *BaseSessionHandler) GetEngine(cfg engine.Config, rs resource.Resource, pr *persist.Persister) engine.Engine <span class="cov0" title="0">{
+        en := engine.NewEngine(cfg, rs)
+        en = en.WithPersister(pr)
+        return en
+}</span>
+
+func(f *BaseSessionHandler) Process(rqs RequestSession) (RequestSession, error) <span class="cov0" title="0">{
+        var r bool
+        var err error
+        var ok bool
+        
+        logg.InfoCtxf(rqs.Ctx, "new request", "data", rqs)
+
+        rqs.Storage, err = f.provider.Get(rqs.Config.SessionId)
+        if err != nil </span><span class="cov0" title="0">{
+                logg.ErrorCtxf(rqs.Ctx, "", "storage get error", err)
+                return rqs, ErrStorage
+        }</span>
+
+        <span class="cov0" title="0">f.hn = f.hn.WithPersister(rqs.Storage.Persister)
+        eni := f.GetEngine(rqs.Config, f.rs, rqs.Storage.Persister)
+        en, ok := eni.(*engine.DefaultEngine)
+        if !ok </span><span class="cov0" title="0">{
+                perr := f.provider.Put(rqs.Config.SessionId, rqs.Storage)
+                rqs.Storage = nil
+                if perr != nil </span><span class="cov0" title="0">{
+                        logg.ErrorCtxf(rqs.Ctx, "", "storage put error", perr)
+                }</span>
+                <span class="cov0" title="0">return rqs, ErrEngineType</span>
+        }
+        <span class="cov0" title="0">en = en.WithFirst(f.hn.Init)
+        if rqs.Config.EngineDebug </span><span class="cov0" title="0">{
+                en = en.WithDebug(nil)
+        }</span>
+        <span class="cov0" title="0">rqs.Engine = en
+
+        r, err = rqs.Engine.Exec(rqs.Ctx, rqs.Input)
+        if err != nil </span><span class="cov0" title="0">{
+                perr := f.provider.Put(rqs.Config.SessionId, rqs.Storage)
+                rqs.Storage = nil
+                if perr != nil </span><span class="cov0" title="0">{
+                        logg.ErrorCtxf(rqs.Ctx, "", "storage put error", perr)
+                }</span>
+                <span class="cov0" title="0">return rqs, err</span>
+        }
+
+        <span class="cov0" title="0">rqs.Continue = r 
+        return rqs, nil</span>
+}
+
+func(f *BaseSessionHandler) Output(rqs RequestSession) (RequestSession,  error) <span class="cov0" title="0">{
+        var err error
+        _, err = rqs.Engine.Flush(rqs.Ctx, rqs.Writer)
+        return rqs, err
+}</span>
+
+func(f *BaseSessionHandler) Reset(rqs RequestSession) (RequestSession, error) <span class="cov0" title="0">{
+        defer f.provider.Put(rqs.Config.SessionId, rqs.Storage)
+        return rqs, rqs.Engine.Finish()
+}</span>
+
+func(f *BaseSessionHandler) GetConfig() engine.Config <span class="cov0" title="0">{
+        return f.cfgTemplate
+}</span>
+
+func(f *BaseSessionHandler) GetRequestParser() RequestParser <span class="cov0" title="0">{
+        return f.rp
+}</span>
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package handlers
+
+import (
+        "git.defalsify.org/vise.git/asm"
+        "git.defalsify.org/vise.git/db"
+        "git.defalsify.org/vise.git/engine"
+        "git.defalsify.org/vise.git/persist"
+        "git.defalsify.org/vise.git/resource"
+        "git.grassecon.net/urdt/ussd/internal/handlers/ussd"
+)
+
+type HandlerService interface {
+        GetHandler() (*ussd.Handlers, error)
+}
+
+func getParser(fp string, debug bool) (*asm.FlagParser, error) <span class="cov0" title="0">{
+        flagParser := asm.NewFlagParser().WithDebug()
+        _, err := flagParser.Load(fp)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return flagParser, nil</span>
+}
+
+type LocalHandlerService struct {
+        Parser        *asm.FlagParser
+        DbRs          *resource.DbResource
+        Pe            *persist.Persister
+        UserdataStore *db.Db
+        Cfg           engine.Config
+        Rs            resource.Resource
+}
+
+func NewLocalHandlerService(fp string, debug bool, dbResource *resource.DbResource, cfg engine.Config, rs resource.Resource) (*LocalHandlerService, error) <span class="cov0" title="0">{
+        parser, err := getParser(fp, debug)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return &amp;LocalHandlerService{
+                Parser: parser,
+                DbRs:   dbResource,
+                Cfg:    cfg,
+                Rs:     rs,
+        }, nil</span>
+}
+
+func (ls *LocalHandlerService) SetPersister(Pe *persist.Persister) <span class="cov0" title="0">{
+        ls.Pe = Pe
+}</span>
+
+func (ls *LocalHandlerService) SetDataStore(db *db.Db) <span class="cov0" title="0">{
+        ls.UserdataStore = db
+}</span>
+
+func (ls *LocalHandlerService) GetHandler() (*ussd.Handlers, error) <span class="cov0" title="0">{
+        ussdHandlers, err := ussd.NewHandlers(ls.Parser, *ls.UserdataStore)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">ussdHandlers = ussdHandlers.WithPersister(ls.Pe)
+        ls.DbRs.AddLocalFunc("set_language", ussdHandlers.SetLanguage)
+        ls.DbRs.AddLocalFunc("create_account", ussdHandlers.CreateAccount)
+        ls.DbRs.AddLocalFunc("save_pin", ussdHandlers.SavePin)
+        ls.DbRs.AddLocalFunc("verify_pin", ussdHandlers.VerifyPin)
+        ls.DbRs.AddLocalFunc("check_identifier", ussdHandlers.CheckIdentifier)
+        ls.DbRs.AddLocalFunc("check_account_status", ussdHandlers.CheckAccountStatus)
+        ls.DbRs.AddLocalFunc("authorize_account", ussdHandlers.Authorize)
+        ls.DbRs.AddLocalFunc("quit", ussdHandlers.Quit)
+        ls.DbRs.AddLocalFunc("check_balance", ussdHandlers.CheckBalance)
+        ls.DbRs.AddLocalFunc("validate_recipient", ussdHandlers.ValidateRecipient)
+        ls.DbRs.AddLocalFunc("transaction_reset", ussdHandlers.TransactionReset)
+        ls.DbRs.AddLocalFunc("max_amount", ussdHandlers.MaxAmount)
+        ls.DbRs.AddLocalFunc("validate_amount", ussdHandlers.ValidateAmount)
+        ls.DbRs.AddLocalFunc("reset_transaction_amount", ussdHandlers.ResetTransactionAmount)
+        ls.DbRs.AddLocalFunc("get_recipient", ussdHandlers.GetRecipient)
+        ls.DbRs.AddLocalFunc("get_sender", ussdHandlers.GetSender)
+        ls.DbRs.AddLocalFunc("get_amount", ussdHandlers.GetAmount)
+        ls.DbRs.AddLocalFunc("reset_incorrect", ussdHandlers.ResetIncorrectPin)
+        ls.DbRs.AddLocalFunc("save_firstname", ussdHandlers.SaveFirstname)
+        ls.DbRs.AddLocalFunc("save_familyname", ussdHandlers.SaveFamilyname)
+        ls.DbRs.AddLocalFunc("save_gender", ussdHandlers.SaveGender)
+        ls.DbRs.AddLocalFunc("save_location", ussdHandlers.SaveLocation)
+        ls.DbRs.AddLocalFunc("save_yob", ussdHandlers.SaveYob)
+        ls.DbRs.AddLocalFunc("save_offerings", ussdHandlers.SaveOfferings)
+        ls.DbRs.AddLocalFunc("quit_with_balance", ussdHandlers.QuitWithBalance)
+        ls.DbRs.AddLocalFunc("reset_account_authorized", ussdHandlers.ResetAccountAuthorized)
+        ls.DbRs.AddLocalFunc("reset_allow_update", ussdHandlers.ResetAllowUpdate)
+        ls.DbRs.AddLocalFunc("get_profile_info", ussdHandlers.GetProfileInfo)
+        ls.DbRs.AddLocalFunc("verify_yob", ussdHandlers.VerifyYob)
+        ls.DbRs.AddLocalFunc("reset_incorrect_date_format", ussdHandlers.ResetIncorrectYob)
+        ls.DbRs.AddLocalFunc("initiate_transaction", ussdHandlers.InitiateTransaction)
+        ls.DbRs.AddLocalFunc("save_temporary_pin", ussdHandlers.SaveTemporaryPin)
+        ls.DbRs.AddLocalFunc("verify_new_pin", ussdHandlers.VerifyNewPin)
+        ls.DbRs.AddLocalFunc("confirm_pin_change", ussdHandlers.ConfirmPinChange)
+        ls.DbRs.AddLocalFunc("quit_with_help", ussdHandlers.QuitWithHelp)
+        ls.DbRs.AddLocalFunc("fetch_custodial_balances", ussdHandlers.FetchCustodialBalances)
+
+        return ussdHandlers, nil</span>
+}
+
+// TODO: enable setting of sessionId on engine init time
+func (ls *LocalHandlerService) GetEngine() *engine.DefaultEngine <span class="cov0" title="0">{
+        en := engine.NewEngine(ls.Cfg, ls.Rs)
+        en = en.WithPersister(ls.Pe)
+        return en
+}</span>
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package server
+
+import (
+        "encoding/json"
+        "io"
+        "net/http"
+
+        "git.grassecon.net/urdt/ussd/config"
+        "git.grassecon.net/urdt/ussd/internal/models"
+)
+
+type AccountServiceInterface interface {
+        CheckBalance(publicKey string) (*models.BalanceResponse, error)
+        CreateAccount() (*models.AccountResponse, error)
+        CheckAccountStatus(trackingId string) (*models.TrackStatusResponse, error)
+}
+
+type AccountService struct {
+}
+
+// CheckAccountStatus retrieves the status of an account transaction based on the provided tracking ID.
+//
+// Parameters:
+//   - trackingId: A unique identifier for the account.This should be obtained from a previous call to
+//     CreateAccount or a similar function that returns an AccountResponse. The `trackingId` field in the
+//     AccountResponse struct can be used here to check the account status during a transaction.
+//
+// Returns:
+//   - string: The status of the transaction as a string. If there is an error during the request or processing, this will be an empty string.
+//   - error: An error if any occurred during the HTTP request, reading the response, or unmarshalling the JSON data.
+//     If no error occurs, this will be nil.
+func (as *AccountService) CheckAccountStatus(trackingId string) (*models.TrackStatusResponse, error) <span class="cov0" title="0">{
+        resp, err := http.Get(config.TrackStatusURL + trackingId)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">defer resp.Body.Close()
+
+        body, err := io.ReadAll(resp.Body)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">var trackResp models.TrackStatusResponse
+        err = json.Unmarshal(body, &amp;trackResp)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        //        status := trackResp.Result.Transaction.Status
+
+        <span class="cov0" title="0">return &amp;trackResp, nil</span>
+}
+
+// CheckBalance retrieves the balance for a given public key from the custodial balance API endpoint.
+// Parameters:
+//   - publicKey: The public key associated with the account whose balance needs to be checked.
+func (as *AccountService) CheckBalance(publicKey string) (*models.BalanceResponse, error) <span class="cov0" title="0">{
+
+        resp, err := http.Get(config.BalanceURL + publicKey)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">defer resp.Body.Close()
+
+        body, err := io.ReadAll(resp.Body)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">var balanceResp models.BalanceResponse
+        err = json.Unmarshal(body, &amp;balanceResp)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        //balance := balanceResp.Result.Balance
+        <span class="cov0" title="0">return &amp;balanceResp, nil</span>
+}
+
+// CreateAccount creates a new account in the custodial system.
+// Returns:
+//   - *models.AccountResponse: A pointer to an AccountResponse struct containing the details of the created account.
+//     If there is an error during the request or processing, this will be nil.
+//   - error: An error if any occurred during the HTTP request, reading the response, or unmarshalling the JSON data.
+//     If no error occurs, this will be nil.
+func (as *AccountService) CreateAccount() (*models.AccountResponse, error) <span class="cov0" title="0">{
+        resp, err := http.Post(config.CreateAccountURL, "application/json", nil)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">defer resp.Body.Close()
+
+        body, err := io.ReadAll(resp.Body)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">var accountResp models.AccountResponse
+        err = json.Unmarshal(body, &amp;accountResp)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return &amp;accountResp, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package ussd
+
+import (
+        "bytes"
+        "context"
+        "fmt"
+        "path"
+        "regexp"
+        "strconv"
+        "strings"
+
+        "git.defalsify.org/vise.git/asm"
+
+        "git.defalsify.org/vise.git/cache"
+        "git.defalsify.org/vise.git/db"
+        "git.defalsify.org/vise.git/lang"
+        "git.defalsify.org/vise.git/logging"
+        "git.defalsify.org/vise.git/persist"
+        "git.defalsify.org/vise.git/resource"
+        "git.defalsify.org/vise.git/state"
+        "git.grassecon.net/urdt/ussd/internal/handlers/server"
+        "git.grassecon.net/urdt/ussd/internal/utils"
+        "gopkg.in/leonelquinteros/gotext.v1"
+)
+
+var (
+        logg           = logging.NewVanilla().WithDomain("ussdmenuhandler")
+        scriptDir      = path.Join("services", "registration")
+        translationDir = path.Join(scriptDir, "locale")
+)
+
+// FlagManager handles centralized flag management
+type FlagManager struct {
+        parser *asm.FlagParser
+}
+
+// NewFlagManager creates a new FlagManager instance
+func NewFlagManager(csvPath string) (*FlagManager, error) <span class="cov8" title="1">{
+        parser := asm.NewFlagParser()
+        _, err := parser.Load(csvPath)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to load flag parser: %v", err)
+        }</span>
+
+        <span class="cov8" title="1">return &amp;FlagManager{
+                parser: parser,
+        }, nil</span>
+}
+
+// GetFlag retrieves a flag value by its label
+func (fm *FlagManager) GetFlag(label string) (uint32, error) <span class="cov8" title="1">{
+        return fm.parser.GetFlag(label)
+}</span>
+
+type Handlers struct {
+        pe             *persist.Persister
+        st             *state.State
+        ca             cache.Memory
+        userdataStore  utils.DataStore
+        flagManager    *asm.FlagParser
+        accountService server.AccountServiceInterface
+}
+
+func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db) (*Handlers, error) <span class="cov0" title="0">{
+        if userdataStore == nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("cannot create handler with nil userdata store")
+        }</span>
+        <span class="cov0" title="0">userDb := &amp;utils.UserDataStore{
+                Db: userdataStore,
+        }
+        h := &amp;Handlers{
+                userdataStore:  userDb,
+                flagManager:    appFlags,
+                accountService: &amp;server.AccountService{},
+        }
+        return h, nil</span>
+}
+
+// Define the regex pattern as a constant
+const pinPattern = `^\d{4}$`
+
+// isValidPIN checks whether the given input is a 4 digit number
+func isValidPIN(pin string) bool <span class="cov8" title="1">{
+        match, _ := regexp.MatchString(pinPattern, pin)
+        return match
+}</span>
+
+func (h *Handlers) WithPersister(pe *persist.Persister) *Handlers <span class="cov8" title="1">{
+        if h.pe != nil </span><span class="cov8" title="1">{
+                panic("persister already set")</span>
+        }
+        <span class="cov8" title="1">h.pe = pe
+        return h</span>
+}
+
+func (h *Handlers) Init(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov0" title="0">{
+        var r resource.Result
+
+        if h.pe == nil </span><span class="cov0" title="0">{
+                logg.WarnCtxf(ctx, "handler init called before it is ready or more than once", "state", h.st, "cache", h.ca)
+                return r, nil
+        }</span>
+        <span class="cov0" title="0">h.st = h.pe.GetState()
+        h.ca = h.pe.GetMemory()
+        if h.st == nil || h.ca == nil </span><span class="cov0" title="0">{
+                logg.ErrorCtxf(ctx, "perister fail in handler", "state", h.st, "cache", h.ca)
+                return r, fmt.Errorf("cannot get state and memory for handler")
+        }</span>
+        <span class="cov0" title="0">h.pe = nil
+
+        logg.DebugCtxf(ctx, "handler has been initialized", "state", h.st, "cache", h.ca)
+
+        return r, nil</span>
+}
+
+// SetLanguage sets the language across the menu
+func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+
+        symbol, _ := h.st.Where()
+        code := strings.Split(symbol, "_")[1]
+
+        if !utils.IsValidISO639(code) </span><span class="cov0" title="0">{
+                return res, nil
+        }</span>
+        <span class="cov8" title="1">res.FlagSet = append(res.FlagSet, state.FLAG_LANG)
+        res.Content = code
+
+        languageSetFlag, err := h.flagManager.GetFlag("flag_language_set")
+        if err != nil </span><span class="cov0" title="0">{
+                return res, err
+        }</span>
+        <span class="cov8" title="1">res.FlagSet = append(res.FlagSet, languageSetFlag)
+
+        return res, nil</span>
+}
+
+func (h *Handlers) createAccountNoExist(ctx context.Context, sessionId string, res *resource.Result) error <span class="cov8" title="1">{
+        accountResp, err := h.accountService.CreateAccount()
+        data := map[utils.DataTyp]string{
+                utils.DATA_TRACKING_ID:  accountResp.Result.TrackingId,
+                utils.DATA_PUBLIC_KEY:   accountResp.Result.PublicKey,
+                utils.DATA_CUSTODIAL_ID: accountResp.Result.CustodialId.String(),
+        }
+
+        for key, value := range data </span><span class="cov8" title="1">{
+                store := h.userdataStore
+                err := store.WriteEntry(ctx, sessionId, key, []byte(value))
+                if err != nil </span><span class="cov0" title="0">{
+                        return err
+                }</span>
+        }
+        <span class="cov8" title="1">flag_account_created, _ := h.flagManager.GetFlag("flag_account_created")
+        res.FlagSet = append(res.FlagSet, flag_account_created)
+        return err</span>
+
+}
+
+// CreateAccount checks if any account exists on the JSON data file, and if not
+// creates an account on the API,
+// sets the default values and flags
+func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+        var err error
+        sessionId, ok := ctx.Value("SessionId").(string)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("missing session")
+        }</span>
+        <span class="cov8" title="1">store := h.userdataStore
+        _, err = store.ReadEntry(ctx, sessionId, utils.DATA_ACCOUNT_CREATED)
+        if err != nil </span><span class="cov8" title="1">{
+                if db.IsNotFound(err) </span><span class="cov8" title="1">{
+                        logg.Printf(logging.LVL_INFO, "Creating an account because it doesn't exist")
+                        err = h.createAccountNoExist(ctx, sessionId, &amp;res)
+                        if err != nil </span><span class="cov0" title="0">{
+                                return res, err
+                        }</span>
+                }
+        }
+        <span class="cov8" title="1">return res, nil</span>
+}
+
+// SavePin persists the user's PIN choice into the filesystem
+func (h *Handlers) SavePin(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+        var err error
+
+        sessionId, ok := ctx.Value("SessionId").(string)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("missing session")
+        }</span>
+
+        <span class="cov8" title="1">flag_incorrect_pin, _ := h.flagManager.GetFlag("flag_incorrect_pin")
+
+        accountPIN := string(input)
+        // Validate that the PIN is a 4-digit number
+        if !isValidPIN(accountPIN) </span><span class="cov8" title="1">{
+                res.FlagSet = append(res.FlagSet, flag_incorrect_pin)
+                return res, nil
+        }</span>
+
+        <span class="cov8" title="1">res.FlagReset = append(res.FlagReset, flag_incorrect_pin)
+        store := h.userdataStore
+        err = store.WriteEntry(ctx, sessionId, utils.DATA_ACCOUNT_PIN, []byte(accountPIN))
+        if err != nil </span><span class="cov0" title="0">{
+                return res, err
+        }</span>
+        <span class="cov8" title="1">return res, nil</span>
+}
+
+func (h *Handlers) VerifyNewPin(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        res := resource.Result{}
+        _, ok := ctx.Value("SessionId").(string)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("missing session")
+        }</span>
+        <span class="cov8" title="1">flag_valid_pin, _ := h.flagManager.GetFlag("flag_valid_pin")
+        pinInput := string(input)
+        // Validate that the PIN is a 4-digit number
+        if isValidPIN(pinInput) </span><span class="cov8" title="1">{
+                res.FlagSet = append(res.FlagSet, flag_valid_pin)
+        }</span> else<span class="cov8" title="1"> {
+                res.FlagReset = append(res.FlagReset, flag_valid_pin)
+        }</span>
+
+        <span class="cov8" title="1">return res, nil</span>
+}
+
+func (h *Handlers) SaveTemporaryPin(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+        var err error
+
+        sessionId, ok := ctx.Value("SessionId").(string)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("missing session")
+        }</span>
+        <span class="cov8" title="1">flag_incorrect_pin, _ := h.flagManager.GetFlag("flag_incorrect_pin")
+
+        accountPIN := string(input)
+
+        // Validate that the PIN is a 4-digit number
+        if !isValidPIN(accountPIN) </span><span class="cov0" title="0">{
+                res.FlagSet = append(res.FlagSet, flag_incorrect_pin)
+                return res, nil
+        }</span>
+        <span class="cov8" title="1">store := h.userdataStore
+        err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_PIN, []byte(accountPIN))
+        if err != nil </span><span class="cov0" title="0">{
+                return res, err
+        }</span>
+        <span class="cov8" title="1">return res, nil</span>
+}
+
+func (h *Handlers) ConfirmPinChange(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+        sessionId, ok := ctx.Value("SessionId").(string)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("missing session")
+        }</span>
+        <span class="cov8" title="1">flag_pin_mismatch, _ := h.flagManager.GetFlag("flag_pin_mismatch")
+
+        store := h.userdataStore
+        temporaryPin, err := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_PIN)
+        if err != nil </span><span class="cov0" title="0">{
+                return res, err
+        }</span>
+        <span class="cov8" title="1">if bytes.Equal(temporaryPin, input) </span><span class="cov8" title="1">{
+                res.FlagReset = append(res.FlagReset, flag_pin_mismatch)
+        }</span> else<span class="cov0" title="0"> {
+                res.FlagSet = append(res.FlagSet, flag_pin_mismatch)
+        }</span>
+        <span class="cov8" title="1">err = store.WriteEntry(ctx, sessionId, utils.DATA_ACCOUNT_PIN, []byte(temporaryPin))
+        if err != nil </span><span class="cov0" title="0">{
+                return res, err
+        }</span>
+        <span class="cov8" title="1">return res, nil</span>
+}
+
+// VerifyPin checks whether the confirmation PIN is similar to the account PIN
+// If similar, it sets the USERFLAG_PIN_SET flag allowing the user
+// to access the main menu
+func (h *Handlers) VerifyPin(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+
+        flag_valid_pin, _ := h.flagManager.GetFlag("flag_valid_pin")
+        flag_pin_mismatch, _ := h.flagManager.GetFlag("flag_pin_mismatch")
+        flag_pin_set, _ := h.flagManager.GetFlag("flag_pin_set")
+
+        sessionId, ok := ctx.Value("SessionId").(string)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("missing session")
+        }</span>
+        <span class="cov8" title="1">store := h.userdataStore
+        AccountPin, err := store.ReadEntry(ctx, sessionId, utils.DATA_ACCOUNT_PIN)
+        if err != nil </span><span class="cov0" title="0">{
+                return res, err
+        }</span>
+
+        <span class="cov8" title="1">if bytes.Equal(input, AccountPin) </span><span class="cov8" title="1">{
+                res.FlagSet = []uint32{flag_valid_pin}
+                res.FlagReset = []uint32{flag_pin_mismatch}
+                res.FlagSet = append(res.FlagSet, flag_pin_set)
+        }</span> else<span class="cov8" title="1"> {
+                res.FlagSet = []uint32{flag_pin_mismatch}
+        }</span>
+
+        <span class="cov8" title="1">return res, nil</span>
+}
+
+// codeFromCtx retrieves language codes from the context that can be used for handling translations
+func codeFromCtx(ctx context.Context) string <span class="cov8" title="1">{
+        var code string
+        if ctx.Value("Language") != nil </span><span class="cov0" title="0">{
+                lang := ctx.Value("Language").(lang.Language)
+                code = lang.Code
+        }</span>
+        <span class="cov8" title="1">return code</span>
+}
+
+// SaveFirstname updates the first name in the gdbm with the provided input.
+func (h *Handlers) SaveFirstname(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+        var err error
+        sessionId, ok := ctx.Value("SessionId").(string)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("missing session")
+        }</span>
+        <span class="cov8" title="1">if len(input) &gt; 0 </span><span class="cov8" title="1">{
+                firstName := string(input)
+                store := h.userdataStore
+                err = store.WriteEntry(ctx, sessionId, utils.DATA_FIRST_NAME, []byte(firstName))
+                if err != nil </span><span class="cov0" title="0">{
+                        return res, err
+                }</span>
+        }
+
+        <span class="cov8" title="1">return res, nil</span>
+}
+
+// SaveFamilyname updates the family name in the gdbm with the provided input.
+func (h *Handlers) SaveFamilyname(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+        var err error
+        sessionId, ok := ctx.Value("SessionId").(string)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("missing session")
+        }</span>
+
+        <span class="cov8" title="1">if len(input) &gt; 0 </span><span class="cov8" title="1">{
+                familyName := string(input)
+                store := h.userdataStore
+                err = store.WriteEntry(ctx, sessionId, utils.DATA_FAMILY_NAME, []byte(familyName))
+                if err != nil </span><span class="cov0" title="0">{
+                        return res, err
+                }</span>
+        } else<span class="cov0" title="0"> {
+                return res, fmt.Errorf("a family name cannot be less than one character")
+        }</span>
+
+        <span class="cov8" title="1">return res, nil</span>
+}
+
+// SaveYOB updates the Year of Birth(YOB) in the gdbm with the provided input.
+func (h *Handlers) SaveYob(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+        var err error
+        sessionId, ok := ctx.Value("SessionId").(string)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("missing session")
+        }</span>
+
+        <span class="cov8" title="1">if len(input) == 4 </span><span class="cov8" title="1">{
+                yob := string(input)
+                store := h.userdataStore
+                err = store.WriteEntry(ctx, sessionId, utils.DATA_YOB, []byte(yob))
+                if err != nil </span><span class="cov0" title="0">{
+                        return res, err
+                }</span>
+        }
+
+        <span class="cov8" title="1">return res, nil</span>
+}
+
+// SaveLocation updates the location in the gdbm with the provided input.
+func (h *Handlers) SaveLocation(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+        var err error
+        sessionId, ok := ctx.Value("SessionId").(string)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("missing session")
+        }</span>
+
+        <span class="cov8" title="1">if len(input) &gt; 0 </span><span class="cov8" title="1">{
+                location := string(input)
+                store := h.userdataStore
+                err = store.WriteEntry(ctx, sessionId, utils.DATA_LOCATION, []byte(location))
+                if err != nil </span><span class="cov0" title="0">{
+                        return res, err
+                }</span>
+        }
+
+        <span class="cov8" title="1">return res, nil</span>
+}
+
+// SaveGender updates the gender in the gdbm with the provided input.
+func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        symbol, _ := h.st.Where()
+        var res resource.Result
+        var err error
+        sessionId, ok := ctx.Value("SessionId").(string)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("missing session")
+        }</span>
+
+        <span class="cov8" title="1">gender := strings.Split(symbol, "_")[1]
+        store := h.userdataStore
+        err = store.WriteEntry(ctx, sessionId, utils.DATA_GENDER, []byte(gender))
+        if err != nil </span><span class="cov0" title="0">{
+                return res, nil
+        }</span>
+
+        <span class="cov8" title="1">return res, nil</span>
+}
+
+// SaveOfferings updates the offerings(goods and services provided by the user) in the gdbm with the provided input.
+func (h *Handlers) SaveOfferings(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+        var err error
+        sessionId, ok := ctx.Value("SessionId").(string)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("missing session")
+        }</span>
+
+        <span class="cov8" title="1">if len(input) &gt; 0 </span><span class="cov8" title="1">{
+                offerings := string(input)
+                store := h.userdataStore
+                err = store.WriteEntry(ctx, sessionId, utils.DATA_OFFERINGS, []byte(offerings))
+                if err != nil </span><span class="cov0" title="0">{
+                        return res, nil
+                }</span>
+        }
+
+        <span class="cov8" title="1">return res, nil</span>
+}
+
+// ResetAllowUpdate resets the allowupdate flag that allows a user to update  profile data.
+func (h *Handlers) ResetAllowUpdate(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+
+        flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+
+        res.FlagReset = append(res.FlagReset, flag_allow_update)
+        return res, nil
+}</span>
+
+// ResetAccountAuthorized resets the account authorization flag after a successful PIN entry.
+func (h *Handlers) ResetAccountAuthorized(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+
+        flag_account_authorized, _ := h.flagManager.GetFlag("flag_account_authorized")
+
+        res.FlagReset = append(res.FlagReset, flag_account_authorized)
+        return res, nil
+}</span>
+
+// CheckIdentifier retrieves the PublicKey from the JSON data file.
+func (h *Handlers) CheckIdentifier(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+
+        sessionId, ok := ctx.Value("SessionId").(string)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("missing session")
+        }</span>
+
+        <span class="cov8" title="1">store := h.userdataStore
+        publicKey, _ := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
+
+        res.Content = string(publicKey)
+
+        return res, nil</span>
+}
+
+// Authorize attempts to unlock the next sequential nodes by verifying the provided PIN against the already set PIN.
+// It sets the required flags that control the flow.
+func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+        var err error
+
+        sessionId, ok := ctx.Value("SessionId").(string)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("missing session")
+        }</span>
+
+        <span class="cov8" title="1">flag_incorrect_pin, _ := h.flagManager.GetFlag("flag_incorrect_pin")
+        flag_account_authorized, _ := h.flagManager.GetFlag("flag_account_authorized")
+        flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+
+        store := h.userdataStore
+        AccountPin, err := store.ReadEntry(ctx, sessionId, utils.DATA_ACCOUNT_PIN)
+        if err != nil </span><span class="cov0" title="0">{
+                return res, err
+        }</span>
+        <span class="cov8" title="1">if len(input) == 4 </span><span class="cov8" title="1">{
+                if bytes.Equal(input, AccountPin) </span><span class="cov8" title="1">{
+                        if h.st.MatchFlag(flag_account_authorized, false) </span><span class="cov8" title="1">{
+                                res.FlagReset = append(res.FlagReset, flag_incorrect_pin)
+                                res.FlagSet = append(res.FlagSet, flag_allow_update, flag_account_authorized)
+                        }</span> else<span class="cov0" title="0"> {
+                                res.FlagSet = append(res.FlagSet, flag_allow_update)
+                                res.FlagReset = append(res.FlagReset, flag_account_authorized)
+                        }</span>
+                } else<span class="cov8" title="1"> {
+                        res.FlagSet = append(res.FlagSet, flag_incorrect_pin)
+                        res.FlagReset = append(res.FlagReset, flag_account_authorized)
+                        return res, nil
+                }</span>
+        } else<span class="cov8" title="1"> {
+                return res, nil
+        }</span>
+        <span class="cov8" title="1">return res, nil</span>
+}
+
+// ResetIncorrectPin resets the incorrect pin flag  after a new PIN attempt.
+func (h *Handlers) ResetIncorrectPin(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+        flag_incorrect_pin, _ := h.flagManager.GetFlag("flag_incorrect_pin")
+        res.FlagReset = append(res.FlagReset, flag_incorrect_pin)
+        return res, nil
+}</span>
+
+// CheckAccountStatus queries the API using the TrackingId and sets flags
+// based on the account status
+func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+
+        flag_account_success, _ := h.flagManager.GetFlag("flag_account_success")
+        flag_account_pending, _ := h.flagManager.GetFlag("flag_account_pending")
+        flag_api_error, _ := h.flagManager.GetFlag("flag_api_call_error")
+
+        sessionId, ok := ctx.Value("SessionId").(string)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("missing session")
+        }</span>
+        <span class="cov8" title="1">store := h.userdataStore
+        trackingId, err := store.ReadEntry(ctx, sessionId, utils.DATA_TRACKING_ID)
+        if err != nil </span><span class="cov0" title="0">{
+                return res, err
+        }</span>
+
+        <span class="cov8" title="1">accountStatus, err := h.accountService.CheckAccountStatus(string(trackingId))
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Println("Error checking account status:", err)
+                return res, err
+        }</span>
+        <span class="cov8" title="1">if !accountStatus.Ok </span><span class="cov8" title="1">{
+                res.FlagSet = append(res.FlagSet, flag_api_error)
+                return res, err
+        }</span>
+        <span class="cov8" title="1">res.FlagReset = append(res.FlagReset, flag_api_error)
+        status := accountStatus.Result.Transaction.Status
+
+        err = store.WriteEntry(ctx, sessionId, utils.DATA_ACCOUNT_STATUS, []byte(status))
+        if err != nil </span><span class="cov0" title="0">{
+                return res, nil
+        }</span>
+        <span class="cov8" title="1">if accountStatus.Result.Transaction.Status == "SUCCESS" </span><span class="cov8" title="1">{
+                res.FlagSet = append(res.FlagSet, flag_account_success)
+                res.FlagReset = append(res.FlagReset, flag_account_pending)
+        }</span> else<span class="cov8" title="1"> {
+                res.FlagReset = append(res.FlagReset, flag_account_success)
+                res.FlagSet = append(res.FlagSet, flag_account_pending)
+        }</span>
+        <span class="cov8" title="1">return res, nil</span>
+}
+
+// Quit displays the Thank you message and exits the menu
+func (h *Handlers) Quit(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+
+        flag_account_authorized, _ := h.flagManager.GetFlag("flag_account_authorized")
+
+        code := codeFromCtx(ctx)
+        l := gotext.NewLocale(translationDir, code)
+        l.AddDomain("default")
+
+        res.Content = l.Get("Thank you for using Sarafu. Goodbye!")
+        res.FlagReset = append(res.FlagReset, flag_account_authorized)
+        return res, nil
+}</span>
+
+// QuitWithHelp displays helpline information then exits the menu
+func (h *Handlers) QuitWithHelp(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov0" title="0">{
+        var res resource.Result
+
+        flag_account_authorized, _ := h.flagManager.GetFlag("flag_account_authorized")
+
+        code := codeFromCtx(ctx)
+        l := gotext.NewLocale(translationDir, code)
+        l.AddDomain("default")
+
+        res.Content = l.Get("For more help,please call: 0757628885")
+        res.FlagReset = append(res.FlagReset, flag_account_authorized)
+        return res, nil
+}</span>
+
+// VerifyYob verifies the length of the given input
+func (h *Handlers) VerifyYob(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+        var err error
+
+        flag_incorrect_date_format, _ := h.flagManager.GetFlag("flag_incorrect_date_format")
+
+        date := string(input)
+        _, err = strconv.Atoi(date)
+        if err != nil </span><span class="cov8" title="1">{
+                // If conversion fails, input is not numeric
+                res.FlagSet = append(res.FlagSet, flag_incorrect_date_format)
+                return res, nil
+        }</span>
+
+        <span class="cov8" title="1">if len(date) == 4 </span><span class="cov8" title="1">{
+                res.FlagReset = append(res.FlagReset, flag_incorrect_date_format)
+        }</span> else<span class="cov8" title="1"> {
+                res.FlagSet = append(res.FlagSet, flag_incorrect_date_format)
+        }</span>
+
+        <span class="cov8" title="1">return res, nil</span>
+}
+
+// ResetIncorrectYob resets the incorrect date format flag after a new attempt
+func (h *Handlers) ResetIncorrectYob(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+
+        flag_incorrect_date_format, _ := h.flagManager.GetFlag("flag_incorrect_date_format")
+
+        res.FlagReset = append(res.FlagReset, flag_incorrect_date_format)
+        return res, nil
+}</span>
+
+// CheckBalance retrieves the balance from the API using the "PublicKey" and sets
+// the balance as the result content
+func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+        var err error
+
+        flag_api_error, _ := h.flagManager.GetFlag("flag_api_call_error")
+
+        sessionId, ok := ctx.Value("SessionId").(string)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("missing session")
+        }</span>
+
+        <span class="cov8" title="1">store := h.userdataStore
+        publicKey, err := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
+        if err != nil </span><span class="cov0" title="0">{
+                return res, err
+        }</span>
+
+        <span class="cov8" title="1">balanceResponse, err := h.accountService.CheckBalance(string(publicKey))
+        if err != nil </span><span class="cov0" title="0">{
+                return res, nil
+        }</span>
+        <span class="cov8" title="1">if !balanceResponse.Ok </span><span class="cov8" title="1">{
+                res.FlagSet = append(res.FlagSet, flag_api_error)
+                return res, nil
+        }</span>
+        <span class="cov8" title="1">res.FlagReset = append(res.FlagReset, flag_api_error)
+        balance := balanceResponse.Result.Balance
+        res.Content = balance
+
+        return res, nil</span>
+}
+
+func (h *Handlers) FetchCustodialBalances(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+        flag_api_error, _ := h.flagManager.GetFlag("flag_api_call_error")
+
+        sessionId, ok := ctx.Value("SessionId").(string)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("missing session")
+        }</span>
+        <span class="cov8" title="1">symbol, _ := h.st.Where()
+        balanceType := strings.Split(symbol, "_")[0]
+
+        store := h.userdataStore
+        publicKey, err := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
+        if err != nil </span><span class="cov0" title="0">{
+                return res, err
+        }</span>
+
+        <span class="cov8" title="1">balanceResponse, err := h.accountService.CheckBalance(string(publicKey))
+        if err != nil </span><span class="cov0" title="0">{
+                return res, nil
+        }</span>
+        <span class="cov8" title="1">if !balanceResponse.Ok </span><span class="cov8" title="1">{
+                res.FlagSet = append(res.FlagSet, flag_api_error)
+                return res, nil
+        }</span>
+        <span class="cov8" title="1">res.FlagReset = append(res.FlagReset, flag_api_error)
+        balance := balanceResponse.Result.Balance
+
+        switch balanceType </span>{
+        case "my":<span class="cov0" title="0">
+                res.Content = fmt.Sprintf("Your balance is %s", balance)</span>
+        case "community":<span class="cov0" title="0">
+                res.Content = fmt.Sprintf("Your community balance is %s", balance)</span>
+        default:<span class="cov8" title="1">
+                break</span>
+        }
+        <span class="cov8" title="1">return res, nil</span>
+}
+
+// ValidateRecipient validates that the given input is a valid phone number.
+func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+        var err error
+
+        sessionId, ok := ctx.Value("SessionId").(string)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("missing session")
+        }</span>
+
+        <span class="cov8" title="1">recipient := string(input)
+
+        flag_invalid_recipient, _ := h.flagManager.GetFlag("flag_invalid_recipient")
+
+        if recipient != "0" </span><span class="cov8" title="1">{
+                // mimic invalid number check
+                if recipient == "000" </span><span class="cov8" title="1">{
+                        res.FlagSet = append(res.FlagSet, flag_invalid_recipient)
+                        res.Content = recipient
+
+                        return res, nil
+                }</span>
+                <span class="cov8" title="1">store := h.userdataStore
+                err = store.WriteEntry(ctx, sessionId, utils.DATA_RECIPIENT, []byte(recipient))
+                if err != nil </span><span class="cov0" title="0">{
+                        return res, nil
+                }</span>
+        }
+
+        <span class="cov8" title="1">return res, nil</span>
+}
+
+// TransactionReset resets the previous transaction data (Recipient and Amount)
+// as well as the invalid flags
+func (h *Handlers) TransactionReset(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+        var err error
+
+        sessionId, ok := ctx.Value("SessionId").(string)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("missing session")
+        }</span>
+
+        <span class="cov8" title="1">flag_invalid_recipient, _ := h.flagManager.GetFlag("flag_invalid_recipient")
+        flag_invalid_recipient_with_invite, _ := h.flagManager.GetFlag("flag_invalid_recipient_with_invite")
+        store := h.userdataStore
+        err = store.WriteEntry(ctx, sessionId, utils.DATA_AMOUNT, []byte(""))
+        if err != nil </span><span class="cov0" title="0">{
+                return res, nil
+        }</span>
+
+        <span class="cov8" title="1">err = store.WriteEntry(ctx, sessionId, utils.DATA_RECIPIENT, []byte(""))
+        if err != nil </span><span class="cov0" title="0">{
+                return res, nil
+        }</span>
+
+        <span class="cov8" title="1">res.FlagReset = append(res.FlagReset, flag_invalid_recipient, flag_invalid_recipient_with_invite)
+
+        return res, nil</span>
+}
+
+// ResetTransactionAmount resets the transaction amount and invalid flag
+func (h *Handlers) ResetTransactionAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+        var err error
+
+        sessionId, ok := ctx.Value("SessionId").(string)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("missing session")
+        }</span>
+
+        <span class="cov8" title="1">flag_invalid_amount, _ := h.flagManager.GetFlag("flag_invalid_amount")
+        store := h.userdataStore
+        err = store.WriteEntry(ctx, sessionId, utils.DATA_AMOUNT, []byte(""))
+        if err != nil </span><span class="cov0" title="0">{
+                return res, nil
+        }</span>
+
+        <span class="cov8" title="1">res.FlagReset = append(res.FlagReset, flag_invalid_amount)
+
+        return res, nil</span>
+}
+
+// MaxAmount gets the current balance from the API and sets it as
+// the result content.
+func (h *Handlers) MaxAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+        var err error
+
+        sessionId, ok := ctx.Value("SessionId").(string)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("missing session")
+        }</span>
+        <span class="cov8" title="1">store := h.userdataStore
+        publicKey, _ := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
+
+        balanceResp, err := h.accountService.CheckBalance(string(publicKey))
+        if err != nil </span><span class="cov0" title="0">{
+                return res, nil
+        }</span>
+        <span class="cov8" title="1">balance := balanceResp.Result.Balance
+
+        res.Content = balance
+
+        return res, nil</span>
+}
+
+// ValidateAmount ensures that the given input is a valid amount and that
+// it is not more than the current balance.
+func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+        var err error
+
+        sessionId, ok := ctx.Value("SessionId").(string)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("missing session")
+        }</span>
+
+        <span class="cov8" title="1">flag_invalid_amount, _ := h.flagManager.GetFlag("flag_invalid_amount")
+
+        store := h.userdataStore
+        publicKey, _ := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
+
+        amountStr := string(input)
+
+        balanceRes, err := h.accountService.CheckBalance(string(publicKey))
+        balanceStr := balanceRes.Result.Balance
+
+        if err != nil </span><span class="cov0" title="0">{
+                return res, err
+        }</span>
+        <span class="cov8" title="1">res.Content = balanceStr
+
+        // Parse the balance
+        balanceParts := strings.Split(balanceStr, " ")
+        if len(balanceParts) != 2 </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("unexpected balance format: %s", balanceStr)
+        }</span>
+        <span class="cov8" title="1">balanceValue, err := strconv.ParseFloat(balanceParts[0], 64)
+        if err != nil </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("failed to parse balance: %v", err)
+        }</span>
+
+        // Extract numeric part from input
+        <span class="cov8" title="1">re := regexp.MustCompile(`^(\d+(\.\d+)?)\s*(?:CELO)?$`)
+        matches := re.FindStringSubmatch(strings.TrimSpace(amountStr))
+        if len(matches) &lt; 2 </span><span class="cov8" title="1">{
+                res.FlagSet = append(res.FlagSet, flag_invalid_amount)
+                res.Content = amountStr
+                return res, nil
+        }</span>
+
+        <span class="cov8" title="1">inputAmount, err := strconv.ParseFloat(matches[1], 64)
+        if err != nil </span><span class="cov0" title="0">{
+                res.FlagSet = append(res.FlagSet, flag_invalid_amount)
+                res.Content = amountStr
+                return res, nil
+        }</span>
+
+        <span class="cov8" title="1">if inputAmount &gt; balanceValue </span><span class="cov8" title="1">{
+                res.FlagSet = append(res.FlagSet, flag_invalid_amount)
+                res.Content = amountStr
+                return res, nil
+        }</span>
+
+        <span class="cov8" title="1">res.Content = fmt.Sprintf("%.3f", inputAmount) // Format to 3 decimal places
+        err = store.WriteEntry(ctx, sessionId, utils.DATA_AMOUNT, []byte(amountStr))
+        if err != nil </span><span class="cov0" title="0">{
+                return res, err
+        }</span>
+
+        <span class="cov8" title="1">return res, nil</span>
+}
+
+// GetRecipient returns the transaction recipient from the gdbm.
+func (h *Handlers) GetRecipient(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+
+        sessionId, ok := ctx.Value("SessionId").(string)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("missing session")
+        }</span>
+        <span class="cov8" title="1">store := h.userdataStore
+        recipient, _ := store.ReadEntry(ctx, sessionId, utils.DATA_RECIPIENT)
+
+        res.Content = string(recipient)
+
+        return res, nil</span>
+}
+
+// GetSender retrieves the public key from the Gdbm Db
+func (h *Handlers) GetSender(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+
+        sessionId, ok := ctx.Value("SessionId").(string)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("missing session")
+        }</span>
+
+        <span class="cov8" title="1">store := h.userdataStore
+        publicKey, _ := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
+
+        res.Content = string(publicKey)
+
+        return res, nil</span>
+}
+
+// GetAmount retrieves the amount from teh Gdbm Db
+func (h *Handlers) GetAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+
+        sessionId, ok := ctx.Value("SessionId").(string)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("missing session")
+        }</span>
+        <span class="cov8" title="1">store := h.userdataStore
+        amount, _ := store.ReadEntry(ctx, sessionId, utils.DATA_AMOUNT)
+
+        res.Content = string(amount)
+
+        return res, nil</span>
+}
+
+// QuickWithBalance retrieves the balance for a given public key from the custodial balance API endpoint before
+// gracefully exiting the session.
+func (h *Handlers) QuitWithBalance(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov0" title="0">{
+        var res resource.Result
+        var err error
+        sessionId, ok := ctx.Value("SessionId").(string)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("missing session")
+        }</span>
+
+        <span class="cov0" title="0">flag_account_authorized, _ := h.flagManager.GetFlag("flag_account_authorized")
+
+        code := codeFromCtx(ctx)
+        l := gotext.NewLocale(translationDir, code)
+        l.AddDomain("default")
+
+        store := h.userdataStore
+        publicKey, err := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
+        if err != nil </span><span class="cov0" title="0">{
+                return res, err
+        }</span>
+        <span class="cov0" title="0">balance, err := h.accountService.CheckBalance(string(publicKey))
+        if err != nil </span><span class="cov0" title="0">{
+                return res, nil
+        }</span>
+        <span class="cov0" title="0">res.Content = l.Get("Your account balance is %s", balance)
+        res.FlagReset = append(res.FlagReset, flag_account_authorized)
+        return res, nil</span>
+}
+
+// InitiateTransaction returns a confirmation and resets the transaction data
+// on the gdbm store.
+func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+        var err error
+        sessionId, ok := ctx.Value("SessionId").(string)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("missing session")
+        }</span>
+
+        <span class="cov8" title="1">code := codeFromCtx(ctx)
+        l := gotext.NewLocale(translationDir, code)
+        l.AddDomain("default")
+        // TODO
+        // Use the amount, recipient and sender to call the API and initialize the transaction
+        store := h.userdataStore
+        publicKey, _ := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
+
+        amount, _ := store.ReadEntry(ctx, sessionId, utils.DATA_AMOUNT)
+
+        recipient, _ := store.ReadEntry(ctx, sessionId, utils.DATA_RECIPIENT)
+
+        res.Content = l.Get("Your request has been sent. %s will receive %s from %s.", string(recipient), string(amount), string(publicKey))
+
+        account_authorized_flag, err := h.flagManager.GetFlag("flag_account_authorized")
+        if err != nil </span><span class="cov0" title="0">{
+                return res, err
+        }</span>
+
+        <span class="cov8" title="1">res.FlagReset = append(res.FlagReset, account_authorized_flag)
+        return res, nil</span>
+}
+
+func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte) (resource.Result, error) <span class="cov8" title="1">{
+        var res resource.Result
+        var defaultValue string
+        sessionId, ok := ctx.Value("SessionId").(string)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("missing session")
+        }</span>
+        <span class="cov8" title="1">language, ok := ctx.Value("Language").(lang.Language)
+        if !ok </span><span class="cov0" title="0">{
+                return res, fmt.Errorf("value for 'Language' is not of type lang.Language")
+        }</span>
+        <span class="cov8" title="1">code := language.Code
+        if code == "swa" </span><span class="cov8" title="1">{
+                defaultValue = "Haipo"
+        }</span> else<span class="cov8" title="1"> {
+                defaultValue = "Not Provided"
+        }</span>
+
+        // Helper function to handle nil byte slices and convert them to string
+        <span class="cov8" title="1">getEntryOrDefault := func(entry []byte, err error) string </span><span class="cov8" title="1">{
+                if err != nil || entry == nil </span><span class="cov0" title="0">{
+                        return defaultValue
+                }</span>
+                <span class="cov8" title="1">return string(entry)</span>
+        }
+        <span class="cov8" title="1">store := h.userdataStore
+        // Retrieve user data as strings with fallback to defaultValue
+        firstName := getEntryOrDefault(store.ReadEntry(ctx, sessionId, utils.DATA_FIRST_NAME))
+        familyName := getEntryOrDefault(store.ReadEntry(ctx, sessionId, utils.DATA_FAMILY_NAME))
+        yob := getEntryOrDefault(store.ReadEntry(ctx, sessionId, utils.DATA_YOB))
+        gender := getEntryOrDefault(store.ReadEntry(ctx, sessionId, utils.DATA_GENDER))
+        location := getEntryOrDefault(store.ReadEntry(ctx, sessionId, utils.DATA_LOCATION))
+        offerings := getEntryOrDefault(store.ReadEntry(ctx, sessionId, utils.DATA_OFFERINGS))
+
+        // Construct the full name
+        name := defaultValue
+        if familyName != defaultValue </span><span class="cov8" title="1">{
+                if firstName == defaultValue </span><span class="cov0" title="0">{
+                        name = familyName
+                }</span> else<span class="cov8" title="1"> {
+                        name = firstName + " " + familyName
+                }</span>
+        }
+
+        // Calculate age from year of birth
+        <span class="cov8" title="1">age := defaultValue
+        if yob != defaultValue </span><span class="cov8" title="1">{
+                if yobInt, err := strconv.Atoi(yob); err == nil </span><span class="cov8" title="1">{
+                        age = strconv.Itoa(utils.CalculateAgeWithYOB(yobInt))
+                }</span> else<span class="cov0" title="0"> {
+                        return res, fmt.Errorf("invalid year of birth: %v", err)
+                }</span>
+        }
+        <span class="cov8" title="1">switch language.Code </span>{
+        case "eng":<span class="cov8" title="1">
+                res.Content = fmt.Sprintf(
+                        "Name: %s\nGender: %s\nAge: %s\nLocation: %s\nYou provide: %s\n",
+                        name, gender, age, location, offerings,
+                )</span>
+        case "swa":<span class="cov8" title="1">
+                res.Content = fmt.Sprintf(
+                        "Jina: %s\nJinsia: %s\nUmri: %s\nEneo: %s\nUnauza: %s\n",
+                        name, gender, age, location, offerings,
+                )</span>
+        default:<span class="cov8" title="1">
+                res.Content = fmt.Sprintf(
+                        "Name: %s\nGender: %s\nAge: %s\nLocation: %s\nYou provide: %s\n",
+                        name, gender, age, location, offerings,
+                )</span>
+        }
+
+        <span class="cov8" title="1">return res, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package http
+
+import (
+        "io"
+        "net/http"
+
+        "git.grassecon.net/urdt/ussd/internal/handlers"
+)
+
+type ATSessionHandler struct {
+        *SessionHandler
+}
+
+func NewATSessionHandler(h handlers.RequestHandler) *ATSessionHandler <span class="cov8" title="1">{
+        return &amp;ATSessionHandler{
+                SessionHandler: ToSessionHandler(h),
+        }
+}</span>
+
+func (ash *ATSessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) <span class="cov8" title="1">{
+        var code int
+        var err error
+
+        rqs := handlers.RequestSession{
+                Ctx:    req.Context(),
+                Writer: w,
+        }
+
+        rp := ash.GetRequestParser()
+        cfg := ash.GetConfig()
+        cfg.SessionId, err = rp.GetSessionId(req)
+        if err != nil </span><span class="cov8" title="1">{
+                logg.ErrorCtxf(rqs.Ctx, "", "header processing error", err)
+                ash.writeError(w, 400, err)
+                return
+        }</span>
+        <span class="cov8" title="1">rqs.Config = cfg
+        rqs.Input, err = rp.GetInput(req)
+        if err != nil </span><span class="cov8" title="1">{
+                logg.ErrorCtxf(rqs.Ctx, "", "header processing error", err)
+                ash.writeError(w, 400, err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">rqs, err = ash.Process(rqs) 
+        switch err </span>{
+        case nil:<span class="cov8" title="1"> // set code to 200 if no err
+                code = 200</span>
+        case handlers.ErrStorage, handlers.ErrEngineInit, handlers.ErrEngineExec, handlers.ErrEngineType:<span class="cov8" title="1">
+                code = 500</span>
+        default:<span class="cov0" title="0">
+                code = 500</span>
+        }
+
+        <span class="cov8" title="1">if code != 200 </span><span class="cov8" title="1">{
+                ash.writeError(w, 500, err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">w.WriteHeader(200)
+        w.Header().Set("Content-Type", "text/plain")
+        rqs, err = ash.Output(rqs)
+        if err != nil </span><span class="cov0" title="0">{
+                ash.writeError(w, 500, err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">rqs, err = ash.Reset(rqs)
+        if err != nil </span><span class="cov0" title="0">{
+                ash.writeError(w, 500, err)
+                return
+        }</span>
+}
+
+func (ash *ATSessionHandler) Output(rqs handlers.RequestSession) (handlers.RequestSession, error) <span class="cov8" title="1">{
+        var err error
+        var prefix string
+
+        if rqs.Continue </span><span class="cov8" title="1">{
+                prefix = "CON "
+        }</span> else<span class="cov8" title="1"> {
+                prefix = "END "
+        }</span>
+
+        <span class="cov8" title="1">_, err = io.WriteString(rqs.Writer, prefix)
+        if err != nil </span><span class="cov0" title="0">{
+                return rqs, err
+        }</span>
+
+        <span class="cov8" title="1">_, err = rqs.Engine.Flush(rqs.Ctx, rqs.Writer)
+        return rqs, err</span>
+}</pre>
+		
+		<pre class="file" id="file9" style="display: none">package http
+
+import (
+        "io/ioutil"
+        "net/http"
+        "strconv"
+
+        "git.defalsify.org/vise.git/logging"
+
+        "git.grassecon.net/urdt/ussd/internal/handlers"
+)
+
+var (
+        logg = logging.NewVanilla().WithDomain("httpserver")
+)
+
+type DefaultRequestParser struct {
+}
+
+
+func(rp *DefaultRequestParser) GetSessionId(rq any) (string, error) <span class="cov8" title="1">{
+        rqv, ok := rq.(*http.Request)
+        if !ok </span><span class="cov8" title="1">{
+                return "", handlers.ErrInvalidRequest
+        }</span>
+        <span class="cov8" title="1">v := rqv.Header.Get("X-Vise-Session")
+        if v == "" </span><span class="cov8" title="1">{
+                return "", handlers.ErrSessionMissing
+        }</span>
+        <span class="cov8" title="1">return v, nil</span>
+}
+
+func(rp *DefaultRequestParser) GetInput(rq any) ([]byte, error) <span class="cov8" title="1">{
+        rqv, ok := rq.(*http.Request)
+        if !ok </span><span class="cov8" title="1">{
+                return nil, handlers.ErrInvalidRequest
+        }</span>
+        <span class="cov8" title="1">defer rqv.Body.Close()
+        v, err := ioutil.ReadAll(rqv.Body)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">return v, nil</span>
+}
+
+type SessionHandler struct {
+        handlers.RequestHandler
+}
+
+func ToSessionHandler(h handlers.RequestHandler) *SessionHandler <span class="cov8" title="1">{
+        return &amp;SessionHandler{
+                RequestHandler: h,
+        }
+}</span>
+
+func(f *SessionHandler) writeError(w http.ResponseWriter, code int, err error) <span class="cov8" title="1">{
+        s := err.Error()
+        w.Header().Set("Content-Length", strconv.Itoa(len(s)))
+        w.WriteHeader(code)
+        _, err = w.Write([]byte{})
+        if err != nil </span><span class="cov0" title="0">{
+                logg.Errorf("error writing error!!", "err", err, "olderr", s)
+                w.WriteHeader(500)
+        }</span>
+        <span class="cov8" title="1">return</span> 
+}
+
+func(f *SessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) <span class="cov8" title="1">{
+        var code int
+        var err error
+        var perr error
+
+        rqs := handlers.RequestSession{
+                Ctx: req.Context(),
+                Writer: w,
+        }
+
+        rp := f.GetRequestParser()
+        cfg := f.GetConfig()
+        cfg.SessionId, err = rp.GetSessionId(req)
+        if err != nil </span><span class="cov8" title="1">{
+                logg.ErrorCtxf(rqs.Ctx, "", "header processing error", err)
+                f.writeError(w, 400, err)
+        }</span>
+        <span class="cov8" title="1">rqs.Config = cfg
+        rqs.Input, err = rp.GetInput(req)
+        if err != nil </span><span class="cov0" title="0">{
+                logg.ErrorCtxf(rqs.Ctx, "", "header processing error", err)
+                f.writeError(w, 400, err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">rqs, err = f.Process(rqs)
+        switch err </span>{
+        case handlers.ErrStorage:<span class="cov8" title="1">
+                code = 500</span>
+        case handlers.ErrEngineInit:<span class="cov0" title="0">
+                code = 500</span>
+        case handlers.ErrEngineExec:<span class="cov0" title="0">
+                code = 500</span>
+        default:<span class="cov8" title="1">
+                code = 200</span>
+        }
+
+        <span class="cov8" title="1">if code != 200 </span><span class="cov8" title="1">{
+                f.writeError(w, 500, err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">w.WriteHeader(200)
+        w.Header().Set("Content-Type", "text/plain")
+        rqs, err = f.Output(rqs)
+        rqs, perr = f.Reset(rqs)
+        if err != nil </span><span class="cov8" title="1">{
+                f.writeError(w, 500, err)
+                return
+        }</span>
+        <span class="cov8" title="1">if perr != nil </span><span class="cov8" title="1">{
+                f.writeError(w, 500, perr)
+                return
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">package mocks
+
+import (
+        "context"
+
+        "git.defalsify.org/vise.git/lang"
+        "github.com/stretchr/testify/mock"
+)
+
+type MockDb struct {
+        mock.Mock
+}
+
+func (m *MockDb) SetPrefix(prefix uint8) <span class="cov0" title="0">{
+        m.Called(prefix)
+}</span>
+
+func (m *MockDb) Prefix() uint8 <span class="cov0" title="0">{
+        args := m.Called()
+        return args.Get(0).(uint8)
+}</span>
+
+func (m *MockDb) Safe() bool <span class="cov0" title="0">{
+        args := m.Called()
+        return args.Get(0).(bool)
+}</span>
+
+func (m *MockDb) SetLanguage(language *lang.Language) <span class="cov0" title="0">{
+        m.Called(language)
+}</span>
+
+func (m *MockDb) SetLock(uint8, bool) error <span class="cov0" title="0">{
+        args := m.Called()
+        return args.Error(0)
+}</span>
+
+func (m *MockDb) Connect(ctx context.Context, connectionStr string) error <span class="cov0" title="0">{
+        args := m.Called(ctx, connectionStr)
+        return args.Error(0)
+}</span>
+
+func (m *MockDb) SetSession(sessionId string) <span class="cov0" title="0">{
+        m.Called(sessionId)
+}</span>
+
+func (m *MockDb) Put(ctx context.Context, key, value []byte) error <span class="cov0" title="0">{
+        args := m.Called(ctx, key, value)
+        return args.Error(0)
+}</span>
+
+func (m *MockDb) Get(ctx context.Context, key []byte) ([]byte, error) <span class="cov0" title="0">{
+        args := m.Called(ctx, key)
+        return nil, args.Error(0)
+}</span>
+
+func (m *MockDb) Close() error <span class="cov0" title="0">{
+        args := m.Called(nil)
+        return args.Error(0)
+}</span>
+</pre>
+		
+		<pre class="file" id="file11" style="display: none">package httpmocks
+
+import (
+        "context"
+        "io"
+)
+
+// MockEngine implements the engine.Engine interface for testing
+type MockEngine struct {
+        InitFunc   func(context.Context) (bool, error)
+        ExecFunc   func(context.Context, []byte) (bool, error)
+        FlushFunc  func(context.Context, io.Writer) (int, error)
+        FinishFunc func() error
+}
+
+func (m *MockEngine) Init(ctx context.Context) (bool, error) <span class="cov0" title="0">{
+        return m.InitFunc(ctx)
+}</span>
+
+func (m *MockEngine) Exec(ctx context.Context, input []byte) (bool, error) <span class="cov0" title="0">{
+        return m.ExecFunc(ctx, input)
+}</span>
+
+func (m *MockEngine) Flush(ctx context.Context, w io.Writer) (int, error) <span class="cov8" title="1">{
+        return m.FlushFunc(ctx, w)
+}</span>
+
+func (m *MockEngine) Finish() error <span class="cov0" title="0">{
+        return m.FinishFunc()
+}</span>
+</pre>
+		
+		<pre class="file" id="file12" style="display: none">package httpmocks
+
+import (
+        "git.defalsify.org/vise.git/engine"
+        "git.defalsify.org/vise.git/persist"
+        "git.defalsify.org/vise.git/resource"
+        "git.grassecon.net/urdt/ussd/internal/handlers"
+)
+
+// MockRequestHandler implements handlers.RequestHandler interface for testing
+type MockRequestHandler struct {
+        ProcessFunc          func(handlers.RequestSession) (handlers.RequestSession, error)
+        GetConfigFunc        func() engine.Config
+        GetEngineFunc        func(cfg engine.Config, rs resource.Resource, pe *persist.Persister) engine.Engine
+        OutputFunc           func(rs handlers.RequestSession) (handlers.RequestSession, error)
+        ResetFunc            func(rs handlers.RequestSession) (handlers.RequestSession, error)
+        ShutdownFunc         func()
+        GetRequestParserFunc func() handlers.RequestParser
+}
+
+func (m *MockRequestHandler) Process(rqs handlers.RequestSession) (handlers.RequestSession, error) <span class="cov8" title="1">{
+        return m.ProcessFunc(rqs)
+}</span>
+
+func (m *MockRequestHandler) GetConfig() engine.Config <span class="cov8" title="1">{
+        return m.GetConfigFunc()
+}</span>
+
+func (m *MockRequestHandler) GetEngine(cfg engine.Config, rs resource.Resource, pe *persist.Persister) engine.Engine <span class="cov0" title="0">{
+        return m.GetEngineFunc(cfg, rs, pe)
+}</span>
+
+func (m *MockRequestHandler) Output(rs handlers.RequestSession) (handlers.RequestSession, error) <span class="cov8" title="1">{
+        return m.OutputFunc(rs)
+}</span>
+
+func (m *MockRequestHandler) Reset(rs handlers.RequestSession) (handlers.RequestSession, error) <span class="cov8" title="1">{
+        return m.ResetFunc(rs)
+}</span>
+
+func (m *MockRequestHandler) Shutdown() <span class="cov0" title="0">{
+        m.ShutdownFunc()
+}</span>
+
+func (m *MockRequestHandler) GetRequestParser() handlers.RequestParser <span class="cov8" title="1">{
+        return m.GetRequestParserFunc()
+}</span>
+</pre>
+		
+		<pre class="file" id="file13" style="display: none">package httpmocks
+
+// MockRequestParser implements the handlers.RequestParser interface for testing
+type MockRequestParser struct {
+        GetSessionIdFunc func(any) (string, error)
+        GetInputFunc     func(any) ([]byte, error)
+}
+
+func (m *MockRequestParser) GetSessionId(rq any) (string, error) <span class="cov8" title="1">{
+        return m.GetSessionIdFunc(rq)
+}</span>
+
+func (m *MockRequestParser) GetInput(rq any) ([]byte, error) <span class="cov8" title="1">{
+        return m.GetInputFunc(rq)
+}</span>
+</pre>
+		
+		<pre class="file" id="file14" style="display: none">package httpmocks
+
+import "net/http"
+
+// MockWriter implements a mock io.Writer for testing
+type MockWriter struct {
+        WriteStringCalled bool
+        WrittenString     string
+}
+
+func (m *MockWriter) Write(p []byte) (n int, err error) <span class="cov8" title="1">{
+        return len(p), nil
+}</span>
+
+func (m *MockWriter) WriteString(s string) (n int, err error) <span class="cov8" title="1">{
+        m.WriteStringCalled = true
+        m.WrittenString = s
+        return len(s), nil
+}</span>
+
+func (m *MockWriter) Header() http.Header <span class="cov8" title="1">{
+        return http.Header{}
+}</span>
+
+func (m *MockWriter) WriteHeader(statusCode int) {<span class="cov8" title="1">}</pre>
+		
+		<pre class="file" id="file15" style="display: none">package mocks
+
+import (
+        "git.grassecon.net/urdt/ussd/internal/models"
+        "github.com/stretchr/testify/mock"
+)
+
+// MockAccountService implements AccountServiceInterface for testing
+type MockAccountService struct {
+        mock.Mock
+}
+
+func (m *MockAccountService) CreateAccount() (*models.AccountResponse, error) <span class="cov8" title="1">{
+        args := m.Called()
+        return args.Get(0).(*models.AccountResponse), args.Error(1)
+}</span>
+
+func (m *MockAccountService) CheckBalance(publicKey string) (*models.BalanceResponse, error) <span class="cov8" title="1">{
+        args := m.Called(publicKey)
+        return args.Get(0).(*models.BalanceResponse), args.Error(1)
+}</span>
+
+func (m *MockAccountService) CheckAccountStatus(trackingId string) (*models.TrackStatusResponse, error) <span class="cov8" title="1">{
+        args := m.Called(trackingId)
+        return args.Get(0).(*models.TrackStatusResponse), args.Error(1)
+}</pre>
+		
+		<pre class="file" id="file16" style="display: none">package mocks
+
+import (
+        "context"
+
+        "git.defalsify.org/vise.git/db"
+        "git.grassecon.net/urdt/ussd/internal/utils"
+        "github.com/stretchr/testify/mock"
+)
+
+type MockUserDataStore struct {
+        db.Db
+        mock.Mock
+}
+
+func (m *MockUserDataStore) ReadEntry(ctx context.Context, sessionId string, typ utils.DataTyp) ([]byte, error) <span class="cov8" title="1">{
+        args := m.Called(ctx, sessionId, typ)
+        return args.Get(0).([]byte), args.Error(1)
+}</span>
+
+func (m *MockUserDataStore) WriteEntry(ctx context.Context, sessionId string, typ utils.DataTyp, value []byte) error <span class="cov8" title="1">{
+        args := m.Called(ctx, sessionId, typ, value)
+        return args.Error(0)
+}</span>
+</pre>
+		
+		<pre class="file" id="file17" style="display: none">package storage
+
+import (
+        "context"
+
+        "git.defalsify.org/vise.git/db"
+        "git.defalsify.org/vise.git/lang"
+        gdbmdb "git.defalsify.org/vise.git/db/gdbm"
+)
+
+var (
+        dbC map[string]chan db.Db
+)
+
+type ThreadGdbmDb struct {
+        db db.Db
+        connStr string
+}
+
+func NewThreadGdbmDb() *ThreadGdbmDb <span class="cov0" title="0">{
+        if dbC == nil </span><span class="cov0" title="0">{
+                dbC = make(map[string]chan db.Db)
+        }</span>
+        <span class="cov0" title="0">return &amp;ThreadGdbmDb{}</span>
+}
+
+func(tdb *ThreadGdbmDb) Connect(ctx context.Context, connStr string) error <span class="cov0" title="0">{
+        var ok bool
+        _, ok = dbC[connStr]
+        if ok </span><span class="cov0" title="0">{
+                logg.WarnCtxf(ctx, "already registered thread gdbm, skipping", "connStr", connStr)
+                return nil
+        }</span>
+        <span class="cov0" title="0">gdb := gdbmdb.NewGdbmDb()
+        err := gdb.Connect(ctx, connStr)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov0" title="0">dbC[connStr] = make(chan db.Db, 1)
+        dbC[connStr]&lt;- gdb
+        tdb.connStr = connStr
+        return nil</span>
+}
+
+func(tdb *ThreadGdbmDb) reserve() <span class="cov0" title="0">{
+        if tdb.db == nil </span><span class="cov0" title="0">{
+                tdb.db = &lt;-dbC[tdb.connStr]
+        }</span>
+}
+
+func(tdb *ThreadGdbmDb) release() <span class="cov0" title="0">{
+        if tdb.db == nil </span><span class="cov0" title="0">{
+                return
+        }</span>
+        <span class="cov0" title="0">dbC[tdb.connStr] &lt;- tdb.db
+        tdb.db = nil</span>
+}
+
+func(tdb *ThreadGdbmDb) SetPrefix(pfx uint8) <span class="cov0" title="0">{
+        tdb.reserve()
+        tdb.db.SetPrefix(pfx)
+}</span>
+
+func(tdb *ThreadGdbmDb) SetSession(sessionId string) <span class="cov0" title="0">{
+        tdb.reserve()
+        tdb.db.SetSession(sessionId)
+}</span>
+
+func(tdb *ThreadGdbmDb) SetLanguage(lng *lang.Language) <span class="cov0" title="0">{
+        tdb.reserve()
+        tdb.db.SetLanguage(lng)
+}</span>
+
+func(tdb *ThreadGdbmDb) Safe() bool <span class="cov0" title="0">{
+        tdb.reserve()
+        v := tdb.db.Safe()
+        tdb.release()
+        return v
+}</span>
+
+func(tdb *ThreadGdbmDb) Prefix() uint8 <span class="cov0" title="0">{
+        tdb.reserve()
+        v := tdb.db.Prefix()
+        tdb.release()
+        return v
+}</span>
+
+func(tdb *ThreadGdbmDb) SetLock(typ uint8, locked bool) error <span class="cov0" title="0">{
+        tdb.reserve()
+        err := tdb.db.SetLock(typ, locked)
+        tdb.release()
+        return err
+}</span>
+
+func(tdb *ThreadGdbmDb) Put(ctx context.Context, key []byte, val []byte) error <span class="cov0" title="0">{
+        tdb.reserve()
+        err := tdb.db.Put(ctx, key, val)
+        tdb.release()
+        return err
+}</span>
+
+func(tdb *ThreadGdbmDb) Get(ctx context.Context, key []byte) ([]byte, error) <span class="cov0" title="0">{
+        tdb.reserve()
+        v, err := tdb.db.Get(ctx, key)
+        tdb.release()
+        return v, err
+}</span>
+
+func(tdb *ThreadGdbmDb) Close() error <span class="cov0" title="0">{
+        tdb.reserve()
+        close(dbC[tdb.connStr])
+        err := tdb.db.Close()
+        tdb.db = nil
+        return err
+}</span>
+</pre>
+		
+		<pre class="file" id="file18" style="display: none">package storage
+
+import (
+        "git.defalsify.org/vise.git/db"
+        "git.defalsify.org/vise.git/persist"
+)
+
+const (
+        DATATYPE_CUSTOM = 128 
+)
+
+type Storage struct {
+        Persister *persist.Persister
+        UserdataDb db.Db        
+}
+
+type StorageProvider interface {
+        Get(sessionId string) (*Storage, error)
+        Put(sessionId string, storage *Storage) error
+        Close() error
+}
+
+type SimpleStorageProvider struct {
+        *Storage
+}
+
+func NewSimpleStorageProvider(stateStore db.Db, userdataStore db.Db) StorageProvider <span class="cov0" title="0">{
+        pe := persist.NewPersister(stateStore)
+        pe = pe.WithFlush()
+        return &amp;SimpleStorageProvider{
+                Storage: &amp;Storage{
+                        Persister: pe,
+                        UserdataDb: userdataStore,
+                },
+        }
+}</span>
+
+func (p *SimpleStorageProvider) Get(sessionId string) (*Storage, error) <span class="cov0" title="0">{
+        return p.Storage, nil
+}</span>
+
+func (p *SimpleStorageProvider) Put(sessionId string, storage *Storage) error <span class="cov0" title="0">{
+        return nil
+}</span>
+
+func (p *SimpleStorageProvider) Close() error <span class="cov0" title="0">{
+        return p.Storage.UserdataDb.Close()
+}</span>
+</pre>
+		
+		<pre class="file" id="file19" style="display: none">package storage
+
+import (
+        "context"
+        "fmt"
+        "os"
+        "path"
+
+        "git.defalsify.org/vise.git/db"
+        fsdb "git.defalsify.org/vise.git/db/fs"
+        "git.defalsify.org/vise.git/persist"
+        "git.defalsify.org/vise.git/resource"
+        "git.defalsify.org/vise.git/logging"
+)
+
+var (
+        logg = logging.NewVanilla().WithDomain("storage")
+)        
+
+type StorageService interface {
+        GetPersister(ctx context.Context) (*persist.Persister, error)
+        GetUserdataDb(ctx context.Context) db.Db
+        GetResource(ctx context.Context) (resource.Resource, error)
+        EnsureDbDir() error
+}
+
+type MenuStorageService struct{
+        dbDir string
+        resourceDir string
+        resourceStore db.Db
+        stateStore db.Db
+        userDataStore db.Db
+}
+
+func NewMenuStorageService(dbDir string, resourceDir string) *MenuStorageService <span class="cov0" title="0">{
+        return &amp;MenuStorageService{
+                dbDir: dbDir,
+                resourceDir: resourceDir,
+        }
+}</span>
+
+func (ms *MenuStorageService) GetPersister(ctx context.Context) (*persist.Persister, error) <span class="cov0" title="0">{
+        ms.stateStore = NewThreadGdbmDb()
+        storeFile := path.Join(ms.dbDir, "state.gdbm")
+        err := ms.stateStore.Connect(ctx, storeFile)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">pr := persist.NewPersister(ms.stateStore)
+        logg.TraceCtxf(ctx, "menu storage service", "persist", pr, "store", ms.stateStore)
+        return pr, nil</span>
+}
+
+func (ms *MenuStorageService) GetUserdataDb(ctx context.Context) (db.Db, error) <span class="cov0" title="0">{
+        ms.userDataStore = NewThreadGdbmDb()
+        storeFile := path.Join(ms.dbDir, "userdata.gdbm")
+        err := ms.userDataStore.Connect(ctx, storeFile)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return ms.userDataStore, nil</span>
+}
+
+func (ms *MenuStorageService) GetResource(ctx context.Context) (resource.Resource, error) <span class="cov0" title="0">{
+        ms.resourceStore = fsdb.NewFsDb()
+        err := ms.resourceStore.Connect(ctx, ms.resourceDir)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">rfs := resource.NewDbResource(ms.resourceStore)
+        return rfs, nil</span>
+}
+
+func (ms *MenuStorageService) GetStateStore(ctx context.Context) (db.Db, error) <span class="cov0" title="0">{
+        if ms.stateStore != nil </span><span class="cov0" title="0">{
+                panic("set up store when already exists")</span>
+        }
+        <span class="cov0" title="0">ms.stateStore = NewThreadGdbmDb()
+        storeFile := path.Join(ms.dbDir, "state.gdbm")
+        err := ms.stateStore.Connect(ctx, storeFile)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return ms.stateStore, nil</span>
+}
+
+func (ms *MenuStorageService) EnsureDbDir() error <span class="cov0" title="0">{
+        err := os.MkdirAll(ms.dbDir, 0700)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("state dir create exited with error: %v\n", err)
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+
+func (ms *MenuStorageService) Close() error <span class="cov0" title="0">{
+        errA := ms.stateStore.Close()
+        errB := ms.userDataStore.Close()
+        errC := ms.resourceStore.Close()
+        if errA != nil || errB != nil || errC != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("%v %v %v", errA, errB, errC)
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file20" style="display: none">package utils
+
+import "time"
+
+// CalculateAge calculates the age based on a given birthdate and the current date in the format dd/mm/yy
+// It adjusts for cases where the current date is before the birthday in the current year.
+func CalculateAge(birthdate, today time.Time) int <span class="cov0" title="0">{
+        today = today.In(birthdate.Location())
+        ty, tm, td := today.Date()
+        today = time.Date(ty, tm, td, 0, 0, 0, 0, time.UTC)
+        by, bm, bd := birthdate.Date()
+        birthdate = time.Date(by, bm, bd, 0, 0, 0, 0, time.UTC)
+        if today.Before(birthdate) </span><span class="cov0" title="0">{
+                return 0
+        }</span>
+        <span class="cov0" title="0">age := ty - by
+        anniversary := birthdate.AddDate(age, 0, 0)
+        if anniversary.After(today) </span><span class="cov0" title="0">{
+                age--
+        }</span>
+        <span class="cov0" title="0">return age</span>
+}
+
+// CalculateAgeWithYOB calculates the age based on the given year of birth (YOB).
+// It subtracts the YOB from the current year to determine the age.
+//
+// Parameters:
+//   yob: The year of birth as an integer.
+//
+// Returns:
+//   The calculated age as an integer.
+func CalculateAgeWithYOB(yob int) int <span class="cov8" title="1">{
+    currentYear := time.Now().Year()
+    return currentYear - yob
+}</pre>
+		
+		<pre class="file" id="file21" style="display: none">package utils
+
+import (
+        "encoding/binary"
+)
+
+type DataTyp uint16
+
+const (
+        DATA_ACCOUNT DataTyp = iota
+        DATA_ACCOUNT_CREATED
+        DATA_TRACKING_ID
+        DATA_PUBLIC_KEY
+        DATA_CUSTODIAL_ID
+        DATA_ACCOUNT_PIN
+        DATA_ACCOUNT_STATUS
+        DATA_FIRST_NAME
+        DATA_FAMILY_NAME
+        DATA_YOB
+        DATA_LOCATION
+        DATA_GENDER
+        DATA_OFFERINGS
+        DATA_RECIPIENT
+        DATA_AMOUNT
+        DATA_TEMPORARY_PIN
+)
+
+func typToBytes(typ DataTyp) []byte <span class="cov0" title="0">{
+        var b [2]byte
+        binary.BigEndian.PutUint16(b[:], uint16(typ))
+        return b[:]
+}</span>
+
+func PackKey(typ DataTyp, data []byte) []byte <span class="cov0" title="0">{
+        v := typToBytes(typ)
+        return append(v, data...)
+}</span>
+</pre>
+		
+		<pre class="file" id="file22" style="display: none">package utils
+
+var isoCodes = map[string]bool{
+        "eng": true, // English
+        "swa": true, // Swahili
+
+}
+
+func IsValidISO639(code string) bool <span class="cov8" title="1">{
+        return isoCodes[code]
+}</span>
+</pre>
+		
+		<pre class="file" id="file23" style="display: none">package utils
+
+import (
+        "context"
+
+        "git.defalsify.org/vise.git/db"
+)
+
+type DataStore interface {
+        db.Db
+        ReadEntry(ctx context.Context, sessionId string, typ DataTyp) ([]byte, error)
+        WriteEntry(ctx context.Context, sessionId string, typ DataTyp, value []byte) error
+}
+
+type UserDataStore struct {
+        db.Db
+}
+
+// ReadEntry retrieves an entry from the store based on the provided parameters.
+func (store *UserDataStore) ReadEntry(ctx context.Context, sessionId string, typ DataTyp) ([]byte, error) <span class="cov0" title="0">{
+        store.SetPrefix(db.DATATYPE_USERDATA)
+        store.SetSession(sessionId)
+        k := PackKey(typ, []byte(sessionId))
+        return store.Get(ctx, k)
+}</span>
+
+func (store *UserDataStore) WriteEntry(ctx context.Context, sessionId string, typ DataTyp, value []byte) error <span class="cov0" title="0">{
+        store.SetPrefix(db.DATATYPE_USERDATA)
+        store.SetSession(sessionId)
+        k := PackKey(typ, []byte(sessionId))
+        return store.Put(ctx, k, value)
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

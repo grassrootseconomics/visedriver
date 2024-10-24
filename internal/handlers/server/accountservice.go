@@ -2,18 +2,27 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
 
 	"git.grassecon.net/urdt/ussd/config"
 	"git.grassecon.net/urdt/ussd/internal/models"
+	"github.com/grassrootseconomics/eth-custodial/pkg/api"
+)
+
+var (
+	okResponse  api.OKResponse
+	errResponse api.ErrResponse
 )
 
 type AccountServiceInterface interface {
 	CheckBalance(publicKey string) (*models.BalanceResponse, error)
-	CreateAccount() (*models.AccountResponse, error)
+	CreateAccount() (*api.OKResponse, error)
 	CheckAccountStatus(trackingId string) (*models.TrackStatusResponse, error)
+	TrackAccountStatus(publicKey string) (*api.OKResponse, error)
 }
 
 type AccountService struct {
@@ -22,8 +31,6 @@ type AccountService struct {
 type TestAccountService struct {
 }
 
-// CheckAccountStatus retrieves the status of an account transaction based on the provided tracking ID.
-//
 // Parameters:
 //   - trackingId: A unique identifier for the account.This should be obtained from a previous call to
 //     CreateAccount or a similar function that returns an AccountResponse. The `trackingId` field in the
@@ -32,9 +39,9 @@ type TestAccountService struct {
 // Returns:
 //   - string: The status of the transaction as a string. If there is an error during the request or processing, this will be an empty string.
 //   - error: An error if any occurred during the HTTP request, reading the response, or unmarshalling the JSON data.
-//     If no error occurs, this will be nil.
+//     If no error occurs, this will be nil
 func (as *AccountService) CheckAccountStatus(trackingId string) (*models.TrackStatusResponse, error) {
-	resp, err := http.Get(config.TrackStatusURL + trackingId)
+	resp, err := http.Get(config.BalanceURL + trackingId)
 	if err != nil {
 		return nil, err
 	}
@@ -44,12 +51,55 @@ func (as *AccountService) CheckAccountStatus(trackingId string) (*models.TrackSt
 	if err != nil {
 		return nil, err
 	}
+
 	var trackResp models.TrackStatusResponse
 	err = json.Unmarshal(body, &trackResp)
 	if err != nil {
 		return nil, err
 	}
 	return &trackResp, nil
+
+}
+
+func (as *AccountService) TrackAccountStatus(publicKey string) (*api.OKResponse, error) {
+	var err error
+	// Construct the URL with the path parameter
+	url := fmt.Sprintf("%s/%s", config.TrackURL, publicKey)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-GE-KEY", "xd")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		errResponse.Description = err.Error()
+		return nil, err
+	}
+	if resp.StatusCode >= http.StatusBadRequest {
+		err := json.Unmarshal([]byte(body), &errResponse)
+		if err != nil {
+			return nil, err
+		}
+		return nil, errors.New(errResponse.Description)
+	}
+	err = json.Unmarshal([]byte(body), &okResponse)
+	if err != nil {
+		return nil, err
+	}
+	if len(okResponse.Result) == 0 {
+		return nil, errors.New("Empty api result")
+	}
+	return &okResponse, nil
+
 }
 
 // CheckBalance retrieves the balance for a given public key from the custodial balance API endpoint.
@@ -79,41 +129,55 @@ func (as *AccountService) CheckBalance(publicKey string) (*models.BalanceRespons
 //     If there is an error during the request or processing, this will be nil.
 //   - error: An error if any occurred during the HTTP request, reading the response, or unmarshalling the JSON data.
 //     If no error occurs, this will be nil.
-func (as *AccountService) CreateAccount() (*models.AccountResponse, error) {
-	resp, err := http.Post(config.CreateAccountURL, "application/json", nil)
+func (as *AccountService) CreateAccount() (*api.OKResponse, error) {
+	var err error
+
+	// Create a new request
+	req, err := http.NewRequest("POST", config.CreateAccountURL, nil)
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-GE-KEY", "xd")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		errResponse.Description = err.Error()
+		return nil, err
+	}
 	defer resp.Body.Close()
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
-	var accountResp models.AccountResponse
-	err = json.Unmarshal(body, &accountResp)
+	if resp.StatusCode >= http.StatusBadRequest {
+		err := json.Unmarshal([]byte(body), &errResponse)
+		if err != nil {
+			return nil, err
+		}
+		return nil, errors.New(errResponse.Description)
+	}
+	err = json.Unmarshal([]byte(body), &okResponse)
 	if err != nil {
 		return nil, err
 	}
-	return &accountResp, nil
+	if len(okResponse.Result) == 0 {
+		return nil, errors.New("Empty api result")
+	}
+	return &okResponse, nil
 }
 
-func (tas *TestAccountService) CreateAccount() (*models.AccountResponse, error) {
-	return &models.AccountResponse{
-		Ok: true,
-		Result: struct {
-			CustodialId json.Number `json:"custodialId"`
-			PublicKey   string      `json:"publicKey"`
-			TrackingId  string      `json:"trackingId"`
-		}{
-			CustodialId: json.Number("182"),
-			PublicKey:   "0x48ADca309b5085852207FAaf2816eD72B52F527C",
-			TrackingId:  "28ebe84d-b925-472c-87ae-bbdfa1fb97be",
-		},
+func (tas *TestAccountService) CreateAccount() (*api.OKResponse, error) {
+	return &api.OKResponse{
+		Ok:          true,
+		Description: "Account creation request received successfully",
+		Result:      map[string]any{"publicKey": "0x48ADca309b5085852207FAaf2816eD72B52F527C", "trackingId": "28ebe84d-b925-472c-87ae-bbdfa1fb97be"},
 	}, nil
+
 }
 
 func (tas *TestAccountService) CheckBalance(publicKey string) (*models.BalanceResponse, error) {
-
 	balanceResponse := &models.BalanceResponse{
 		Ok: true,
 		Result: struct {
@@ -124,8 +188,17 @@ func (tas *TestAccountService) CheckBalance(publicKey string) (*models.BalanceRe
 			Nonce:   json.Number("0"),
 		},
 	}
-
 	return balanceResponse, nil
+}
+
+func (tas *TestAccountService) TrackAccountStatus(publicKey string) (*api.OKResponse, error) {
+	return &api.OKResponse{
+		Ok:          true,
+		Description: "Account creation succeeded",
+		Result: map[string]any{
+			"active": true,
+		},
+	}, nil
 }
 
 func (tas *TestAccountService) CheckAccountStatus(trackingId string) (*models.TrackStatusResponse, error) {

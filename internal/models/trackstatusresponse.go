@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"time"
 )
-
 type Transaction struct {
 	CreatedAt     time.Time   `json:"createdAt"`
 	Status        string      `json:"status"`

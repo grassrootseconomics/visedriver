@@ -1,6 +1,4 @@
 LOAD create_account 0
-RELOAD create_account 
-CATCH api_failure  flag_api_call_error  1
 CATCH account_creation_failed flag_account_creation_failed 1
 MOUT exit 0
 HALT

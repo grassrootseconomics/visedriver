@@ -478,12 +478,8 @@ func TestGetSender(t *testing.T) {
 	mockStore := new(mocks.MockUserDataStore)
 
 	// Define test data
-	sessionId := "session123"
+	sessionId := "254712345678"
 	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
-	publicKey := "0xcasgatweksalw1018221"
-
-	// Set up the expected behavior of the mock
-	mockStore.On("ReadEntry", ctx, sessionId, utils.DATA_PUBLIC_KEY).Return([]byte(publicKey), nil)
 
 	// Create the Handlers instance with the mock store
 	h := &Handlers{
@@ -491,11 +487,10 @@ func TestGetSender(t *testing.T) {
 	}
 
 	// Call the method
-	res, _ := h.GetSender(ctx, "max_amount", []byte("check_balance"))
+	res, _ := h.GetSender(ctx, "get_sender", []byte(""))
 
-	//Assert that the public key from readentry operation  is what was set as the result content.
-	assert.Equal(t, publicKey, res.Content)
-
+	//Assert that the sessionId is what was set as the result content.
+	assert.Equal(t, sessionId, res.Content)
 }
 
 func TestGetAmount(t *testing.T) {
@@ -1256,7 +1251,7 @@ func TestResetInvalidAmount(t *testing.T) {
 }
 
 func TestInitiateTransaction(t *testing.T) {
-	sessionId := "session123"
+	sessionId := "254712345678"
 
 	fm, err := NewFlagManager(flagsPath)
 
@@ -1279,30 +1274,26 @@ func TestInitiateTransaction(t *testing.T) {
 	tests := []struct {
 		name           string
 		input          []byte
-		PublicKey      []byte
 		Recipient      []byte
 		Amount         []byte
 		status         string
 		expectedResult resource.Result
 	}{
 		{
-			name:      "Test amount reset",
-			PublicKey: []byte("0x1241527192"),
-			Amount:    []byte("0.002CELO"),
+			name:      "Test initiate transaction",
+			Amount:    []byte("0.002 CELO"),
 			Recipient: []byte("0x12415ass27192"),
 			expectedResult: resource.Result{
 				FlagReset: []uint32{account_authorized_flag},
-				Content:   "Your request has been sent. 0x12415ass27192 will receive 0.002CELO from 0x1241527192.",
+				Content:   "Your request has been sent. 0x12415ass27192 will receive 0.002 CELO from 254712345678.",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Define expected interactions with the mock
-			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_PUBLIC_KEY).Return(tt.PublicKey, nil)
 			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_AMOUNT).Return(tt.Amount, nil)
 			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_RECIPIENT).Return(tt.Recipient, nil)
-			//mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_AMOUNT, []byte("")).Return(nil)
 
 			// Call the method under test
 			res, _ := h.InitiateTransaction(ctx, "transaction_reset_amount", tt.input)
@@ -1315,10 +1306,8 @@ func TestInitiateTransaction(t *testing.T) {
 
 			// Assert that expectations were met
 			mockDataStore.AssertExpectations(t)
-
 		})
 	}
-
 }
 
 func TestQuit(t *testing.T) {

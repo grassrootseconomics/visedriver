@@ -34,7 +34,7 @@ func (m *MockAccountService) TrackAccountStatus(ctx context.Context,publicKey st
 }
 
 
-func (m *MockAccountService) FetchVouchers(publicKey string) (*models.VoucherHoldingResponse, error) {
+func (m *MockAccountService) FetchVouchers(ctx context.Context, publicKey string) (*models.VoucherHoldingResponse, error) {
 	args := m.Called(publicKey)
 	return args.Get(0).(*models.VoucherHoldingResponse), args.Error(1)
 }

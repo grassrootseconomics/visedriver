@@ -1035,7 +1035,7 @@ func (h *Handlers) SetDefaultVoucher(ctx context.Context, sym string, input []by
 			}
 
 			// Fetch vouchers from the API using the public key
-			vouchersResp, err := h.accountService.FetchVouchers(string(publicKey))
+			vouchersResp, err := h.accountService.FetchVouchers(ctx, string(publicKey))
 			if err != nil {
 				return res, nil
 			}
@@ -1089,7 +1089,7 @@ func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) 
 	}
 
 	// Fetch vouchers from the API using the public key
-	vouchersResp, err := h.accountService.FetchVouchers(string(publicKey))
+	vouchersResp, err := h.accountService.FetchVouchers(ctx, string(publicKey))
 	if err != nil {
 		return res, nil
 	}

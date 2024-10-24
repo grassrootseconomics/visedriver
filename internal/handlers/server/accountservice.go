@@ -25,7 +25,7 @@ type AccountServiceInterface interface {
 	CreateAccount(ctx context.Context) (*api.OKResponse, error)
 	CheckAccountStatus(ctx context.Context, trackingId string) (*models.TrackStatusResponse, error)
 	TrackAccountStatus(ctx context.Context, publicKey string) (*api.OKResponse, error)
-	FetchVouchers(publicKey string) (*models.VoucherHoldingResponse, error)
+	FetchVouchers(ctx context.Context, publicKey string) (*models.VoucherHoldingResponse, error)
 }
 
 type AccountService struct {
@@ -174,7 +174,7 @@ func (as *AccountService) CreateAccount(ctx context.Context) (*api.OKResponse, e
 // FetchVouchers retrieves the token holdings for a given public key from the custodial holdings API endpoint
 // Parameters:
 //   - publicKey: The public key associated with the account.
-func (as *AccountService) FetchVouchers(publicKey string) (*models.VoucherHoldingResponse, error) {
+func (as *AccountService) FetchVouchers(ctx context.Context, publicKey string) (*models.VoucherHoldingResponse, error) {
 	file, err := os.Open("sample_tokens.json")
 	if err != nil {
 		return nil, err
@@ -245,7 +245,7 @@ func (tas *TestAccountService) CheckAccountStatus(ctx context.Context, trackingI
 	return trackResponse, nil
 }
 
-func (tas *TestAccountService) FetchVouchers(publicKey string) (*models.VoucherHoldingResponse, error) {
+func (tas *TestAccountService) FetchVouchers(ctx context.Context, publicKey string) (*models.VoucherHoldingResponse, error) {
 	return &models.VoucherHoldingResponse{
 		Ok: true,
 		Result: struct {

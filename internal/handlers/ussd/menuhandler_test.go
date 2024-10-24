@@ -494,26 +494,30 @@ func TestGetSender(t *testing.T) {
 }
 
 func TestGetAmount(t *testing.T) {
-	mockStore := new(mocks.MockUserDataStore)
+	mockDataStore := new(mocks.MockUserDataStore)
 
 	// Define test data
 	sessionId := "session123"
 	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
-	Amount := "0.03CELO"
+	amount := "0.03"
+	activeSym := "SRF"
 
 	// Set up the expected behavior of the mock
-	mockStore.On("ReadEntry", ctx, sessionId, utils.DATA_AMOUNT).Return([]byte(Amount), nil)
+	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_ACTIVE_SYM).Return([]byte(activeSym), nil)
+	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_AMOUNT).Return([]byte(amount), nil)
 
 	// Create the Handlers instance with the mock store
 	h := &Handlers{
-		userdataStore: mockStore,
+		userdataStore: mockDataStore,
 	}
 
 	// Call the method
-	res, _ := h.GetAmount(ctx, "get_amount", []byte("Getting amount..."))
+	res, _ := h.GetAmount(ctx, "get_amount", []byte(""))
+
+	formattedAmount := fmt.Sprintf("%s %s", amount, activeSym)
 
 	//Assert that the retrieved amount is what was set as the content
-	assert.Equal(t, Amount, res.Content)
+	assert.Equal(t, formattedAmount, res.Content)
 
 }
 
@@ -1276,16 +1280,18 @@ func TestInitiateTransaction(t *testing.T) {
 		input          []byte
 		Recipient      []byte
 		Amount         []byte
+		ActiveSym      []byte
 		status         string
 		expectedResult resource.Result
 	}{
 		{
 			name:      "Test initiate transaction",
-			Amount:    []byte("0.002 CELO"),
+			Amount:    []byte("0.002"),
+			ActiveSym: []byte("SRF"),
 			Recipient: []byte("0x12415ass27192"),
 			expectedResult: resource.Result{
 				FlagReset: []uint32{account_authorized_flag},
-				Content:   "Your request has been sent. 0x12415ass27192 will receive 0.002 CELO from 254712345678.",
+				Content:   "Your request has been sent. 0x12415ass27192 will receive 0.002 SRF from 254712345678.",
 			},
 		},
 	}
@@ -1294,6 +1300,7 @@ func TestInitiateTransaction(t *testing.T) {
 			// Define expected interactions with the mock
 			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_AMOUNT).Return(tt.Amount, nil)
 			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_RECIPIENT).Return(tt.Recipient, nil)
+			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_ACTIVE_SYM).Return(tt.ActiveSym, nil)
 
 			// Call the method under test
 			res, _ := h.InitiateTransaction(ctx, "transaction_reset_amount", tt.input)
@@ -1444,28 +1451,28 @@ func TestValidateAmount(t *testing.T) {
 	}{
 		{
 			name:      "Test with valid amount",
-			input:     []byte("0.001"),
-			activeBal: []byte("0.003"),
+			input:     []byte("4.10"),
+			activeBal: []byte("5"),
 			expectedResult: resource.Result{
-				Content:   "0.001",
+				Content: "4.10",
 			},
 		},
 		{
 			name:      "Test with amount larger than active balance",
-			input:     []byte("0.02"),
-			activeBal: []byte("0.003"),
+			input:     []byte("5.02"),
+			activeBal: []byte("5"),
 			expectedResult: resource.Result{
-				FlagSet:   []uint32{flag_invalid_amount},
-				Content:   "0.02",
+				FlagSet: []uint32{flag_invalid_amount},
+				Content: "5.02",
 			},
 		},
 		{
-			name:      "Test with invalid amount format",
-			input:     []byte("0.02ms"),
-			balance:   "0.003 CELO",
+			name:    "Test with invalid amount format",
+			input:   []byte("0.02ms"),
+			activeBal: []byte("5"),
 			expectedResult: resource.Result{
-				FlagSet:   []uint32{flag_invalid_amount},
-				Content:   "0.02ms",
+				FlagSet: []uint32{flag_invalid_amount},
+				Content: "0.02ms",
 			},
 		},
 	}
@@ -1567,7 +1574,7 @@ func TestCheckBalance(t *testing.T) {
 			publicKey:      "0X98765432109",
 			activeSym:      "ETH",
 			activeBal:      "1.5",
-			expectedResult: resource.Result{Content: "1.5 ETH"},
+			expectedResult: resource.Result{Content: "Balance: 1.5 ETH\n"},
 			expectError:    false,
 		},
 	}
@@ -1582,11 +1589,11 @@ func TestCheckBalance(t *testing.T) {
 				userdataStore:  mockDataStore,
 				accountService: mockAccountService,
 			}
-			
+
 			// Mock for user with active sym
 			mockDataStore.On("ReadEntry", ctx, tt.sessionId, utils.DATA_ACTIVE_SYM).Return([]byte(tt.activeSym), nil)
 			mockDataStore.On("ReadEntry", ctx, tt.sessionId, utils.DATA_ACTIVE_BAL).Return([]byte(tt.activeBal), nil)
-		
+
 			res, err := h.CheckBalance(ctx, "check_balance", []byte(""))
 
 			if tt.expectError {

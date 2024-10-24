@@ -1,2 +1,2 @@
-Kiwango cha juu: {{.check_balance}}
+Kiwango cha juu: {{.max_amount}}
 Weka kiwango:

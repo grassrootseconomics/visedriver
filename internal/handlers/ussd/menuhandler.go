@@ -785,6 +785,28 @@ func (h *Handlers) ResetTransactionAmount(ctx context.Context, sym string, input
 	return res, nil
 }
 
+// MaxAmount gets the current balance from the API and sets it as
+// the result content.
+func (h *Handlers) MaxAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	var err error
+
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+	store := h.userdataStore
+
+	activeBal, err := store.ReadEntry(ctx, sessionId, utils.DATA_ACTIVE_BAL)
+	if err != nil {
+		return res, err
+	}
+
+	res.Content = string(activeBal)
+
+	return res, nil
+}
+
 // ValidateAmount ensures that the given input is a valid amount and that
 // it is not more than the current balance.
 func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
@@ -824,12 +846,14 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 		return res, nil
 	}
 
-	err = store.WriteEntry(ctx, sessionId, utils.DATA_AMOUNT, []byte(amountStr))
+	// Format the amount with 2 decimal places before saving
+	formattedAmount := fmt.Sprintf("%.2f", inputAmount)
+	err = store.WriteEntry(ctx, sessionId, utils.DATA_AMOUNT, []byte(formattedAmount))
 	if err != nil {
 		return res, err
 	}
 
-	res.Content = fmt.Sprintf("%.3f", inputAmount)
+	res.Content = fmt.Sprintf("%s", formattedAmount)
 	return res, nil
 }
 
@@ -872,9 +896,16 @@ func (h *Handlers) GetAmount(ctx context.Context, sym string, input []byte) (res
 		return res, fmt.Errorf("missing session")
 	}
 	store := h.userdataStore
+
+	// retrieve the active symbol
+	activeSym, err := store.ReadEntry(ctx, sessionId, utils.DATA_ACTIVE_SYM)
+	if err != nil {
+		return res, err
+	}
+
 	amount, _ := store.ReadEntry(ctx, sessionId, utils.DATA_AMOUNT)
 
-	res.Content = string(amount)
+	res.Content = fmt.Sprintf("%s %s", string(amount), string(activeSym))
 
 	return res, nil
 }
@@ -900,7 +931,9 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 
 	recipient, _ := store.ReadEntry(ctx, sessionId, utils.DATA_RECIPIENT)
 
-	res.Content = l.Get("Your request has been sent. %s will receive %s from %s.", string(recipient), string(amount), string(sessionId))
+	activeSym, _ := store.ReadEntry(ctx, sessionId, utils.DATA_ACTIVE_SYM)
+
+	res.Content = l.Get("Your request has been sent. %s will receive %s %s from %s.", string(recipient), string(amount), string(activeSym), string(sessionId))
 
 	account_authorized_flag, err := h.flagManager.GetFlag("flag_account_authorized")
 	if err != nil {

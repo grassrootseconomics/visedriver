@@ -84,8 +84,8 @@
                         "expectedContent": "{max_amount}\nEnter amount:\n0:Back"
                     },
                     {
-                        "input": "0.001",
-                        "expectedContent": "065656 will receive 0.001 from {public_key}\nPlease enter your PIN to confirm:\n0:Back\n9:Quit"
+                        "input": "1.00",
+                        "expectedContent": "065656 will receive {send_amount} from {session_id}\nPlease enter your PIN to confirm:\n0:Back\n9:Quit"
                     },
                     {
                         "input": "1222",
@@ -93,11 +93,11 @@
                     },
                     {
                         "input": "1",
-                        "expectedContent": "065656 will receive 0.001 from {public_key}\nPlease enter your PIN to confirm:\n0:Back\n9:Quit"
+                        "expectedContent": "065656 will receive {send_amount} from {session_id}\nPlease enter your PIN to confirm:\n0:Back\n9:Quit"
                     },
                     {
                         "input": "1234",
-                        "expectedContent": "Your request has been sent. 065656 will receive 0.001 from {public_key}."
+                        "expectedContent": "Your request has been sent. 065656 will receive {send_amount} from {session_id}."
                     }
                 ]
             },

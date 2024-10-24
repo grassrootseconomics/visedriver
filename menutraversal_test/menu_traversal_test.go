@@ -56,11 +56,22 @@ func extractBalance(response []byte) string {
 
 // Extracts the Maximum amount value from the engine response.
 func extractMaxAmount(response []byte) string {
-	// Regex to match "Maximum amount: <amount> <symbol>" followed by a newline
-	re := regexp.MustCompile(`(?m)^Maximum amount:\s+(\d+(\.\d+)?)\s+([A-Z]+)`)
+	// Regex to match "Maximum amount: <amount>" followed by a newline
+	re := regexp.MustCompile(`(?m)^Maximum amount:\s+(\d+(\.\d+)?)`)
 	match := re.FindSubmatch(response)
 	if match != nil {
-		return string(match[1]) + " " + string(match[3]) // "<amount> <symbol>"
+		return string(match[1]) // "<amount>"
+	}
+	return ""
+}
+
+// Extracts the send amount value from the engine response.
+func extractSendAmount(response []byte) string {
+	// Regex to match the pattern "will receive X.XX SYM from"
+	re := regexp.MustCompile(`will receive (\d+\.\d{2}\s+[A-Z]+) from`)
+	match := re.FindSubmatch(response)
+	if match != nil {
+		return string(match[1]) // Returns "X.XX SYM"
 	}
 	return ""
 }
@@ -304,12 +315,13 @@ func TestMainMenuSend(t *testing.T) {
 				b := w.Bytes()
 				balance := extractBalance(b)
 				max_amount := extractMaxAmount(b)
-				publicKey := extractPublicKey(b)
+				send_amount := extractSendAmount(b)
 
 				expectedContent := []byte(step.ExpectedContent)
 				expectedContent = bytes.Replace(expectedContent, []byte("{balance}"), []byte(balance), -1)
 				expectedContent = bytes.Replace(expectedContent, []byte("{max_amount}"), []byte(max_amount), -1)
-				expectedContent = bytes.Replace(expectedContent, []byte("{public_key}"), []byte(publicKey), -1)
+				expectedContent = bytes.Replace(expectedContent, []byte("{send_amount}"), []byte(send_amount), -1)
+				expectedContent = bytes.Replace(expectedContent, []byte("{session_id}"), []byte(sessionID), -1)
 
 				step.ExpectedContent = string(expectedContent)
 				match, err := step.MatchesExpectedContent(b)

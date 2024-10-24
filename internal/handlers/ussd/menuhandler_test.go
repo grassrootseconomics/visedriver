@@ -20,6 +20,7 @@ import (
 	"git.grassecon.net/urdt/ussd/internal/models"
 	"git.grassecon.net/urdt/ussd/internal/utils"
 	"github.com/alecthomas/assert/v2"
+	"github.com/grassrootseconomics/eth-custodial/pkg/api"
 	testdataloader "github.com/peteole/testdata-loader"
 	"github.com/stretchr/testify/require"
 )
@@ -72,68 +73,74 @@ func TestCreateAccount(t *testing.T) {
 	if err != nil {
 		t.Logf(err.Error())
 	}
-
 	// Create required mocks
-	mockDataStore := new(mocks.MockUserDataStore)
-	mockCreateAccountService := new(mocks.MockAccountService)
-	expectedResult := resource.Result{}
-	accountCreatedFlag, err := fm.GetFlag("flag_account_created")
-
+	flag_account_created, err := fm.GetFlag("flag_account_created")
 	if err != nil {
 		t.Logf(err.Error())
 	}
-	expectedResult.FlagSet = append(expectedResult.FlagSet, accountCreatedFlag)
-
 	// Define session ID and mock data
 	sessionId := "session123"
-	typ := utils.DATA_ACCOUNT_CREATED
-	fakeError := db.ErrNotFound{}
-	// Create context with session ID
+	notFoundErr := db.ErrNotFound{}
 	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
 
-	// Define expected interactions with the mock
-	mockDataStore.On("ReadEntry", ctx, sessionId, typ).Return([]byte("123"), fakeError)
-	expectedAccountResp := &models.AccountResponse{
-		Ok: true,
-		Result: struct {
-			CustodialId json.Number `json:"custodialId"`
-			PublicKey   string      `json:"publicKey"`
-			TrackingId  string      `json:"trackingId"`
-		}{
-			CustodialId: "12",
-			PublicKey:   "0x8E0XSCSVA",
-			TrackingId:  "d95a7e83-196c-4fd0-866fSGAGA",
+	tests := []struct {
+		name           string
+		serverResponse *api.OKResponse
+		expectedResult resource.Result
+	}{
+		{
+			name: "Test account creation success",
+			serverResponse: &api.OKResponse{
+				Ok:          true,
+				Description: "Account creation successed",
+				Result: map[string]any{
+					"trackingId": "1234567890",
+					"publicKey":  "1235QERYU",
+				},
+			},
+			expectedResult: resource.Result{
+				FlagSet: []uint32{flag_account_created},
+			},
 		},
 	}
-	mockCreateAccountService.On("CreateAccount").Return(expectedAccountResp, nil)
-	data := map[utils.DataTyp]string{
-		utils.DATA_TRACKING_ID:  expectedAccountResp.Result.TrackingId,
-		utils.DATA_PUBLIC_KEY:   expectedAccountResp.Result.PublicKey,
-		utils.DATA_CUSTODIAL_ID: expectedAccountResp.Result.CustodialId.String(),
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			mockDataStore := new(mocks.MockUserDataStore)
+			mockCreateAccountService := new(mocks.MockAccountService)
+
+			// Create a Handlers instance with the mock data store
+			h := &Handlers{
+				userdataStore:  mockDataStore,
+				accountService: mockCreateAccountService,
+				flagManager:    fm.parser,
+			}
+
+			data := map[utils.DataTyp]string{
+				utils.DATA_TRACKING_ID: tt.serverResponse.Result["trackingId"].(string),
+				utils.DATA_PUBLIC_KEY:  tt.serverResponse.Result["publicKey"].(string),
+			}
+
+			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_ACCOUNT_CREATED).Return([]byte(""), notFoundErr)
+			mockCreateAccountService.On("CreateAccount").Return(tt.serverResponse, nil)
+
+			for key, value := range data {
+				mockDataStore.On("WriteEntry", ctx, sessionId, key, []byte(value)).Return(nil)
+			}
+
+			// Call the method you want to test
+			res, err := h.CreateAccount(ctx, "create_account", []byte("some-input"))
+
+			// Assert that no errors occurred
+			assert.NoError(t, err)
+
+			// Assert that the account created flag has been set to the result
+			assert.Equal(t, res, tt.expectedResult, "Expected result should be equal to the actual result")
+
+			// Assert that expectations were met
+			mockDataStore.AssertExpectations(t)
+		})
 	}
-
-	for key, value := range data {
-		mockDataStore.On("WriteEntry", ctx, sessionId, key, []byte(value)).Return(nil)
-	}
-
-	// Create a Handlers instance with the mock data store
-	h := &Handlers{
-		userdataStore:  mockDataStore,
-		accountService: mockCreateAccountService,
-		flagManager:    fm.parser,
-	}
-
-	// Call the method you want to test
-	res, err := h.CreateAccount(ctx, "create_account", []byte("some-input"))
-
-	// Assert that no errors occurred
-	assert.NoError(t, err)
-
-	//Assert that the account created flag has been set to the result
-	assert.Equal(t, res, expectedResult, "Expected result should be equal to the actual result")
-
-	// Assert that expectations were met
-	mockDataStore.AssertExpectations(t)
 }
 
 func TestWithPersister(t *testing.T) {
@@ -509,12 +516,8 @@ func TestGetSender(t *testing.T) {
 	mockStore := new(mocks.MockUserDataStore)
 
 	// Define test data
-	sessionId := "session123"
+	sessionId := "254712345678"
 	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
-	publicKey := "0xcasgatweksalw1018221"
-
-	// Set up the expected behavior of the mock
-	mockStore.On("ReadEntry", ctx, sessionId, utils.DATA_PUBLIC_KEY).Return([]byte(publicKey), nil)
 
 	// Create the Handlers instance with the mock store
 	h := &Handlers{
@@ -522,11 +525,10 @@ func TestGetSender(t *testing.T) {
 	}
 
 	// Call the method
-	res, _ := h.GetSender(ctx, "max_amount", []byte("check_balance"))
+	res, _ := h.GetSender(ctx, "get_sender", []byte(""))
 
-	//Assert that the public key from readentry operation  is what was set as the result content.
-	assert.Equal(t, publicKey, res.Content)
-
+	//Assert that the sessionId is what was set as the result content.
+	assert.Equal(t, sessionId, res.Content)
 }
 
 func TestGetAmount(t *testing.T) {
@@ -1066,12 +1068,20 @@ func TestCheckAccountStatus(t *testing.T) {
 	tests := []struct {
 		name           string
 		input          []byte
+		serverResponse *api.OKResponse
 		response       *models.TrackStatusResponse
 		expectedResult resource.Result
 	}{
 		{
-			name:  "Test when account status is Success",
+			name:  "Test when account is on the Sarafu network",
 			input: []byte("TrackingId1234"),
+			serverResponse: &api.OKResponse{
+				Ok:          true,
+				Description: "Account creation succeeded",
+				Result: map[string]any{
+					"active": true,
+				},
+			},
 			response: &models.TrackStatusResponse{
 				Ok: true,
 				Result: struct {
@@ -1098,17 +1108,7 @@ func TestCheckAccountStatus(t *testing.T) {
 			},
 		},
 		{
-			name:  "Test when fetching  account status is not  Success",
-			input: []byte("TrackingId1234"),
-			response: &models.TrackStatusResponse{
-				Ok: false,
-			},
-			expectedResult: resource.Result{
-				FlagSet: []uint32{flag_api_error},
-			},
-		},
-		{
-			name:  "Test when checking account status api call is a SUCCESS but an account is not yet ready",
+			name:  "Test when the account is not  yet on the sarafu network",
 			input: []byte("TrackingId1234"),
 			response: &models.TrackStatusResponse{
 				Ok: true,
@@ -1123,11 +1123,18 @@ func TestCheckAccountStatus(t *testing.T) {
 				}{
 					Transaction: models.Transaction{
 						CreatedAt:     time.Now(),
-						Status:        "IN_NETWORK",
+						Status:        "SUCCESS",
 						TransferValue: json.Number("0.5"),
 						TxHash:        "0x123abc456def",
 						TxType:        "transfer",
 					},
+				},
+			},
+			serverResponse: &api.OKResponse{
+				Ok:          true,
+				Description: "Account creation succeeded",
+				Result: map[string]any{
+					"active": false,
 				},
 			},
 			expectedResult: resource.Result{
@@ -1149,9 +1156,10 @@ func TestCheckAccountStatus(t *testing.T) {
 
 			status := tt.response.Result.Transaction.Status
 			// Define expected interactions with the mock
-			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TRACKING_ID).Return(tt.input, nil)
+			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_PUBLIC_KEY).Return(tt.input, nil)
 
 			mockCreateAccountService.On("CheckAccountStatus", string(tt.input)).Return(tt.response, nil)
+			mockCreateAccountService.On("TrackAccountStatus", string(tt.input)).Return(tt.serverResponse, nil)
 			mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_ACCOUNT_STATUS, []byte(status)).Return(nil).Maybe()
 
 			// Call the method under test
@@ -1284,7 +1292,7 @@ func TestResetInvalidAmount(t *testing.T) {
 }
 
 func TestInitiateTransaction(t *testing.T) {
-	sessionId := "session123"
+	sessionId := "254712345678"
 
 	fm, err := NewFlagManager(flagsPath)
 
@@ -1307,30 +1315,26 @@ func TestInitiateTransaction(t *testing.T) {
 	tests := []struct {
 		name           string
 		input          []byte
-		PublicKey      []byte
 		Recipient      []byte
 		Amount         []byte
 		status         string
 		expectedResult resource.Result
 	}{
 		{
-			name:      "Test amount reset",
-			PublicKey: []byte("0x1241527192"),
-			Amount:    []byte("0.002CELO"),
+			name:      "Test initiate transaction",
+			Amount:    []byte("0.002 CELO"),
 			Recipient: []byte("0x12415ass27192"),
 			expectedResult: resource.Result{
 				FlagReset: []uint32{account_authorized_flag},
-				Content:   "Your request has been sent. 0x12415ass27192 will receive 0.002CELO from 0x1241527192.",
+				Content:   "Your request has been sent. 0x12415ass27192 will receive 0.002 CELO from 254712345678.",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Define expected interactions with the mock
-			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_PUBLIC_KEY).Return(tt.PublicKey, nil)
 			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_AMOUNT).Return(tt.Amount, nil)
 			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_RECIPIENT).Return(tt.Recipient, nil)
-			//mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_AMOUNT, []byte("")).Return(nil)
 
 			// Call the method under test
 			res, _ := h.InitiateTransaction(ctx, "transaction_reset_amount", tt.input)
@@ -1343,10 +1347,8 @@ func TestInitiateTransaction(t *testing.T) {
 
 			// Assert that expectations were met
 			mockDataStore.AssertExpectations(t)
-
 		})
 	}
-
 }
 
 func TestQuit(t *testing.T) {
@@ -1625,7 +1627,6 @@ func TestValidateRecipient(t *testing.T) {
 }
 
 func TestCheckBalance(t *testing.T) {
-
 	sessionId := "session123"
 	publicKey := "0X13242618721"
 	fm, _ := NewFlagManager(flagsPath)
@@ -1655,7 +1656,7 @@ func TestCheckBalance(t *testing.T) {
 			},
 		},
 		{
-			name: "Test when checking a  balance is a success",
+			name: "Test when checking a balance is a success",
 			balanceResonse: &models.BalanceResponse{
 				Ok: true,
 				Result: struct {
@@ -1667,7 +1668,7 @@ func TestCheckBalance(t *testing.T) {
 				},
 			},
 			expectedResult: resource.Result{
-				Content:   "0.003 CELO",
+				Content:   "Balance: 0.003 CELO\n",
 				FlagReset: []uint32{flag_api_error},
 			},
 		},
@@ -1700,10 +1701,8 @@ func TestCheckBalance(t *testing.T) {
 
 			//Assert that the result set to content is what was expected
 			assert.Equal(t, res, tt.expectedResult, "Result should contain flags set according to user input")
-
 		})
 	}
-
 }
 
 func TestGetProfile(t *testing.T) {

@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,16 +13,17 @@ import (
 	"github.com/grassrootseconomics/eth-custodial/pkg/api"
 )
 
-type ApiResponse struct {
-	Ok          bool   `json:"ok"`
-	Description string `json:"description"`
-}
+var (
+	okResponse     api.OKResponse
+	errResponse    api.ErrResponse
+	EMPTY_RESPONSE = 0
+)
 
 type AccountServiceInterface interface {
 	CheckBalance(publicKey string) (*models.BalanceResponse, error)
-	CreateAccount() (*api.OKResponse, *api.ErrResponse)
+	CreateAccount() (*api.OKResponse, error)
 	CheckAccountStatus(trackingId string) (*models.TrackStatusResponse, error)
-	TrackAccountStatus(publicKey string) (*api.OKResponse, *api.ErrResponse)
+	TrackAccountStatus(publicKey string) (*api.OKResponse, error)
 }
 
 type AccountService struct {
@@ -60,58 +62,42 @@ func (as *AccountService) CheckAccountStatus(trackingId string) (*models.TrackSt
 
 }
 
-func (as *AccountService) TrackAccountStatus(publicKey string) (*api.OKResponse, *api.ErrResponse) {
-	var errResponse api.ErrResponse
-	var okResponse api.OKResponse
+func (as *AccountService) TrackAccountStatus(publicKey string) (*api.OKResponse, error) {
 	var err error
 	// Construct the URL with the path parameter
 	url := fmt.Sprintf("%s/%s", config.TrackURL, publicKey)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		errResponse.Description = err.Error()
-		return nil, &errResponse
+		return nil, err
 	}
-	// Set headers
+
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-GE-KEY", "xd")
 
-	// Send the request
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		errResponse.Description = err.Error()
-		return nil, &errResponse
+		return nil, err
 	}
 	defer resp.Body.Close()
 
-	// Read the response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		errResponse.Description = err.Error()
-		return nil, &errResponse
+		return nil, err
 	}
-
-	// Step 2: Unmarshal into the generic struct
-	var apiResponse ApiResponse
-	err = json.Unmarshal([]byte(body), &apiResponse)
+	err = json.Unmarshal([]byte(body), &okResponse)
 	if err != nil {
-		errResponse.Description = err.Error()
-		return nil, &errResponse
-	}
-	if apiResponse.Ok {
-		err = json.Unmarshal([]byte(body), &okResponse)
-		if err != nil {
-			errResponse.Description = err.Error()
-			return nil, &errResponse
-		}
-		return &okResponse, nil
-	} else {
 		err := json.Unmarshal([]byte(body), &errResponse)
 		if err != nil {
-			errResponse.Description = err.Error()
-			return nil, &errResponse
+			return nil, err
 		}
-		return nil, &errResponse
+		return nil, errors.New(errResponse.Description)
 	}
+	if len(okResponse.Result) == EMPTY_RESPONSE {
+		return nil, errors.New("Empty api result")
+	}
+	return &okResponse, nil
+
 }
 
 // CheckBalance retrieves the balance for a given public key from the custodial balance API endpoint.
@@ -141,17 +127,13 @@ func (as *AccountService) CheckBalance(publicKey string) (*models.BalanceRespons
 //     If there is an error during the request or processing, this will be nil.
 //   - error: An error if any occurred during the HTTP request, reading the response, or unmarshalling the JSON data.
 //     If no error occurs, this will be nil.
-func (as *AccountService) CreateAccount() (*api.OKResponse, *api.ErrResponse) {
-
-	var errResponse api.ErrResponse
-	var okResponse api.OKResponse
+func (as *AccountService) CreateAccount() (*api.OKResponse, error) {
 	var err error
 
 	// Create a new request
 	req, err := http.NewRequest("POST", config.CreateAccountURL, nil)
 	if err != nil {
-		errResponse.Description = err.Error()
-		return nil, &errResponse
+		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-GE-KEY", "xd")
@@ -159,38 +141,29 @@ func (as *AccountService) CreateAccount() (*api.OKResponse, *api.ErrResponse) {
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		errResponse.Description = err.Error()
-		return nil, &errResponse
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		errResponse.Description = err.Error()
-		return nil, &errResponse
+		return nil, err
 	}
-	var apiResponse ApiResponse
-	err = json.Unmarshal([]byte(body), &apiResponse)
+	err = json.Unmarshal([]byte(body), &okResponse)
 	if err != nil {
-		return nil, &errResponse
-	}
-	if apiResponse.Ok {
-		err = json.Unmarshal([]byte(body), &okResponse)
-		if err != nil {
-			errResponse.Description = err.Error()
-			return nil, &errResponse
-		}
-		return &okResponse, nil
-	} else {
 		err := json.Unmarshal([]byte(body), &errResponse)
 		if err != nil {
-			errResponse.Description = err.Error()
-			return nil, &errResponse
+			return nil, err
 		}
-		return nil, &errResponse
+		return nil, errors.New(errResponse.Description)
 	}
+	if len(okResponse.Result) == EMPTY_RESPONSE {
+		return nil, errors.New("Empty api result")
+	}
+	return &okResponse, nil
 }
 
-func (tas *TestAccountService) CreateAccount() (*api.OKResponse, *api.ErrResponse) {
+func (tas *TestAccountService) CreateAccount() (*api.OKResponse, error) {
 	return &api.OKResponse{
 		Ok:          true,
 		Description: "Account creation request received successfully",
@@ -200,7 +173,6 @@ func (tas *TestAccountService) CreateAccount() (*api.OKResponse, *api.ErrRespons
 }
 
 func (tas *TestAccountService) CheckBalance(publicKey string) (*models.BalanceResponse, error) {
-
 	balanceResponse := &models.BalanceResponse{
 		Ok: true,
 		Result: struct {
@@ -211,11 +183,10 @@ func (tas *TestAccountService) CheckBalance(publicKey string) (*models.BalanceRe
 			Nonce:   json.Number("0"),
 		},
 	}
-
 	return balanceResponse, nil
 }
 
-func (tas *TestAccountService) TrackAccountStatus(publicKey string) (*api.OKResponse, *api.ErrResponse) {
+func (tas *TestAccountService) TrackAccountStatus(publicKey string) (*api.OKResponse, error) {
 	return &api.OKResponse{
 		Ok:          true,
 		Description: "Account creation succeeded",

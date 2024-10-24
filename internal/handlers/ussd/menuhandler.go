@@ -635,13 +635,18 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 		return res, fmt.Errorf("missing session")
 	}
 
+	code := codeFromCtx(ctx)
+	l := gotext.NewLocale(translationDir, code)
+	l.AddDomain("default")
+
 	store := h.userdataStore
 
 	// get the active sym and active balance
 	activeSym, err := store.ReadEntry(ctx, sessionId, utils.DATA_ACTIVE_SYM)
 	if err != nil {
 		if db.IsNotFound(err) {
-			res.Content = "0.00"
+			balance := "0.00"
+			res.Content = l.Get("Balance: %s\n", balance)
 			return res, nil
 		}
 
@@ -650,10 +655,10 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 
 	activeBal, err := store.ReadEntry(ctx, sessionId, utils.DATA_ACTIVE_BAL)
 	if err != nil {
-		return res, nil
+		return res, err
 	}
 
-	res.Content = fmt.Sprintf("%s %s", activeBal, activeSym)
+	res.Content = l.Get("Balance: %s\n", fmt.Sprintf("%s %s", activeBal, activeSym))
 
 	return res, nil
 }

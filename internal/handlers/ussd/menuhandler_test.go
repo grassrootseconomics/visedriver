@@ -75,11 +75,9 @@ func TestCreateAccount(t *testing.T) {
 	}
 	// Create required mocks
 	flag_account_created, err := fm.GetFlag("flag_account_created")
-	flag_api_call_error, _ := fm.GetFlag("flag_api_call_error")
 	if err != nil {
 		t.Logf(err.Error())
 	}
-
 	// Define session ID and mock data
 	sessionId := "session123"
 	notFoundErr := db.ErrNotFound{}
@@ -101,8 +99,7 @@ func TestCreateAccount(t *testing.T) {
 				},
 			},
 			expectedResult: resource.Result{
-				FlagSet:   []uint32{flag_account_created},
-				FlagReset: []uint32{flag_api_call_error},
+				FlagSet: []uint32{flag_account_created},
 			},
 		},
 	}

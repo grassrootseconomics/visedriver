@@ -1614,7 +1614,6 @@ func TestValidateRecipient(t *testing.T) {
 }
 
 func TestCheckBalance(t *testing.T) {
-
 	sessionId := "session123"
 	publicKey := "0X13242618721"
 	fm, _ := NewFlagManager(flagsPath)
@@ -1644,7 +1643,7 @@ func TestCheckBalance(t *testing.T) {
 			},
 		},
 		{
-			name: "Test when checking a  balance is a success",
+			name: "Test when checking a balance is a success",
 			balanceResonse: &models.BalanceResponse{
 				Ok: true,
 				Result: struct {
@@ -1656,7 +1655,7 @@ func TestCheckBalance(t *testing.T) {
 				},
 			},
 			expectedResult: resource.Result{
-				Content:   "0.003 CELO",
+				Content:   "Balance: 0.003 CELO\n",
 				FlagReset: []uint32{flag_api_error},
 			},
 		},
@@ -1689,10 +1688,8 @@ func TestCheckBalance(t *testing.T) {
 
 			//Assert that the result set to content is what was expected
 			assert.Equal(t, res, tt.expectedResult, "Result should contain flags set according to user input")
-
 		})
 	}
-
 }
 
 func TestGetProfile(t *testing.T) {

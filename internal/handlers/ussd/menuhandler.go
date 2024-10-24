@@ -650,6 +650,10 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 		return res, fmt.Errorf("missing session")
 	}
 
+	code := codeFromCtx(ctx)
+	l := gotext.NewLocale(translationDir, code)
+	l.AddDomain("default")
+
 	store := h.userdataStore
 	publicKey, err := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
 	if err != nil {
@@ -666,7 +670,8 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 	}
 	res.FlagReset = append(res.FlagReset, flag_api_error)
 	balance := balanceResponse.Result.Balance
-	res.Content = balance
+
+	res.Content = l.Get("Balance: %s\n", balance)
 
 	return res, nil
 }

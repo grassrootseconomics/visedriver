@@ -641,6 +641,10 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 		return res, fmt.Errorf("missing session")
 	}
 
+	code := codeFromCtx(ctx)
+	l := gotext.NewLocale(translationDir, code)
+	l.AddDomain("default")
+
 	store := h.userdataStore
 	publicKey, err := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
 	if err != nil {
@@ -657,7 +661,8 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 	}
 	res.FlagReset = append(res.FlagReset, flag_api_error)
 	balance := balanceResponse.Result.Balance
-	res.Content = balance
+
+	res.Content = l.Get("Balance: %s\n", balance)
 
 	return res, nil
 }
@@ -897,7 +902,7 @@ func (h *Handlers) GetRecipient(ctx context.Context, sym string, input []byte) (
 	return res, nil
 }
 
-// GetSender retrieves the public key from the Gdbm Db
+// GetSender returns the sessionId (phoneNumber)
 func (h *Handlers) GetSender(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 
@@ -906,10 +911,7 @@ func (h *Handlers) GetSender(ctx context.Context, sym string, input []byte) (res
 		return res, fmt.Errorf("missing session")
 	}
 
-	store := h.userdataStore
-	publicKey, _ := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
-
-	res.Content = string(publicKey)
+	res.Content = string(sessionId)
 
 	return res, nil
 }
@@ -946,13 +948,12 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 	// TODO
 	// Use the amount, recipient and sender to call the API and initialize the transaction
 	store := h.userdataStore
-	publicKey, _ := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
 
 	amount, _ := store.ReadEntry(ctx, sessionId, utils.DATA_AMOUNT)
 
 	recipient, _ := store.ReadEntry(ctx, sessionId, utils.DATA_RECIPIENT)
 
-	res.Content = l.Get("Your request has been sent. %s will receive %s from %s.", string(recipient), string(amount), string(publicKey))
+	res.Content = l.Get("Your request has been sent. %s will receive %s from %s.", string(recipient), string(amount), string(sessionId))
 
 	account_authorized_flag, err := h.flagManager.GetFlag("flag_account_authorized")
 	if err != nil {

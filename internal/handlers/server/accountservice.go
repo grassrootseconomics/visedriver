@@ -84,13 +84,16 @@ func (as *AccountService) TrackAccountStatus(publicKey string) (*api.OKResponse,
 		errResponse.Description = err.Error()
 		return nil, err
 	}
-	err = json.Unmarshal([]byte(body), &okResponse)
-	if err != nil {
+	if resp.StatusCode >= http.StatusBadRequest {
 		err := json.Unmarshal([]byte(body), &errResponse)
 		if err != nil {
 			return nil, err
 		}
 		return nil, errors.New(errResponse.Description)
+	}
+	err = json.Unmarshal([]byte(body), &okResponse)
+	if err != nil {
+		return nil, err
 	}
 	if len(okResponse.Result) == 0 {
 		return nil, errors.New("Empty api result")
@@ -148,14 +151,16 @@ func (as *AccountService) CreateAccount() (*api.OKResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = json.Unmarshal([]byte(body), &okResponse)
-
-	if err != nil {
+	if resp.StatusCode >= http.StatusBadRequest {
 		err := json.Unmarshal([]byte(body), &errResponse)
 		if err != nil {
 			return nil, err
 		}
 		return nil, errors.New(errResponse.Description)
+	}
+	err = json.Unmarshal([]byte(body), &okResponse)
+	if err != nil {
+		return nil, err
 	}
 	if len(okResponse.Result) == 0 {
 		return nil, errors.New("Empty api result")

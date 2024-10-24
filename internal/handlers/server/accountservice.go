@@ -14,9 +14,8 @@ import (
 )
 
 var (
-	okResponse     api.OKResponse
-	errResponse    api.ErrResponse
-	EMPTY_RESPONSE = 0
+	okResponse  api.OKResponse
+	errResponse api.ErrResponse
 )
 
 type AccountServiceInterface interface {
@@ -93,7 +92,7 @@ func (as *AccountService) TrackAccountStatus(publicKey string) (*api.OKResponse,
 		}
 		return nil, errors.New(errResponse.Description)
 	}
-	if len(okResponse.Result) == EMPTY_RESPONSE {
+	if len(okResponse.Result) == 0 {
 		return nil, errors.New("Empty api result")
 	}
 	return &okResponse, nil
@@ -150,6 +149,7 @@ func (as *AccountService) CreateAccount() (*api.OKResponse, error) {
 		return nil, err
 	}
 	err = json.Unmarshal([]byte(body), &okResponse)
+
 	if err != nil {
 		err := json.Unmarshal([]byte(body), &errResponse)
 		if err != nil {
@@ -157,7 +157,7 @@ func (as *AccountService) CreateAccount() (*api.OKResponse, error) {
 		}
 		return nil, errors.New(errResponse.Description)
 	}
-	if len(okResponse.Result) == EMPTY_RESPONSE {
+	if len(okResponse.Result) == 0 {
 		return nil, errors.New("Empty api result")
 	}
 	return &okResponse, nil

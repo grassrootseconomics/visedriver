@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"git.defalsify.org/vise.git/asm"
+	"github.com/grassrootseconomics/eth-custodial/pkg/api"
 
 	"git.defalsify.org/vise.git/cache"
 	"git.defalsify.org/vise.git/db"
@@ -27,6 +28,8 @@ var (
 	logg           = logging.NewVanilla().WithDomain("ussdmenuhandler")
 	scriptDir      = path.Join("services", "registration")
 	translationDir = path.Join(scriptDir, "locale")
+	okResponse     *api.OKResponse
+	errResponse    *api.ErrResponse
 	backOption     = []byte("0")
 )
 
@@ -137,13 +140,18 @@ func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (r
 }
 
 func (h *Handlers) createAccountNoExist(ctx context.Context, sessionId string, res *resource.Result) error {
-	accountResp, err := h.accountService.CreateAccount()
-	data := map[utils.DataTyp]string{
-		utils.DATA_TRACKING_ID:  accountResp.Result.TrackingId,
-		utils.DATA_PUBLIC_KEY:   accountResp.Result.PublicKey,
-		utils.DATA_CUSTODIAL_ID: accountResp.Result.CustodialId.String(),
+	flag_account_created, _ := h.flagManager.GetFlag("flag_account_created")
+	okResponse, err := h.accountService.CreateAccount(ctx)
+	if err != nil {
+		return err
 	}
+	trackingId := okResponse.Result["trackingId"].(string)
+	publicKey := okResponse.Result["publicKey"].(string)
 
+	data := map[utils.DataTyp]string{
+		utils.DATA_TRACKING_ID: trackingId,
+		utils.DATA_PUBLIC_KEY:  publicKey,
+	}
 	for key, value := range data {
 		store := h.userdataStore
 		err := store.WriteEntry(ctx, sessionId, key, []byte(value))
@@ -151,9 +159,8 @@ func (h *Handlers) createAccountNoExist(ctx context.Context, sessionId string, r
 			return err
 		}
 	}
-	flag_account_created, _ := h.flagManager.GetFlag("flag_account_created")
 	res.FlagSet = append(res.FlagSet, flag_account_created)
-	return err
+	return nil
 
 }
 
@@ -192,7 +199,6 @@ func (h *Handlers) SavePin(ctx context.Context, sym string, input []byte) (resou
 	}
 
 	flag_incorrect_pin, _ := h.flagManager.GetFlag("flag_incorrect_pin")
-
 	accountPIN := string(input)
 	// Validate that the PIN is a 4-digit number
 	if !isValidPIN(accountPIN) {
@@ -374,7 +380,6 @@ func (h *Handlers) SaveYob(ctx context.Context, sym string, input []byte) (resou
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-
 	if len(input) == 4 {
 		yob := string(input)
 		store := h.userdataStore
@@ -440,7 +445,6 @@ func (h *Handlers) SaveOfferings(ctx context.Context, sym string, input []byte) 
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-
 	if len(input) > 0 {
 		offerings := string(input)
 		store := h.userdataStore
@@ -466,7 +470,6 @@ func (h *Handlers) ResetAllowUpdate(ctx context.Context, sym string, input []byt
 // ResetAccountAuthorized resets the account authorization flag after a successful PIN entry.
 func (h *Handlers) ResetAccountAuthorized(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
-
 	flag_account_authorized, _ := h.flagManager.GetFlag("flag_account_authorized")
 
 	res.FlagReset = append(res.FlagReset, flag_account_authorized)
@@ -476,12 +479,10 @@ func (h *Handlers) ResetAccountAuthorized(ctx context.Context, sym string, input
 // CheckIdentifier retrieves the PublicKey from the JSON data file.
 func (h *Handlers) CheckIdentifier(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
-
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-
 	store := h.userdataStore
 	publicKey, _ := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
 
@@ -495,12 +496,10 @@ func (h *Handlers) CheckIdentifier(ctx context.Context, sym string, input []byte
 func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	var err error
-
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-
 	flag_incorrect_pin, _ := h.flagManager.GetFlag("flag_incorrect_pin")
 	flag_account_authorized, _ := h.flagManager.GetFlag("flag_account_authorized")
 	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
@@ -552,28 +551,21 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 		return res, fmt.Errorf("missing session")
 	}
 	store := h.userdataStore
-	trackingId, err := store.ReadEntry(ctx, sessionId, utils.DATA_TRACKING_ID)
+	publicKey, err := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
 	if err != nil {
 		return res, err
 	}
-
-	accountStatus, err := h.accountService.CheckAccountStatus(string(trackingId))
+	okResponse, err = h.accountService.TrackAccountStatus(ctx, string(publicKey))
 	if err != nil {
-		fmt.Println("Error checking account status:", err)
-		return res, err
-	}
-	if !accountStatus.Ok {
 		res.FlagSet = append(res.FlagSet, flag_api_error)
 		return res, err
 	}
 	res.FlagReset = append(res.FlagReset, flag_api_error)
-	status := accountStatus.Result.Transaction.Status
-
-	err = store.WriteEntry(ctx, sessionId, utils.DATA_ACCOUNT_STATUS, []byte(status))
-	if err != nil {
-		return res, nil
+	isActive := okResponse.Result["active"].(bool)
+	if !ok {
+		return res, err
 	}
-	if accountStatus.Result.Transaction.Status == "SUCCESS" {
+	if isActive {
 		res.FlagSet = append(res.FlagSet, flag_account_success)
 		res.FlagReset = append(res.FlagReset, flag_account_pending)
 	} else {
@@ -660,13 +652,17 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 		return res, fmt.Errorf("missing session")
 	}
 
+	code := codeFromCtx(ctx)
+	l := gotext.NewLocale(translationDir, code)
+	l.AddDomain("default")
+
 	store := h.userdataStore
 	publicKey, err := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
 	if err != nil {
 		return res, err
 	}
 
-	balanceResponse, err := h.accountService.CheckBalance(string(publicKey))
+	balanceResponse, err := h.accountService.CheckBalance(ctx, string(publicKey))
 	if err != nil {
 		return res, nil
 	}
@@ -676,7 +672,8 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 	}
 	res.FlagReset = append(res.FlagReset, flag_api_error)
 	balance := balanceResponse.Result.Balance
-	res.Content = balance
+
+	res.Content = l.Get("Balance: %s\n", balance)
 
 	return res, nil
 }
@@ -698,7 +695,7 @@ func (h *Handlers) FetchCustodialBalances(ctx context.Context, sym string, input
 		return res, err
 	}
 
-	balanceResponse, err := h.accountService.CheckBalance(string(publicKey))
+	balanceResponse, err := h.accountService.CheckBalance(ctx, string(publicKey))
 	if err != nil {
 		return res, nil
 	}
@@ -816,7 +813,7 @@ func (h *Handlers) MaxAmount(ctx context.Context, sym string, input []byte) (res
 	store := h.userdataStore
 	publicKey, _ := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
 
-	balanceResp, err := h.accountService.CheckBalance(string(publicKey))
+	balanceResp, err := h.accountService.CheckBalance(ctx, string(publicKey))
 	if err != nil {
 		return res, nil
 	}
@@ -846,7 +843,7 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 
 	amountStr := string(input)
 
-	balanceRes, err := h.accountService.CheckBalance(string(publicKey))
+	balanceRes, err := h.accountService.CheckBalance(ctx, string(publicKey))
 	balanceStr := balanceRes.Result.Balance
 
 	if !balanceRes.Ok {
@@ -916,7 +913,7 @@ func (h *Handlers) GetRecipient(ctx context.Context, sym string, input []byte) (
 	return res, nil
 }
 
-// GetSender retrieves the public key from the Gdbm Db
+// GetSender returns the sessionId (phoneNumber)
 func (h *Handlers) GetSender(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 
@@ -925,10 +922,7 @@ func (h *Handlers) GetSender(ctx context.Context, sym string, input []byte) (res
 		return res, fmt.Errorf("missing session")
 	}
 
-	store := h.userdataStore
-	publicKey, _ := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
-
-	res.Content = string(publicKey)
+	res.Content = string(sessionId)
 
 	return res, nil
 }
@@ -965,13 +959,12 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 	// TODO
 	// Use the amount, recipient and sender to call the API and initialize the transaction
 	store := h.userdataStore
-	publicKey, _ := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
 
 	amount, _ := store.ReadEntry(ctx, sessionId, utils.DATA_AMOUNT)
 
 	recipient, _ := store.ReadEntry(ctx, sessionId, utils.DATA_RECIPIENT)
 
-	res.Content = l.Get("Your request has been sent. %s will receive %s from %s.", string(recipient), string(amount), string(publicKey))
+	res.Content = l.Get("Your request has been sent. %s will receive %s from %s.", string(recipient), string(amount), string(sessionId))
 
 	account_authorized_flag, err := h.flagManager.GetFlag("flag_account_authorized")
 	if err != nil {

@@ -1,31 +1,29 @@
 package testservice
 
 import (
+	"context"
 	"encoding/json"
 	"time"
 
 	"git.grassecon.net/urdt/ussd/internal/models"
+	"github.com/grassrootseconomics/eth-custodial/pkg/api"
 )
 
 type TestAccountService struct {
 }
 
-func (tas *TestAccountService) CreateAccount() (*models.AccountResponse, error) {
-	return &models.AccountResponse{
-		Ok: true,
-		Result: struct {
-			CustodialId json.Number `json:"custodialId"`
-			PublicKey   string      `json:"publicKey"`
-			TrackingId  string      `json:"trackingId"`
-		}{
-			CustodialId: json.Number("182"),
-			PublicKey:   "0x48ADca309b5085852207FAaf2816eD72B52F527C",
-			TrackingId:  "28ebe84d-b925-472c-87ae-bbdfa1fb97be",
+func (tas *TestAccountService) CreateAccount(ctx context.Context) (*api.OKResponse, error) {
+	return &api.OKResponse{
+		Ok:          true,
+		Description: "Account creation succeeded",
+		Result: map[string]any{
+			"trackingId": "075ccc86-f6ef-4d33-97d5-e91cfb37aa0d",
+			"publicKey":  "0x623EFAFa8868df4B934dd12a8B26CB3Dd75A7AdD",
 		},
 	}, nil
 }
 
-func (tas *TestAccountService) CheckBalance(publicKey string) (*models.BalanceResponse, error) {
+func (tas *TestAccountService) CheckBalance(ctx context.Context, publicKey string) (*models.BalanceResponse, error) {
 	balanceResponse := &models.BalanceResponse{
 		Ok: true,
 		Result: struct {
@@ -40,7 +38,7 @@ func (tas *TestAccountService) CheckBalance(publicKey string) (*models.BalanceRe
 	return balanceResponse, nil
 }
 
-func (tas *TestAccountService) CheckAccountStatus(trackingId string) (*models.TrackStatusResponse, error) {
+func (tas *TestAccountService) CheckAccountStatus(ctx context.Context, trackingId string) (*models.TrackStatusResponse, error) {
 	trackResponse := &models.TrackStatusResponse{
 		Ok: true,
 		Result: struct {
@@ -62,4 +60,14 @@ func (tas *TestAccountService) CheckAccountStatus(trackingId string) (*models.Tr
 		},
 	}
 	return trackResponse, nil
+}
+
+func (tas *TestAccountService) TrackAccountStatus(ctx context.Context, publicKey string) (*api.OKResponse, error) {
+	return &api.OKResponse{
+		Ok:          true,
+		Description: "Account creation succeeded",
+		Result: map[string]any{
+			"active": true,
+		},
+	}, nil
 }

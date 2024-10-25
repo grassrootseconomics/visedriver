@@ -71,3 +71,31 @@ func (tas *TestAccountService) TrackAccountStatus(ctx context.Context, publicKey
 		},
 	}, nil
 }
+
+func (tas *TestAccountService) FetchVouchers(ctx context.Context, publicKey string) (*models.VoucherHoldingResponse, error) {
+	return &models.VoucherHoldingResponse{
+		Ok: true,
+		Result: struct {
+			Holdings []struct {
+				ContractAddress string `json:"contractAddress"`
+				TokenSymbol     string `json:"tokenSymbol"`
+				TokenDecimals   string `json:"tokenDecimals"`
+				Balance         string `json:"balance"`
+			} `json:"holdings"`
+		}{
+			Holdings: []struct {
+				ContractAddress string `json:"contractAddress"`
+				TokenSymbol     string `json:"tokenSymbol"`
+				TokenDecimals   string `json:"tokenDecimals"`
+				Balance         string `json:"balance"`
+			}{
+				{
+					ContractAddress: "0x6CC75A06ac72eB4Db2eE22F781F5D100d8ec03ee",
+					TokenSymbol:     "SRF",
+					TokenDecimals:   "6",
+					Balance:         "2745987",
+				},
+			},
+		},
+	}, nil
+}

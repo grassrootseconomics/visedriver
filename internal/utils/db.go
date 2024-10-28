@@ -28,6 +28,7 @@ const (
 	DATA_ACTIVE_SYM
 	DATA_TEMPORARY_BAL
 	DATA_ACTIVE_BAL
+	DATA_BLOCKED_NUMBER
 )
 
 func typToBytes(typ DataTyp) []byte {

@@ -1,0 +1,8 @@
+LOAD retrieve_blocked_number 0
+MAP retrieve_blocked_number
+MOUT back 0
+HALT 
+INCMP _ 0
+LOAD verify_new_pin 0
+RELOAD verify_new_pin
+INCMP * confirm_others_new_pin

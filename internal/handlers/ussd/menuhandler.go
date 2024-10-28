@@ -27,11 +27,12 @@ import (
 )
 
 var (
-	logg           = logging.NewVanilla().WithDomain("ussdmenuhandler")
-	scriptDir      = path.Join("services", "registration")
-	translationDir = path.Join(scriptDir, "locale")
-	okResponse     *api.OKResponse
-	errResponse    *api.ErrResponse
+	logg                    = logging.NewVanilla().WithDomain("ussdmenuhandler")
+	scriptDir               = path.Join("services", "registration")
+	translationDir          = path.Join(scriptDir, "locale")
+	PINChangePrivilege byte = 1
+	okResponse         *api.OKResponse
+	errResponse        *api.ErrResponse
 )
 
 // FlagManager handles centralized flag management
@@ -98,20 +99,41 @@ func (h *Handlers) WithPersister(pe *persist.Persister) *Handlers {
 	return h
 }
 
+func setAdminPrevilege(ctx context.Context, store utils.DataStore) error {
+	var err error
+
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return fmt.Errorf("missing session")
+	}
+	prefixdb := storage.NewSubPrefixDb(store, []byte("acl"))
+	err = prefixdb.Put(ctx, []byte(sessionId), []byte("1"))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (h *Handlers) Init(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var r resource.Result
-
 	if h.pe == nil {
 		logg.WarnCtxf(ctx, "handler init called before it is ready or more than once", "state", h.st, "cache", h.ca)
 		return r, nil
 	}
+
 	h.st = h.pe.GetState()
 	h.ca = h.pe.GetMemory()
+
 	if h.st == nil || h.ca == nil {
 		logg.ErrorCtxf(ctx, "perister fail in handler", "state", h.st, "cache", h.ca)
 		return r, fmt.Errorf("cannot get state and memory for handler")
 	}
 	h.pe = nil
+	store := h.userdataStore
+	err := setAdminPrevilege(ctx, store)
+	if err != nil {
+		return r, fmt.Errorf("failed to set previlege level")
+	}
 
 	logg.DebugCtxf(ctx, "handler has been initialized", "state", h.st, "cache", h.ca)
 
@@ -185,6 +207,26 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 				return res, err
 			}
 		}
+	}
+	return res, nil
+}
+
+func (h *Handlers) CheckPinMisMatch(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	res := resource.Result{}
+	flag_pin_mismatch, _ := h.flagManager.GetFlag("flag_pin_mismatch")
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+	store := h.userdataStore
+	temporaryPin, err := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_PIN)
+	if err != nil {
+		return res, err
+	}
+	if bytes.Equal(temporaryPin, input) {
+		res.FlagReset = append(res.FlagReset, flag_pin_mismatch)
+	} else {
+		res.FlagSet = append(res.FlagSet, flag_pin_mismatch)
 	}
 	return res, nil
 }
@@ -284,7 +326,6 @@ func (h *Handlers) VerifyCreatePin(ctx context.Context, sym string, input []byte
 	if err != nil {
 		return res, err
 	}
-
 	if bytes.Equal(input, temporaryPin) {
 		res.FlagSet = []uint32{flag_valid_pin}
 		res.FlagReset = []uint32{flag_pin_mismatch}
@@ -444,6 +485,14 @@ func (h *Handlers) ResetAllowUpdate(ctx context.Context, sym string, input []byt
 	return res, nil
 }
 
+// ResetAllowUpdate resets the allowupdate flag that allows a user to update  profile data.
+func (h *Handlers) ResetValidPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	flag_valid_pin, _ := h.flagManager.GetFlag("flag_valid_pin")
+	res.FlagReset = append(res.FlagReset, flag_valid_pin)
+	return res, nil
+}
+
 // ResetAccountAuthorized resets the account authorization flag after a successful PIN entry.
 func (h *Handlers) ResetAccountAuthorized(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
@@ -501,6 +550,7 @@ func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (res
 			return res, nil
 		}
 	} else {
+		fmt.Println("Authorizing the account else")
 		return res, nil
 	}
 	return res, nil
@@ -522,17 +572,37 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 	flag_account_success, _ := h.flagManager.GetFlag("flag_account_success")
 	flag_account_pending, _ := h.flagManager.GetFlag("flag_account_pending")
 	flag_api_error, _ := h.flagManager.GetFlag("flag_api_call_error")
+	flag_admin_privilege, _ := h.flagManager.GetFlag("flag_admin_privilege")
 
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
+	isAdmin, _ := ctx.Value("Admin").(bool)
 	store := h.userdataStore
 	publicKey, err := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
 	if err != nil {
 		return res, err
 	}
+	if isAdmin {
+		setAdminPrevilege(ctx, store)
+	}
+	prefixdb := storage.NewSubPrefixDb(store, []byte("acl"))
+	accessLevel, err := prefixdb.Get(ctx, []byte(sessionId))
+	if err != nil {
+		if !db.IsNotFound(err) {
+			return res, nil
+		}
+	}
+	isPrevileged := bytes.Equal(accessLevel, []byte("1"))
+
+	if isPrevileged {
+		//Set Admin privilege Flag
+		res.FlagSet = append(res.FlagSet, flag_admin_privilege)
+	}
+
 	okResponse, err = h.accountService.TrackAccountStatus(ctx, string(publicKey))
+
 	if err != nil {
 		res.FlagSet = append(res.FlagSet, flag_api_error)
 		return res, err
@@ -588,7 +658,6 @@ func (h *Handlers) VerifyYob(ctx context.Context, sym string, input []byte) (res
 	var err error
 
 	flag_incorrect_date_format, _ := h.flagManager.GetFlag("flag_incorrect_date_format")
-
 	date := string(input)
 	_, err = strconv.Atoi(date)
 	if err != nil {
@@ -690,6 +759,22 @@ func (h *Handlers) FetchCustodialBalances(ctx context.Context, sym string, input
 		res.Content = fmt.Sprintf("Your community balance is %s", balance)
 	default:
 		break
+	}
+	return res, nil
+}
+
+func (h *Handlers) ValidateBlockedNumber(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	var err error
+	store := h.userdataStore
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+	blockedNumber := string(input)
+	err = store.WriteEntry(ctx, sessionId, utils.DATA_BLOCKED_NUMBER, []byte(blockedNumber))
+	if err != nil {
+		return res, nil
 	}
 	return res, nil
 }
@@ -861,6 +946,22 @@ func (h *Handlers) GetRecipient(ctx context.Context, sym string, input []byte) (
 	recipient, _ := store.ReadEntry(ctx, sessionId, utils.DATA_RECIPIENT)
 
 	res.Content = string(recipient)
+
+	return res, nil
+}
+
+// RetrieveBlockedNumber gets the current number during the pin reset for other's is in progress.
+func (h *Handlers) RetrieveBlockedNumber(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+	store := h.userdataStore
+	blockedNumber, _ := store.ReadEntry(ctx, sessionId, utils.DATA_BLOCKED_NUMBER)
+
+	res.Content = string(blockedNumber)
 
 	return res, nil
 }
@@ -1102,7 +1203,6 @@ func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) 
 	if err != nil {
 		return res, nil
 	}
-
 	err = prefixdb.Put(ctx, []byte("bal"), []byte(voucherBalanceList))
 	if err != nil {
 		return res, nil

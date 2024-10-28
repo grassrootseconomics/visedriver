@@ -72,6 +72,7 @@ type Handlers struct {
 	userdataStore  utils.DataStore
 	flagManager    *asm.FlagParser
 	accountService server.AccountServiceInterface
+	prefixDb       storage.PrefixDb
 }
 
 func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, accountService server.AccountServiceInterface) (*Handlers, error) {
@@ -81,10 +82,14 @@ func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, accountService s
 	userDb := &utils.UserDataStore{
 		Db: userdataStore,
 	}
+	// Instantiate the SubPrefixDb with "vouchers" prefix
+	prefixDb := storage.NewSubPrefixDb(userdataStore, []byte("vouchers"))
+
 	h := &Handlers{
 		userdataStore:  userDb,
 		flagManager:    appFlags,
 		accountService: accountService,
+		prefixDb:       prefixDb,
 	}
 	return h, nil
 }
@@ -1102,7 +1107,6 @@ func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) 
 		return res, nil
 	}
 
-	prefixdb := storage.NewSubPrefixDb(store, []byte("vouchers"))
 	data := processVouchers(vouchersResp.Result.Holdings)
 
 	// Store all voucher data
@@ -1114,7 +1118,7 @@ func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) 
 	}
 
 	for key, value := range dataMap {
-		if err := prefixdb.Put(ctx, []byte(key), []byte(value)); err != nil {
+		if err := h.prefixDb.Put(ctx, []byte(key), []byte(value)); err != nil {
 			return res, nil
 		}
 	}
@@ -1152,12 +1156,9 @@ func (h *Handlers) GetVoucherList(ctx context.Context, sym string, input []byte)
 	var res resource.Result
 
 	// Read vouchers from the store
-	store := h.userdataStore
-	prefixdb := storage.NewSubPrefixDb(store, []byte("vouchers"))
-
-	voucherData, err := prefixdb.Get(ctx, []byte("sym"))
+	voucherData, err := h.prefixDb.Get(ctx, []byte("sym"))
 	if err != nil {
-		return res, nil
+		return res, err
 	}
 
 	res.Content = string(voucherData)
@@ -1168,8 +1169,6 @@ func (h *Handlers) GetVoucherList(ctx context.Context, sym string, input []byte)
 // ViewVoucher retrieves the token holding and balance from the subprefixDB
 func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
-	store := h.userdataStore
-
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
 		return res, fmt.Errorf("missing session")
@@ -1183,10 +1182,8 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 		return res, nil
 	}
 
-	prefixdb := storage.NewSubPrefixDb(store, []byte("vouchers"))
-
-	// Retrieve the voucher metadata
-	metadata, err := getVoucherData(ctx, prefixdb, inputStr)
+	// Retrieve the voucher metadata using the PrefixDb interface
+	metadata, err := getVoucherData(ctx, h.prefixDb, inputStr)
 	if err != nil {
 		return res, fmt.Errorf("failed to retrieve voucher data: %v", err)
 	}
@@ -1207,7 +1204,7 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 }
 
 // getVoucherData retrieves and matches voucher data
-func getVoucherData(ctx context.Context, db *storage.SubPrefixDb, input string) (*VoucherMetadata, error) {
+func getVoucherData(ctx context.Context, db storage.PrefixDb, input string) (*VoucherMetadata, error) {
 	keys := []string{"sym", "bal", "deci", "addr"}
 	data := make(map[string]string)
 

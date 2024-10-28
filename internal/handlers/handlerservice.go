@@ -54,7 +54,7 @@ func (ls *LocalHandlerService) SetDataStore(db *db.Db) {
 }
 
 func (ls *LocalHandlerService) GetHandler(accountService server.AccountServiceInterface) (*ussd.Handlers, error) {
-	ussdHandlers, err := ussd.NewHandlers(ls.Parser, *ls.UserdataStore,accountService)
+	ussdHandlers, err := ussd.NewHandlers(ls.Parser, *ls.UserdataStore, accountService)
 	if err != nil {
 		return nil, err
 	}
@@ -98,6 +98,10 @@ func (ls *LocalHandlerService) GetHandler(accountService server.AccountServiceIn
 	ls.DbRs.AddLocalFunc("get_vouchers", ussdHandlers.GetVoucherList)
 	ls.DbRs.AddLocalFunc("view_voucher", ussdHandlers.ViewVoucher)
 	ls.DbRs.AddLocalFunc("set_voucher", ussdHandlers.SetVoucher)
+	ls.DbRs.AddLocalFunc("reset_valid_pin", ussdHandlers.ResetValidPin)
+	ls.DbRs.AddLocalFunc("check_pin_mismatch", ussdHandlers.CheckPinMisMatch)
+	ls.DbRs.AddLocalFunc("validate_blocked_number", ussdHandlers.ValidateBlockedNumber)
+	ls.DbRs.AddLocalFunc("retrieve_blocked_number", ussdHandlers.RetrieveBlockedNumber)
 
 	return ussdHandlers, nil
 }

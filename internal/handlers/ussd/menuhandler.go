@@ -32,6 +32,7 @@ var (
 	translationDir = path.Join(scriptDir, "locale")
 	okResponse     *api.OKResponse
 	errResponse    *api.ErrResponse
+	backOption     = []byte("0")
 )
 
 // FlagManager handles centralized flag management
@@ -320,6 +321,9 @@ func (h *Handlers) SaveFirstname(ctx context.Context, sym string, input []byte) 
 		return res, fmt.Errorf("missing session")
 	}
 	if len(input) > 0 {
+		if bytes.Equal(input, backOption) {
+			return res, nil
+		}
 		firstName := string(input)
 		store := h.userdataStore
 		err = store.WriteEntry(ctx, sessionId, utils.DATA_FIRST_NAME, []byte(firstName))
@@ -339,8 +343,10 @@ func (h *Handlers) SaveFamilyname(ctx context.Context, sym string, input []byte)
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-
 	if len(input) > 0 {
+		if bytes.Equal(input, backOption) {
+			return res, nil
+		}
 		familyName := string(input)
 		store := h.userdataStore
 		err = store.WriteEntry(ctx, sessionId, utils.DATA_FAMILY_NAME, []byte(familyName))
@@ -382,8 +388,10 @@ func (h *Handlers) SaveLocation(ctx context.Context, sym string, input []byte) (
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-
 	if len(input) > 0 {
+		if bytes.Equal(input, backOption) {
+			return res, nil
+		}
 		location := string(input)
 		store := h.userdataStore
 		err = store.WriteEntry(ctx, sessionId, utils.DATA_LOCATION, []byte(location))
@@ -403,6 +411,9 @@ func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (re
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
 		return res, fmt.Errorf("missing session")
+	}
+	if bytes.Equal(input, backOption) {
+		return res, nil
 	}
 	gender := strings.Split(symbol, "_")[1]
 	store := h.userdataStore

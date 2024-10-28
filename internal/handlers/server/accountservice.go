@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"time"
 
 	"git.grassecon.net/urdt/ussd/config"
 	"git.grassecon.net/urdt/ussd/internal/models"
@@ -29,9 +28,6 @@ type AccountServiceInterface interface {
 }
 
 type AccountService struct {
-}
-
-type TestAccountService struct {
 }
 
 // Parameters:
@@ -186,89 +182,4 @@ func (as *AccountService) FetchVouchers(ctx context.Context, publicKey string) (
 		return nil, err
 	}
 	return &holdings, nil
-}
-
-func (tas *TestAccountService) CreateAccount(ctx context.Context) (*api.OKResponse, error) {
-	return &api.OKResponse{
-		Ok:          true,
-		Description: "Account creation request received successfully",
-		Result:      map[string]any{"publicKey": "0x48ADca309b5085852207FAaf2816eD72B52F527C", "trackingId": "28ebe84d-b925-472c-87ae-bbdfa1fb97be"},
-	}, nil
-
-}
-
-func (tas *TestAccountService) CheckBalance(ctx context.Context, publicKey string) (*models.BalanceResponse, error) {
-	balanceResponse := &models.BalanceResponse{
-		Ok: true,
-		Result: struct {
-			Balance string      `json:"balance"`
-			Nonce   json.Number `json:"nonce"`
-		}{
-			Balance: "0.003 CELO",
-			Nonce:   json.Number("0"),
-		},
-	}
-	return balanceResponse, nil
-}
-
-func (tas *TestAccountService) TrackAccountStatus(ctx context.Context, publicKey string) (*api.OKResponse, error) {
-	return &api.OKResponse{
-		Ok:          true,
-		Description: "Account creation succeeded",
-		Result: map[string]any{
-			"active": true,
-		},
-	}, nil
-}
-
-func (tas *TestAccountService) CheckAccountStatus(ctx context.Context, trackingId string) (*models.TrackStatusResponse, error) {
-	trackResponse := &models.TrackStatusResponse{
-		Ok: true,
-		Result: struct {
-			Transaction struct {
-				CreatedAt     time.Time   "json:\"createdAt\""
-				Status        string      "json:\"status\""
-				TransferValue json.Number "json:\"transferValue\""
-				TxHash        string      "json:\"txHash\""
-				TxType        string      "json:\"txType\""
-			}
-		}{
-			Transaction: models.Transaction{
-				CreatedAt:     time.Now(),
-				Status:        "SUCCESS",
-				TransferValue: json.Number("0.5"),
-				TxHash:        "0x123abc456def",
-				TxType:        "transfer",
-			},
-		},
-	}
-	return trackResponse, nil
-}
-
-func (tas *TestAccountService) FetchVouchers(ctx context.Context, publicKey string) (*models.VoucherHoldingResponse, error) {
-	return &models.VoucherHoldingResponse{
-		Ok: true,
-		Result: struct {
-			Holdings []struct {
-				ContractAddress string `json:"contractAddress"`
-				TokenSymbol     string `json:"tokenSymbol"`
-				TokenDecimals   string `json:"tokenDecimals"`
-				Balance         string `json:"balance"`
-			} `json:"holdings"`
-		}{
-			Holdings: []struct {
-				ContractAddress string `json:"contractAddress"`
-				TokenSymbol     string `json:"tokenSymbol"`
-				TokenDecimals   string `json:"tokenDecimals"`
-				Balance         string `json:"balance"`
-			}{
-				{
-					ContractAddress: "0x6CC75A06ac72eB4Db2eE22F781F5D100d8ec03ee",
-					TokenSymbol:     "SRF",
-					TokenDecimals:   "6",
-					Balance:         "2745987",
-				},
-			},
-		},
-	}, nil
 }

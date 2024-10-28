@@ -1197,7 +1197,7 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 	}
 
 	if err := h.storeTemporaryVoucher(ctx, sessionId, metadata); err != nil {
-		return resource.Result{}, err
+		return res, err
 	}
 
 	res.FlagReset = append(res.FlagReset, flag_incorrect_voucher)
@@ -1295,15 +1295,16 @@ func (h *Handlers) SetVoucher(ctx context.Context, sym string, input []byte) (re
 	// Get temporary data
 	tempData, err := h.getTemporaryVoucherData(ctx, sessionId)
 	if err != nil {
-		return resource.Result{}, err
+		return res, err
 	}
 
 	// Set as active and clear temporary
 	if err := h.updateVoucherData(ctx, sessionId, tempData); err != nil {
-		return resource.Result{}, err
+		return res, err
 	}
 
-	return resource.Result{Content: tempData.Symbol}, nil
+	res.Content = tempData.Symbol
+	return res, nil
 }
 
 func (h *Handlers) getTemporaryVoucherData(ctx context.Context, sessionId string) (*VoucherMetadata, error) {

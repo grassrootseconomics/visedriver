@@ -1816,16 +1816,43 @@ func TestSetVoucher(t *testing.T) {
 	sessionId := "session123"
 	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
 
+	// Define the temporary voucher data
 	temporarySym := []byte("tempSym")
 	temporaryBal := []byte("tempBal")
+	temporaryDecimal := []byte("2")
+	temporaryAddress := []byte("0x123456")
 
-	// Set expectations for the mock data store
+	// Define the expected active entries
+	activeEntries := map[utils.DataTyp][]byte{
+		utils.DATA_ACTIVE_SYM:     temporarySym,
+		utils.DATA_ACTIVE_BAL:     temporaryBal,
+		utils.DATA_ACTIVE_DECIMAL: temporaryDecimal,
+		utils.DATA_ACTIVE_ADDRESS: temporaryAddress,
+	}
+
+	// Define the temporary entries to be cleared
+	tempEntries := map[utils.DataTyp][]byte{
+		utils.DATA_TEMPORARY_SYM:     []byte(""),
+		utils.DATA_TEMPORARY_BAL:     []byte(""),
+		utils.DATA_TEMPORARY_DECIMAL: []byte(""),
+		utils.DATA_TEMPORARY_ADDRESS: []byte(""),
+	}
+
+	// Mocking ReadEntry calls for temporary data retrieval
 	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_SYM).Return(temporarySym, nil)
 	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_BAL).Return(temporaryBal, nil)
-	mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_ACTIVE_SYM, temporarySym).Return(nil)
-	mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_ACTIVE_BAL, temporaryBal).Return(nil)
-	mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_SYM, []byte("")).Return(nil)
-	mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_BAL, []byte("")).Return(nil)
+	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_DECIMAL).Return(temporaryDecimal, nil)
+	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_ADDRESS).Return(temporaryAddress, nil)
+
+	// Mocking WriteEntry calls for setting active data
+	for key, value := range activeEntries {
+		mockDataStore.On("WriteEntry", ctx, sessionId, key, value).Return(nil)
+	}
+
+	// Mocking WriteEntry calls for clearing temporary data
+	for key, value := range tempEntries {
+		mockDataStore.On("WriteEntry", ctx, sessionId, key, value).Return(nil)
+	}
 
 	h := &Handlers{
 		userdataStore: mockDataStore,

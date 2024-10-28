@@ -1219,10 +1219,10 @@ func getVoucherData(ctx context.Context, db *storage.SubPrefixDb, input string) 
 		data[key] = string(value)
 	}
 
-	symbol, balance, decimal, address := matchVoucher(input, 
-		data["sym"], 
-		data["bal"], 
-		data["deci"], 
+	symbol, balance, decimal, address := matchVoucher(input,
+		data["sym"],
+		data["bal"],
+		data["deci"],
 		data["addr"])
 
 	if symbol == "" {
@@ -1286,7 +1286,7 @@ func (h *Handlers) storeTemporaryVoucher(ctx context.Context, sessionId string, 
 func (h *Handlers) SetVoucher(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	var err error
-	
+
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
 		return res, fmt.Errorf("missing session")
@@ -1308,7 +1308,7 @@ func (h *Handlers) SetVoucher(ctx context.Context, sym string, input []byte) (re
 
 func (h *Handlers) getTemporaryVoucherData(ctx context.Context, sessionId string) (*VoucherMetadata, error) {
 	store := h.userdataStore
-	
+
 	keys := []utils.DataTyp{
 		utils.DATA_TEMPORARY_SYM,
 		utils.DATA_TEMPORARY_BAL,

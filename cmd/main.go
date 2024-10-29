@@ -15,6 +15,7 @@ import (
 	"git.grassecon.net/urdt/ussd/internal/handlers"
 	"git.grassecon.net/urdt/ussd/internal/handlers/server"
 	"git.grassecon.net/urdt/ussd/internal/storage"
+	"git.grassecon.net/urdt/ussd/internal/utils"
 )
 
 var (
@@ -33,12 +34,10 @@ func main() {
 	var size uint
 	var sessionId string
 	var database string
-	var isAdmin bool
 	var engineDebug bool
 	flag.StringVar(&sessionId, "session-id", "075xx2123", "session id")
 	flag.StringVar(&database, "db", "gdbm", "database to be used")
 	flag.StringVar(&dbDir, "dbdir", ".state", "database dir to read from")
-	flag.BoolVar(&isAdmin, "admin", false, "if user has admin previleges")
 	flag.BoolVar(&engineDebug, "d", false, "use engine debug output")
 	flag.UintVar(&size, "s", 160, "max size of output")
 	flag.Parse()
@@ -48,8 +47,10 @@ func main() {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
 	ctx = context.WithValue(ctx, "Database", database)
-	ctx = context.WithValue(ctx, "Admin", isAdmin)
 	pfp := path.Join(scriptDir, "pp.csv")
+
+	as := utils.NewAdminStore("admin_numbers.txt")
+	as.Seed()
 
 	cfg := engine.Config{
 		Root:       "root",

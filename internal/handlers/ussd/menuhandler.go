@@ -99,21 +99,6 @@ func (h *Handlers) WithPersister(pe *persist.Persister) *Handlers {
 	return h
 }
 
-func setAdminPrevilege(ctx context.Context, store utils.DataStore) error {
-	var err error
-
-	sessionId, ok := ctx.Value("SessionId").(string)
-	if !ok {
-		return fmt.Errorf("missing session")
-	}
-	prefixdb := storage.NewSubPrefixDb(store, []byte("acl"))
-	err = prefixdb.Put(ctx, []byte(sessionId), []byte("1"))
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (h *Handlers) Init(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var r resource.Result
 	if h.pe == nil {
@@ -124,16 +109,24 @@ func (h *Handlers) Init(ctx context.Context, sym string, input []byte) (resource
 	h.st = h.pe.GetState()
 	h.ca = h.pe.GetMemory()
 
+	sessionId, _ := ctx.Value("SessionId").(string)
+	flag_admin_privilege, _ := h.flagManager.GetFlag("flag_admin_privilege")
+
+	number, _ := strconv.ParseInt(sessionId, 10, 64)
+	as := utils.NewAdminStore("admin_numbers.txt")
+	isAdmin, _ := as.IsAdmin(number)
+
+	if isAdmin {
+		r.FlagSet = append(r.FlagSet, flag_admin_privilege)
+	} else {
+		r.FlagReset = append(r.FlagReset, flag_admin_privilege)
+	}
+
 	if h.st == nil || h.ca == nil {
 		logg.ErrorCtxf(ctx, "perister fail in handler", "state", h.st, "cache", h.ca)
 		return r, fmt.Errorf("cannot get state and memory for handler")
 	}
 	h.pe = nil
-	store := h.userdataStore
-	err := setAdminPrevilege(ctx, store)
-	if err != nil {
-		return r, fmt.Errorf("failed to set previlege level")
-	}
 
 	logg.DebugCtxf(ctx, "handler has been initialized", "state", h.st, "cache", h.ca)
 
@@ -403,6 +396,7 @@ func (h *Handlers) SaveYob(ctx context.Context, sym string, input []byte) (resou
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
+
 	if len(input) == 4 {
 		yob := string(input)
 		store := h.userdataStore
@@ -550,7 +544,6 @@ func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (res
 			return res, nil
 		}
 	} else {
-		fmt.Println("Authorizing the account else")
 		return res, nil
 	}
 	return res, nil
@@ -572,37 +565,19 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 	flag_account_success, _ := h.flagManager.GetFlag("flag_account_success")
 	flag_account_pending, _ := h.flagManager.GetFlag("flag_account_pending")
 	flag_api_error, _ := h.flagManager.GetFlag("flag_api_call_error")
-	flag_admin_privilege, _ := h.flagManager.GetFlag("flag_admin_privilege")
 
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-	isAdmin, _ := ctx.Value("Admin").(bool)
+
 	store := h.userdataStore
 	publicKey, err := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
 	if err != nil {
 		return res, err
 	}
-	if isAdmin {
-		setAdminPrevilege(ctx, store)
-	}
-	prefixdb := storage.NewSubPrefixDb(store, []byte("acl"))
-	accessLevel, err := prefixdb.Get(ctx, []byte(sessionId))
-	if err != nil {
-		if !db.IsNotFound(err) {
-			return res, nil
-		}
-	}
-	isPrevileged := bytes.Equal(accessLevel, []byte("1"))
-
-	if isPrevileged {
-		//Set Admin privilege Flag
-		res.FlagSet = append(res.FlagSet, flag_admin_privilege)
-	}
 
 	okResponse, err = h.accountService.TrackAccountStatus(ctx, string(publicKey))
-
 	if err != nil {
 		res.FlagSet = append(res.FlagSet, flag_api_error)
 		return res, err

@@ -1,9 +1,10 @@
 CATCH no_admin_privilege flag_admin_privilege  0
-LOAD reset_account_authorized 6
+LOAD reset_account_authorized 0
 RELOAD reset_account_authorized
 MOUT back 0
 HALT
-LOAD validate_blocked_number 0
+INCMP _ 0
+LOAD validate_blocked_number 20
 RELOAD validate_blocked_number
-INCMP pin_management 0
+CATCH unregistered_number flag_unregistered_number 1
 INCMP enter_others_new_pin *

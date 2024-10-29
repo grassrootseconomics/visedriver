@@ -748,15 +748,35 @@ func (h *Handlers) FetchCustodialBalances(ctx context.Context, sym string, input
 	return res, nil
 }
 
+func (h *Handlers) ResetUnregisteredNumber(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	flag_unregistered_number, _ := h.flagManager.GetFlag("flag_unregistered_number")
+	res.FlagReset = append(res.FlagReset, flag_unregistered_number)
+	return res, nil
+}
+
 func (h *Handlers) ValidateBlockedNumber(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	var err error
+
+	flag_unregistered_number, _ := h.flagManager.GetFlag("flag_unregistered_number")
+
 	store := h.userdataStore
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
 	blockedNumber := string(input)
+	_, err = store.ReadEntry(ctx, blockedNumber, utils.DATA_PUBLIC_KEY)
+	if err != nil {
+		if db.IsNotFound(err) {
+			logg.Printf(logging.LVL_INFO, "Invalid or unregistered number")
+			res.FlagSet = append(res.FlagSet, flag_unregistered_number)
+			return res, nil
+		} else {
+			return res, err
+		}
+	}
 	err = store.WriteEntry(ctx, sessionId, utils.DATA_BLOCKED_NUMBER, []byte(blockedNumber))
 	if err != nil {
 		return res, nil

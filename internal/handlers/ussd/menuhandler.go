@@ -35,6 +35,12 @@ var (
 	backOption     = []byte("0")
 )
 
+// Define the regex patterns as  constants
+const (
+	phoneRegex = `(\(\d{3}\)\s?|\d{3}[-.\s]?)?\d{3}[-.\s]?\d{4}`
+	pinPattern = `^\d{4}$`
+)
+
 // FlagManager handles centralized flag management
 type FlagManager struct {
 	parser *asm.FlagParser
@@ -82,12 +88,14 @@ func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, accountService s
 	return h, nil
 }
 
-// Define the regex pattern as a constant
-const pinPattern = `^\d{4}$`
-
 // isValidPIN checks whether the given input is a 4 digit number
 func isValidPIN(pin string) bool {
 	match, _ := regexp.MatchString(pinPattern, pin)
+	return match
+}
+
+func isValidPhoneNumber(phonenumber string) bool {
+	match, _ := regexp.MatchString(phoneRegex, phonenumber)
 	return match
 }
 
@@ -255,7 +263,6 @@ func (h *Handlers) SaveTemporaryPin(ctx context.Context, sym string, input []byt
 	}
 
 	flag_incorrect_pin, _ := h.flagManager.GetFlag("flag_incorrect_pin")
-
 	accountPIN := string(input)
 
 	// Validate that the PIN is a 4-digit number
@@ -768,6 +775,9 @@ func (h *Handlers) ValidateBlockedNumber(ctx context.Context, sym string, input 
 	}
 	blockedNumber := string(input)
 	_, err = store.ReadEntry(ctx, blockedNumber, utils.DATA_PUBLIC_KEY)
+	if !isValidPhoneNumber(blockedNumber) {
+		return res, nil
+	}
 	if err != nil {
 		if db.IsNotFound(err) {
 			logg.Printf(logging.LVL_INFO, "Invalid or unregistered number")

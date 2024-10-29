@@ -9,8 +9,8 @@ import (
 	"regexp"
 	"testing"
 
-	"git.grassecon.net/urdt/ussd/driver"
 	"git.grassecon.net/urdt/ussd/internal/testutil"
+	"git.grassecon.net/urdt/ussd/internal/testutil/driver"
 	"github.com/gofrs/uuid"
 )
 

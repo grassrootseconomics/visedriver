@@ -13,6 +13,8 @@ import (
 	"git.grassecon.net/urdt/ussd/internal/handlers"
 	"git.grassecon.net/urdt/ussd/internal/handlers/server"
 	"git.grassecon.net/urdt/ussd/internal/storage"
+	"git.grassecon.net/urdt/ussd/internal/testutil/testservice"
+	"git.grassecon.net/urdt/ussd/internal/testutil/testtag"
 	testdataloader "github.com/peteole/testdata-loader"
 )
 
@@ -80,12 +82,12 @@ func TestEngine(sessionId string) (engine.Engine, func(), chan bool) {
 		os.Exit(1)
 	}
 
-	if AccountService == nil {
-		AccountService = &server.AccountService{}
+	if testtag.AccountService == nil {
+		testtag.AccountService = &server.AccountService{}
 	}
 
-	switch AccountService.(type) {
-	case *server.TestAccountService:
+	switch testtag.AccountService.(type) {
+	case *testservice.TestAccountService:
 		go func() {
 			eventChannel <- false
 		}()
@@ -98,7 +100,7 @@ func TestEngine(sessionId string) (engine.Engine, func(), chan bool) {
 		panic("Unknown account service type")
 	}
 
-	hl, err := lhs.GetHandler(AccountService)
+	hl, err := lhs.GetHandler(testtag.AccountService)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)

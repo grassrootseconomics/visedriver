@@ -1,6 +1,6 @@
 // +build online
 
-package testutil
+package testtag
 
 import "git.grassecon.net/urdt/ussd/internal/handlers/server"
 

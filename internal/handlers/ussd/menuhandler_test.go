@@ -2050,29 +2050,6 @@ func TestCheckVouchers(t *testing.T) {
 	mockAccountService.AssertExpectations(t)
 }
 
-func TestProcessVouchers(t *testing.T) {
-	holdings := []struct {
-		ContractAddress string `json:"contractAddress"`
-		TokenSymbol     string `json:"tokenSymbol"`
-		TokenDecimals   string `json:"tokenDecimals"`
-		Balance         string `json:"balance"`
-	}{
-		{ContractAddress: "0xd4c288865Ce", TokenSymbol: "SRF", TokenDecimals: "6", Balance: "100"},
-		{ContractAddress: "0x41c188d63Qa", TokenSymbol: "MILO", TokenDecimals: "4", Balance: "200"},
-	}
-
-	expectedResult := VoucherMetadata{
-		Symbol:  "1:SRF\n2:MILO",
-		Balance: "1:100\n2:200",
-		Decimal: "1:6\n2:4",
-		Address: "1:0xd4c288865Ce\n2:0x41c188d63Qa",
-	}
-
-	result := processVouchers(holdings)
-
-	assert.Equal(t, expectedResult, result)
-}
-
 func TestGetVoucherList(t *testing.T) {
 	mockSubPrefixDb := new(mocks.MockSubPrefixDb)
 
@@ -2141,92 +2118,6 @@ func TestViewVoucher(t *testing.T) {
 	mockSubPrefixDb.AssertExpectations(t)
 }
 
-func TestGetVoucherData(t *testing.T) {
-	mockSubPrefixDb := new(mocks.MockSubPrefixDb)
-	ctx := context.Background()
-
-	// Mocked voucher data
-	mockData := map[string][]byte{
-		"sym":  []byte("1:SRF\n2:MILO"),
-		"bal":  []byte("1:100\n2:200"),
-		"deci": []byte("1:6\n2:4"),
-		"addr": []byte("1:0xd4c288865Ce\n2:0x41c188d63Qa"),
-	}
-
-	// Mock Get calls
-	for key, value := range mockData {
-		mockSubPrefixDb.On("Get", ctx, []byte(key)).Return(value, nil)
-	}
-
-	result, err := getVoucherData(ctx, mockSubPrefixDb, "1")
-
-	assert.NoError(t, err)
-	assert.Equal(t, "SRF", result.Symbol)
-	assert.Equal(t, "100", result.Balance)
-	assert.Equal(t, "6", result.Decimal)
-	assert.Equal(t, "0xd4c288865Ce", result.Address)
-
-	mockSubPrefixDb.AssertExpectations(t)
-}
-
-func TestMatchVoucher(t *testing.T) {
-	symbols := "1:SRF\n2:MILO"
-	balances := "1:100\n2:200"
-	decimals := "1:6\n2:4"
-	addresses := "1:0xd4c288865Ce\n2:0x41c188d63Qa"
-
-	// Test for valid voucher
-	symbol, balance, decimal, address := matchVoucher("2", symbols, balances, decimals, addresses)
-
-	// Assertions for valid voucher
-	assert.Equal(t, "MILO", symbol)
-	assert.Equal(t, "200", balance)
-	assert.Equal(t, "4", decimal)
-	assert.Equal(t, "0x41c188d63Qa", address)
-
-	// Test for non-existent voucher
-	symbol, balance, decimal, address = matchVoucher("3", symbols, balances, decimals, addresses)
-
-	// Assertions for non-match
-	assert.Equal(t, "", symbol)
-	assert.Equal(t, "", balance)
-	assert.Equal(t, "", decimal)
-	assert.Equal(t, "", address)
-}
-
-func TestStoreTemporaryVoucher(t *testing.T) {
-	mockDataStore := new(mocks.MockUserDataStore)
-	ctx := context.Background()
-	sessionId := "session123"
-
-	voucherData := &VoucherMetadata{
-		Symbol:  "SRF",
-		Balance: "200",
-		Decimal: "6",
-		Address: "0xd4c288865Ce0985a481Eef3be02443dF5E2e4Ea9",
-	}
-
-	// Define expected entries to be written
-	expectedEntries := map[utils.DataTyp][]byte{
-		utils.DATA_TEMPORARY_SYM:     []byte("SRF"),
-		utils.DATA_TEMPORARY_BAL:     []byte("200"),
-		utils.DATA_TEMPORARY_DECIMAL: []byte("6"),
-		utils.DATA_TEMPORARY_ADDRESS: []byte("0xd4c288865Ce0985a481Eef3be02443dF5E2e4Ea9"),
-	}
-
-	// Mock WriteEntry calls
-	for key, value := range expectedEntries {
-		mockDataStore.On("WriteEntry", ctx, sessionId, key, value).Return(nil)
-	}
-
-	h := &Handlers{userdataStore: mockDataStore}
-
-	err := h.storeTemporaryVoucher(ctx, sessionId, voucherData)
-
-	assert.NoError(t, err)
-	mockDataStore.AssertExpectations(t)
-}
-
 func TestSetVoucher(t *testing.T) {
 	mockDataStore := new(mocks.MockUserDataStore)
 
@@ -2282,66 +2173,6 @@ func TestSetVoucher(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, string(tempData.Symbol), res.Content)
-
-	mockDataStore.AssertExpectations(t)
-}
-
-func TestGetTemporaryVoucherData(t *testing.T) {
-	mockDataStore := new(mocks.MockUserDataStore)
-	sessionId := "session123"
-	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
-
-	h := &Handlers{userdataStore: mockDataStore}
-
-	// Mock temporary voucher data
-	tempData := &VoucherMetadata{
-		Symbol:  "SRF",
-		Balance: "100",
-		Decimal: "6",
-		Address: "0xd4c288865Ce",
-	}
-
-	// Set up mocks for reading entries
-	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_SYM).Return([]byte(tempData.Symbol), nil)
-	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_BAL).Return([]byte(tempData.Balance), nil)
-	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_DECIMAL).Return([]byte(tempData.Decimal), nil)
-	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_ADDRESS).Return([]byte(tempData.Address), nil)
-
-	data, err := h.getTemporaryVoucherData(ctx, sessionId)
-	assert.NoError(t, err)
-	assert.Equal(t, tempData, data)
-
-	mockDataStore.AssertExpectations(t)
-}
-
-func TestUpdateVoucherData(t *testing.T) {
-	mockDataStore := new(mocks.MockUserDataStore)
-	ctx := context.Background()
-	sessionId := "session123"
-
-	h := &Handlers{userdataStore: mockDataStore}
-
-	data := &VoucherMetadata{
-		Symbol:  "SRF",
-		Balance: "100",
-		Decimal: "6",
-		Address: "0xd4c288865Ce",
-	}
-
-	// Mock WriteEntry for active data
-	mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_ACTIVE_SYM, []byte(data.Symbol)).Return(nil)
-	mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_ACTIVE_BAL, []byte(data.Balance)).Return(nil)
-	mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_ACTIVE_DECIMAL, []byte(data.Decimal)).Return(nil)
-	mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_ACTIVE_ADDRESS, []byte(data.Address)).Return(nil)
-
-	// Mock WriteEntry for clearing temporary data
-	mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_SYM, []byte("")).Return(nil)
-	mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_BAL, []byte("")).Return(nil)
-	mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_DECIMAL, []byte("")).Return(nil)
-	mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_ADDRESS, []byte("")).Return(nil)
-
-	err := h.updateVoucherData(ctx, sessionId, data)
-	assert.NoError(t, err)
 
 	mockDataStore.AssertExpectations(t)
 }

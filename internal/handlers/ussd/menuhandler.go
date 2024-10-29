@@ -1118,7 +1118,7 @@ func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) 
 		return res, nil
 	}
 
-	data := processVouchers(vouchersResp.Result.Holdings)
+	data := utils.ProcessVouchers(vouchersResp.Result.Holdings)
 
 	// Store all voucher data
 	dataMap := map[string]string{
@@ -1135,31 +1135,6 @@ func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) 
 	}
 
 	return res, nil
-}
-
-// processVouchers converts holdings into formatted strings
-func processVouchers(holdings []struct {
-	ContractAddress string `json:"contractAddress"`
-	TokenSymbol     string `json:"tokenSymbol"`
-	TokenDecimals   string `json:"tokenDecimals"`
-	Balance         string `json:"balance"`
-}) VoucherMetadata {
-	var data VoucherMetadata
-	var symbols, balances, decimals, addresses []string
-
-	for i, h := range holdings {
-		symbols = append(symbols, fmt.Sprintf("%d:%s", i+1, h.TokenSymbol))
-		balances = append(balances, fmt.Sprintf("%d:%s", i+1, h.Balance))
-		decimals = append(decimals, fmt.Sprintf("%d:%s", i+1, h.TokenDecimals))
-		addresses = append(addresses, fmt.Sprintf("%d:%s", i+1, h.ContractAddress))
-	}
-
-	data.Symbol = strings.Join(symbols, "\n")
-	data.Balance = strings.Join(balances, "\n")
-	data.Decimal = strings.Join(decimals, "\n")
-	data.Address = strings.Join(addresses, "\n")
-
-	return data
 }
 
 // GetVoucherList fetches the list of vouchers and formats them
@@ -1193,8 +1168,7 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 		return res, nil
 	}
 
-	// Retrieve the voucher metadata using the PrefixDb interface
-	metadata, err := getVoucherData(ctx, h.prefixDb, inputStr)
+	metadata, err := utils.GetVoucherData(ctx, h.prefixDb, inputStr)
 	if err != nil {
 		return res, fmt.Errorf("failed to retrieve voucher data: %v", err)
 	}
@@ -1204,7 +1178,7 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 		return res, nil
 	}
 
-	if err := h.storeTemporaryVoucher(ctx, sessionId, metadata); err != nil {
+	if err := utils.StoreTemporaryVoucher(ctx, h.userdataStore, sessionId, metadata); err != nil {
 		return res, err
 	}
 
@@ -1214,86 +1188,9 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 	return res, nil
 }
 
-// getVoucherData retrieves and matches voucher data
-func getVoucherData(ctx context.Context, db storage.PrefixDb, input string) (*VoucherMetadata, error) {
-	keys := []string{"sym", "bal", "deci", "addr"}
-	data := make(map[string]string)
-
-	for _, key := range keys {
-		value, err := db.Get(ctx, []byte(key))
-		if err != nil {
-			return nil, fmt.Errorf("failed to get %s: %v", key, err)
-		}
-		data[key] = string(value)
-	}
-
-	symbol, balance, decimal, address := matchVoucher(input,
-		data["sym"],
-		data["bal"],
-		data["deci"],
-		data["addr"])
-
-	if symbol == "" {
-		return nil, nil
-	}
-
-	return &VoucherMetadata{
-		Symbol:  symbol,
-		Balance: balance,
-		Decimal: decimal,
-		Address: address,
-	}, nil
-}
-
-// MatchVoucher finds the matching voucher symbol, balance, decimals and contract address based on the input.
-func matchVoucher(input, symbols, balances, decimals, addresses string) (symbol, balance, decimal, address string) {
-	symList := strings.Split(symbols, "\n")
-	balList := strings.Split(balances, "\n")
-	decList := strings.Split(decimals, "\n")
-	addrList := strings.Split(addresses, "\n")
-
-	for i, sym := range symList {
-		parts := strings.SplitN(sym, ":", 2)
-		if len(parts) != 2 {
-			continue
-		}
-
-		if input == parts[0] || strings.EqualFold(input, parts[1]) {
-			symbol = parts[1]
-			if i < len(balList) {
-				balance = strings.SplitN(balList[i], ":", 2)[1]
-			}
-			if i < len(decList) {
-				decimal = strings.SplitN(decList[i], ":", 2)[1]
-			}
-			if i < len(addrList) {
-				address = strings.SplitN(addrList[i], ":", 2)[1]
-			}
-			break
-		}
-	}
-	return
-}
-
-func (h *Handlers) storeTemporaryVoucher(ctx context.Context, sessionId string, data *VoucherMetadata) error {
-	entries := map[utils.DataTyp][]byte{
-		utils.DATA_TEMPORARY_SYM:     []byte(data.Symbol),
-		utils.DATA_TEMPORARY_BAL:     []byte(data.Balance),
-		utils.DATA_TEMPORARY_DECIMAL: []byte(data.Decimal),
-		utils.DATA_TEMPORARY_ADDRESS: []byte(data.Address),
-	}
-
-	for key, value := range entries {
-		if err := h.userdataStore.WriteEntry(ctx, sessionId, key, value); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
+// SetVoucher retrieves the temp voucher data and sets it as the active data
 func (h *Handlers) SetVoucher(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
-	var err error
 
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
@@ -1301,78 +1198,16 @@ func (h *Handlers) SetVoucher(ctx context.Context, sym string, input []byte) (re
 	}
 
 	// Get temporary data
-	tempData, err := h.getTemporaryVoucherData(ctx, sessionId)
+	tempData, err := utils.GetTemporaryVoucherData(ctx, h.userdataStore, sessionId)
 	if err != nil {
 		return res, err
 	}
 
-	// Set as active and clear temporary
-	if err := h.updateVoucherData(ctx, sessionId, tempData); err != nil {
+	// Set as active and clear temporary data
+	if err := utils.UpdateVoucherData(ctx, h.userdataStore, sessionId, tempData); err != nil {
 		return res, err
 	}
 
 	res.Content = tempData.Symbol
 	return res, nil
-}
-
-func (h *Handlers) getTemporaryVoucherData(ctx context.Context, sessionId string) (*VoucherMetadata, error) {
-	store := h.userdataStore
-
-	keys := []utils.DataTyp{
-		utils.DATA_TEMPORARY_SYM,
-		utils.DATA_TEMPORARY_BAL,
-		utils.DATA_TEMPORARY_DECIMAL,
-		utils.DATA_TEMPORARY_ADDRESS,
-	}
-
-	data := &VoucherMetadata{}
-	values := make([][]byte, len(keys))
-
-	for i, key := range keys {
-		value, err := store.ReadEntry(ctx, sessionId, key)
-		if err != nil {
-			return nil, err
-		}
-		values[i] = value
-	}
-
-	data.Symbol = string(values[0])
-	data.Balance = string(values[1])
-	data.Decimal = string(values[2])
-	data.Address = string(values[3])
-
-	return data, nil
-}
-
-func (h *Handlers) updateVoucherData(ctx context.Context, sessionId string, data *VoucherMetadata) error {
-	// Set active voucher data
-	activeEntries := map[utils.DataTyp][]byte{
-		utils.DATA_ACTIVE_SYM:     []byte(data.Symbol),
-		utils.DATA_ACTIVE_BAL:     []byte(data.Balance),
-		utils.DATA_ACTIVE_DECIMAL: []byte(data.Decimal),
-		utils.DATA_ACTIVE_ADDRESS: []byte(data.Address),
-	}
-
-	// Clear temporary voucher data
-	tempEntries := map[utils.DataTyp][]byte{
-		utils.DATA_TEMPORARY_SYM:     []byte(""),
-		utils.DATA_TEMPORARY_BAL:     []byte(""),
-		utils.DATA_TEMPORARY_DECIMAL: []byte(""),
-		utils.DATA_TEMPORARY_ADDRESS: []byte(""),
-	}
-
-	// Write all entries
-	for key, value := range activeEntries {
-		if err := h.userdataStore.WriteEntry(ctx, sessionId, key, value); err != nil {
-			return err
-		}
-	}
-
-	for key, value := range tempEntries {
-		if err := h.userdataStore.WriteEntry(ctx, sessionId, key, value); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }

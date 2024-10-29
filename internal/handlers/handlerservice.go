@@ -102,6 +102,7 @@ func (ls *LocalHandlerService) GetHandler(accountService server.AccountServiceIn
 	ls.DbRs.AddLocalFunc("check_pin_mismatch", ussdHandlers.CheckPinMisMatch)
 	ls.DbRs.AddLocalFunc("validate_blocked_number", ussdHandlers.ValidateBlockedNumber)
 	ls.DbRs.AddLocalFunc("retrieve_blocked_number", ussdHandlers.RetrieveBlockedNumber)
+	ls.DbRs.AddLocalFunc("reset_unregistered_number", ussdHandlers.ResetUnregisteredNumber)
 
 	return ussdHandlers, nil
 }

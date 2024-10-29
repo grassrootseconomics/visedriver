@@ -2,8 +2,12 @@ package utils
 
 import (
 	"bufio"
+	"log"
 	"os"
 	"strconv"
+	"strings"
+
+	"git.grassecon.net/urdt/ussd/initializers"
 )
 
 type AdminStore struct {
@@ -15,9 +19,18 @@ func NewAdminStore(filePath string) *AdminStore {
 	return &AdminStore{filePath: filePath}
 }
 
-// Seed saves a list of phonumbers with admin privileges
+// Seed initializes a list of phonenumbers with admin privileges
 func (as *AdminStore) Seed() error {
-	adminNumbers := []int64{254705136690, 123456789012, 987654321098}
+	var adminNumbers []int64
+
+	numbersEnv := initializers.GetEnv("ADMIN_NUMBERS", "")
+	for _, numStr := range strings.Split(numbersEnv, ",") {
+		if num, err := strconv.ParseInt(strings.TrimSpace(numStr), 10, 64); err == nil {
+			adminNumbers = append(adminNumbers, num)
+		} else {
+			log.Printf("Skipping invalid number: %s", numStr)
+		}
+	}
 	file, err := os.Create(as.filePath)
 	if err != nil {
 		return err
@@ -33,7 +46,6 @@ func (as *AdminStore) Seed() error {
 	}
 	return writer.Flush()
 }
-
 
 func (as *AdminStore) load() ([]int64, error) {
 	file, err := os.Open(as.filePath)

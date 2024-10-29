@@ -1,0 +1,7 @@
+LOAD reset_unregistered_number 0
+RELOAD reset_unregistered_number
+MOUT retry 1
+MOUT quit 9
+HALT
+INCMP enter_other_number 1
+INCMP quit 9

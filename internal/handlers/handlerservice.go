@@ -8,6 +8,7 @@ import (
 	"git.defalsify.org/vise.git/resource"
 	"git.grassecon.net/urdt/ussd/internal/handlers/server"
 	"git.grassecon.net/urdt/ussd/internal/handlers/ussd"
+	"git.grassecon.net/urdt/ussd/internal/utils"
 )
 
 type HandlerService interface {
@@ -28,6 +29,7 @@ type LocalHandlerService struct {
 	DbRs          *resource.DbResource
 	Pe            *persist.Persister
 	UserdataStore *db.Db
+	AdminStore    *utils.AdminStore
 	Cfg           engine.Config
 	Rs            resource.Resource
 }
@@ -53,8 +55,12 @@ func (ls *LocalHandlerService) SetDataStore(db *db.Db) {
 	ls.UserdataStore = db
 }
 
+func (ls *LocalHandlerService) SetAdminStore(adminstore *utils.AdminStore) {
+	ls.AdminStore = adminstore
+}
+
 func (ls *LocalHandlerService) GetHandler(accountService server.AccountServiceInterface) (*ussd.Handlers, error) {
-	ussdHandlers, err := ussd.NewHandlers(ls.Parser, *ls.UserdataStore, accountService)
+	ussdHandlers, err := ussd.NewHandlers(ls.Parser, *ls.UserdataStore, ls.AdminStore, accountService)
 	if err != nil {
 		return nil, err
 	}
@@ -103,6 +109,8 @@ func (ls *LocalHandlerService) GetHandler(accountService server.AccountServiceIn
 	ls.DbRs.AddLocalFunc("validate_blocked_number", ussdHandlers.ValidateBlockedNumber)
 	ls.DbRs.AddLocalFunc("retrieve_blocked_number", ussdHandlers.RetrieveBlockedNumber)
 	ls.DbRs.AddLocalFunc("reset_unregistered_number", ussdHandlers.ResetUnregisteredNumber)
+	ls.DbRs.AddLocalFunc("reset_others_pin", ussdHandlers.ResetOthersPin)
+	ls.DbRs.AddLocalFunc("save_others_temporary_pin", ussdHandlers.SaveOthersTemporaryPin)
 
 	return ussdHandlers, nil
 }

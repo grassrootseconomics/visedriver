@@ -68,10 +68,10 @@ func TestProcessVouchers(t *testing.T) {
 	}
 
 	expectedResult := VoucherMetadata{
-		Symbol:  "1:SRF\n2:MILO",
-		Balance: "1:100\n2:200",
-		Decimal: "1:6\n2:4",
-		Address: "1:0xd4c288865Ce\n2:0x41c188d63Qa",
+		Symbols:   "1:SRF\n2:MILO",
+		Balances:  "1:100\n2:200",
+		Decimals:  "1:6\n2:4",
+		Addresses: "1:0xd4c288865Ce\n2:0x41c188d63Qa",
 	}
 
 	result := ProcessVouchers(holdings)

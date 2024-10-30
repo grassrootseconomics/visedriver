@@ -9,12 +9,12 @@ import (
 	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 )
 
-// VoucherMetadata helps organize voucher data fields
+// VoucherMetadata helps organize data fields
 type VoucherMetadata struct {
-	Symbol  string
-	Balance string
-	Decimal string
-	Address string
+	Symbols   string
+	Balances  string
+	Decimals  string
+	Addresses string
 }
 
 // ProcessVouchers converts holdings into formatted strings
@@ -29,10 +29,10 @@ func ProcessVouchers(holdings []dataserviceapi.TokenHoldings) VoucherMetadata {
 		addresses = append(addresses, fmt.Sprintf("%d:%s", i+1, h.ContractAddress))
 	}
 
-	data.Symbol = strings.Join(symbols, "\n")
-	data.Balance = strings.Join(balances, "\n")
-	data.Decimal = strings.Join(decimals, "\n")
-	data.Address = strings.Join(addresses, "\n")
+	data.Symbols = strings.Join(symbols, "\n")
+	data.Balances = strings.Join(balances, "\n")
+	data.Decimals = strings.Join(decimals, "\n")
+	data.Addresses = strings.Join(addresses, "\n")
 
 	return data
 }

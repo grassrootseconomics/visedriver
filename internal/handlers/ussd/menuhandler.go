@@ -58,14 +58,6 @@ func (fm *FlagManager) GetFlag(label string) (uint32, error) {
 	return fm.parser.GetFlag(label)
 }
 
-// VoucherMetadata helps organize voucher data fields
-type VoucherMetadata struct {
-	Symbol  string
-	Balance string
-	Decimal string
-	Address string
-}
-
 type Handlers struct {
 	pe             *persist.Persister
 	st             *state.State
@@ -1122,10 +1114,10 @@ func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) 
 
 	// Store all voucher data
 	dataMap := map[string]string{
-		"sym":  data.Symbol,
-		"bal":  data.Balance,
-		"deci": data.Decimal,
-		"addr": data.Address,
+		"sym":  data.Symbols,
+		"bal":  data.Balances,
+		"deci": data.Decimals,
+		"addr": data.Addresses,
 	}
 
 	for key, value := range dataMap {

@@ -2096,19 +2096,19 @@ func TestSetVoucher(t *testing.T) {
 	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
 
 	// Define the temporary voucher data
-	tempData := &VoucherMetadata{
-		Symbol:  "SRF",
-		Balance: "200",
-		Decimal: "6",
-		Address: "0xd4c288865Ce0985a481Eef3be02443dF5E2e4Ea9",
+	tempData := &dataserviceapi.TokenHoldings{
+		TokenSymbol:     "SRF",
+		Balance:         "200",
+		TokenDecimals:   "6",
+		ContractAddress: "0xd4c288865Ce0985a481Eef3be02443dF5E2e4Ea9",
 	}
 
 	// Define the expected active entries
 	activeEntries := map[utils.DataTyp][]byte{
-		utils.DATA_ACTIVE_SYM:     []byte(tempData.Symbol),
+		utils.DATA_ACTIVE_SYM:     []byte(tempData.TokenSymbol),
 		utils.DATA_ACTIVE_BAL:     []byte(tempData.Balance),
-		utils.DATA_ACTIVE_DECIMAL: []byte(tempData.Decimal),
-		utils.DATA_ACTIVE_ADDRESS: []byte(tempData.Address),
+		utils.DATA_ACTIVE_DECIMAL: []byte(tempData.TokenDecimals),
+		utils.DATA_ACTIVE_ADDRESS: []byte(tempData.ContractAddress),
 	}
 
 	// Define the temporary entries to be cleared
@@ -2120,10 +2120,10 @@ func TestSetVoucher(t *testing.T) {
 	}
 
 	// Mocking ReadEntry calls for temporary data retrieval
-	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_SYM).Return([]byte(tempData.Symbol), nil)
+	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_SYM).Return([]byte(tempData.TokenSymbol), nil)
 	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_BAL).Return([]byte(tempData.Balance), nil)
-	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_DECIMAL).Return([]byte(tempData.Decimal), nil)
-	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_ADDRESS).Return([]byte(tempData.Address), nil)
+	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_DECIMAL).Return([]byte(tempData.TokenDecimals), nil)
+	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_ADDRESS).Return([]byte(tempData.ContractAddress), nil)
 
 	// Mocking WriteEntry calls for setting active data
 	for key, value := range activeEntries {
@@ -2143,7 +2143,7 @@ func TestSetVoucher(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	assert.Equal(t, string(tempData.Symbol), res.Content)
+	assert.Equal(t, string(tempData.TokenSymbol), res.Content)
 
 	mockDataStore.AssertExpectations(t)
 }

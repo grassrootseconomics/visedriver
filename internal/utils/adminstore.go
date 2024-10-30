@@ -1,80 +1,85 @@
 package utils
 
 import (
-	"bufio"
-	"log"
+	"context"
+	"encoding/json"
 	"os"
-	"strconv"
-	"strings"
 
-	"git.grassecon.net/urdt/ussd/initializers"
+	"git.defalsify.org/vise.git/db"
+	fsdb "git.defalsify.org/vise.git/db/fs"
+	"git.defalsify.org/vise.git/logging"
 )
 
-type AdminStore struct {
-	filePath string
+var (
+	logg = logging.NewVanilla().WithDomain("adminstore")
+)
+
+type Admin struct {
+	PhoneNumber string `json:"phonenumber"`
 }
 
-// Creates a new Admin store
-func NewAdminStore(filePath string) *AdminStore {
-	return &AdminStore{filePath: filePath}
+type Config struct {
+	Admins []Admin `json:"admins"`
+}
+
+type AdminStore struct {
+	ctx     context.Context
+	fsStore db.Db
+}
+
+func NewAdminStore(ctx context.Context, fileName string) (*AdminStore, error) {
+	fsStore, err := getFsStore(ctx, fileName)
+	if err != nil {
+		return nil, err
+	}
+	return &AdminStore{ctx: ctx, fsStore: fsStore}, nil
+}
+
+func getFsStore(ctx context.Context, connectStr string) (db.Db, error) {
+	fsStore := fsdb.NewFsDb()
+	err := fsStore.Connect(ctx, connectStr)
+	fsStore.SetPrefix(db.DATATYPE_USERDATA)
+	if err != nil {
+		return nil, err
+	}
+	return fsStore, nil
 }
 
 // Seed initializes a list of phonenumbers with admin privileges
 func (as *AdminStore) Seed() error {
-	var adminNumbers []int64
+	var config Config
 
-	numbersEnv := initializers.GetEnv("ADMIN_NUMBERS", "")
-	for _, numStr := range strings.Split(numbersEnv, ",") {
-		if num, err := strconv.ParseInt(strings.TrimSpace(numStr), 10, 64); err == nil {
-			adminNumbers = append(adminNumbers, num)
-		} else {
-			log.Printf("Skipping invalid number: %s", numStr)
-		}
-	}
-	file, err := os.Create(as.filePath)
+	store := as.fsStore
+	defer store.Close()
+
+	data, err := os.ReadFile("admin_numbers.json")
 	if err != nil {
 		return err
 	}
-	defer file.Close()
-
-	writer := bufio.NewWriter(file)
-	for _, num := range adminNumbers {
-		_, err := writer.WriteString(strconv.FormatInt(num, 10) + "\n")
+	if err := json.Unmarshal(data, &config); err != nil {
+		return err
+	}
+	for _, admin := range config.Admins {
+		err := store.Put(as.ctx, []byte(admin.PhoneNumber), []byte("1"))
 		if err != nil {
+			logg.Printf(logging.LVL_DEBUG, "Failed to insert admin number", admin.PhoneNumber)
 			return err
 		}
 	}
-	return writer.Flush()
+	return nil
 }
 
-func (as *AdminStore) load() ([]int64, error) {
-	file, err := os.Open(as.filePath)
+// Checks if the given sessionId is listed as an admin.
+func (as *AdminStore) IsAdmin(sessionId string) (bool, error) {
+	_, err := as.fsStore.Get(as.ctx, []byte(sessionId))
 	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	var numbers []int64
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		num, err := strconv.ParseInt(scanner.Text(), 10, 64)
-		if err != nil {
-			return nil, err
-		}
-		numbers = append(numbers, num)
-	}
-	return numbers, scanner.Err()
-}
-
-func (as *AdminStore) IsAdmin(phoneNumber int64) (bool, error) {
-	phoneNumbers, err := as.load()
-	if err != nil {
-		return false, err
-	}
-	for _, phonenumber := range phoneNumbers {
-		if phonenumber == phoneNumber {
-			return true, nil
+		if db.IsNotFound(err) {
+			logg.Printf(logging.LVL_INFO, "Returning false because session id was not found")
+			return false, nil
+		} else {
+			return false, err
 		}
 	}
-	return false, nil
+
+	return true, nil
 }

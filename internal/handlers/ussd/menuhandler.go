@@ -21,6 +21,7 @@ import (
 	"git.defalsify.org/vise.git/state"
 	"git.grassecon.net/urdt/ussd/internal/handlers/server"
 	"git.grassecon.net/urdt/ussd/internal/utils"
+	"git.grassecon.net/urdt/ussd/common"
 	"gopkg.in/leonelquinteros/gotext.v1"
 
 	"git.grassecon.net/urdt/ussd/internal/storage"
@@ -176,12 +177,20 @@ func (h *Handlers) createAccountNoExist(ctx context.Context, sessionId string, r
 		utils.DATA_TRACKING_ID: trackingId,
 		utils.DATA_PUBLIC_KEY:  publicKey,
 	}
+	store := h.userdataStore
 	for key, value := range data {
-		store := h.userdataStore
-		err := store.WriteEntry(ctx, sessionId, key, []byte(value))
+		err = store.WriteEntry(ctx, sessionId, key, []byte(value))
 		if err != nil {
 			return err
 		}
+	}
+	publicKeyNormalized, err := common.NormalizeHex(publicKey)
+	if err != nil {
+		return err
+	}
+	err = store.WriteEntry(ctx, publicKeyNormalized, utils.DATA_PUBLIC_KEY_REVERSE, []byte(sessionId))
+	if err != nil {
+		return err
 	}
 	res.FlagSet = append(res.FlagSet, flag_account_created)
 	return nil

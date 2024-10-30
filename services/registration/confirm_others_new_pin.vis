@@ -1,9 +1,9 @@
 LOAD retrieve_blocked_number 0
 MAP retrieve_blocked_number
 CATCH invalid_others_pin flag_valid_pin 0
-LOAD save_temporary_pin 6
-RELOAD save_temporary_pin
 CATCH pin_reset_result flag_account_authorized 1
+LOAD save_others_temporary_pin 6
+RELOAD save_others_temporary_pin
 MOUT back 0
 HALT 
 INCMP _ 0

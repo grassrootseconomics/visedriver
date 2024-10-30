@@ -11,6 +11,25 @@ import (
 	memdb "git.defalsify.org/vise.git/db/mem"
 )
 
+// InitializeTestDb sets up and returns an in-memory database and store.
+func InitializeTestDb(t *testing.T) (context.Context, *UserDataStore) {
+	ctx := context.Background()
+
+	// Initialize memDb
+	db := memdb.NewMemDb()
+	err := db.Connect(ctx, "")
+	require.NoError(t, err, "Failed to connect to memDb")
+
+	// Create UserDataStore with memDb
+	store := &UserDataStore{Db: db}
+
+	t.Cleanup(func() {
+		db.Close() // Ensure the DB is closed after each test
+	})
+
+	return ctx, store
+}
+
 // AssertEmptyValue checks if a value is empty/nil/zero
 func AssertEmptyValue(t *testing.T, value []byte, msgAndArgs ...interface{}) {
 	assert.Equal(t, len(value), 0, msgAndArgs...)
@@ -100,31 +119,20 @@ func TestGetVoucherData(t *testing.T) {
 }
 
 func TestStoreTemporaryVoucher(t *testing.T) {
-	ctx := context.Background()
+	ctx, store := InitializeTestDb(t)
 	sessionId := "session123"
-	
-	// Initialize memDb
-	db := memdb.NewMemDb()
-	err := db.Connect(ctx, "")
-	require.NoError(t, err)
-	defer db.Close()
-
-	// Create UserDataStore with memDb
-	store := &UserDataStore{
-		Db: db,
-	}
 
 	// Test data
 	voucherData := &VoucherMetadata{
-		Symbol:   "SRF",
-		Balance:  "200",
-		Decimal:  "6",
-		Address:  "0xd4c288865Ce0985a481Eef3be02443dF5E2e4Ea9",
+		Symbol:  "SRF",
+		Balance: "200",
+		Decimal: "6",
+		Address: "0xd4c288865Ce0985a481Eef3be02443dF5E2e4Ea9",
 	}
 
 	// Execute the function being tested
-	err = StoreTemporaryVoucher(ctx, store, sessionId, voucherData)
-	assert.NoError(t, err)
+	err := StoreTemporaryVoucher(ctx, store, sessionId, voucherData)
+	require.NoError(t, err)
 
 	// Verify stored data
 	expectedEntries := map[DataTyp][]byte{
@@ -136,92 +144,70 @@ func TestStoreTemporaryVoucher(t *testing.T) {
 
 	for key, expectedValue := range expectedEntries {
 		storedValue, err := store.ReadEntry(ctx, sessionId, key)
-		assert.NoError(t, err)
-		assert.Equal(t, expectedValue, storedValue, "Mismatch for key %v", key)
+		require.NoError(t, err)
+		require.Equal(t, expectedValue, storedValue, "Mismatch for key %v", key)
 	}
 }
 
 func TestGetTemporaryVoucherData(t *testing.T) {
+	ctx, store := InitializeTestDb(t)
 	sessionId := "session123"
-	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
-
-	// Initialize memDb
-	db := memdb.NewMemDb()
-	err := db.Connect(ctx, "")
-	require.NoError(t, err)
-	defer db.Close()
-
-	// Create UserDataStore with memDb
-	store := &UserDataStore{
-		Db: db,
-	}
 
 	// Test voucher data
 	tempData := &VoucherMetadata{
-		Symbol:   "SRF",
-		Balance:  "200",
-		Decimal:  "6",
-		Address:  "0xd4c288865Ce0985a481Eef3be02443dF5E2e4Ea9",
+		Symbol:  "SRF",
+		Balance: "200",
+		Decimal: "6",
+		Address: "0xd4c288865Ce0985a481Eef3be02443dF5E2e4Ea9",
 	}
 
-	// store the data
-	err = StoreTemporaryVoucher(ctx, store, sessionId, tempData)
-	assert.NoError(t, err)
-	
+	// Store the data
+	err := StoreTemporaryVoucher(ctx, store, sessionId, tempData)
+	require.NoError(t, err)
+
 	// Execute the function being tested
 	data, err := GetTemporaryVoucherData(ctx, store, sessionId)
-	assert.NoError(t, err)
-	assert.Equal(t, tempData, data)
+	require.NoError(t, err)
+	require.Equal(t, tempData, data)
 }
 
 func TestUpdateVoucherData(t *testing.T) {
+	ctx, store := InitializeTestDb(t)
 	sessionId := "session123"
-	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
 
-	// Initialize memDb
-	db := memdb.NewMemDb()
-	err := db.Connect(ctx, "")
-	require.NoError(t, err)
-	defer db.Close()
-
-	store := &UserDataStore{
-		Db: db,
+	// New voucher data
+	newData := &VoucherMetadata{
+		Symbol:  "SRF",
+		Balance: "200",
+		Decimal: "6",
+		Address: "0xd4c288865Ce0985a481Eef3be02443dF5E2e4Ea9",
 	}
 
-	// Test data
-	data := &VoucherMetadata{
-		Symbol:   "SRF",
-		Balance:  "200",
-		Decimal:  "6",
-		Address:  "0xd4c288865Ce0985a481Eef3be02443dF5E2e4Ea9",
-	}
-
-	// First store some temporary data to verify it gets cleared
+	// Old temporary data
 	tempData := &VoucherMetadata{
-		Symbol:   "OLD",
-		Balance:  "100",
-		Decimal:  "8",
-		Address:  "0xold",
+		Symbol:  "OLD",
+		Balance: "100",
+		Decimal: "8",
+		Address: "0xold",
 	}
-	err = StoreTemporaryVoucher(ctx, store, sessionId, tempData)
-	require.NoError(t, err)
+	require.NoError(t, StoreTemporaryVoucher(ctx, store, sessionId, tempData))
 
 	// Execute update
-	err = UpdateVoucherData(ctx, store, sessionId, data)
-	assert.NoError(t, err)
+	err := UpdateVoucherData(ctx, store, sessionId, newData)
+	require.NoError(t, err)
 
 	// Verify active data was stored correctly
 	activeEntries := map[DataTyp][]byte{
-		DATA_ACTIVE_SYM:     []byte(data.Symbol),
-		DATA_ACTIVE_BAL:     []byte(data.Balance),
-		DATA_ACTIVE_DECIMAL: []byte(data.Decimal),
-		DATA_ACTIVE_ADDRESS: []byte(data.Address),
+		DATA_ACTIVE_SYM:     []byte(newData.Symbol),
+		DATA_ACTIVE_BAL:     []byte(newData.Balance),
+		DATA_ACTIVE_DECIMAL: []byte(newData.Decimal),
+		DATA_ACTIVE_ADDRESS: []byte(newData.Address),
 	}
 
 	for key, expectedValue := range activeEntries {
 		storedValue, err := store.ReadEntry(ctx, sessionId, key)
-		assert.NoError(t, err)
-		assert.Equal(t, expectedValue, storedValue, "Active data mismatch for key %v", key)
+		require.NoError(t, err)
+		require.Equal(t, expectedValue, storedValue, "Active data mismatch for key %v", key)
 	}
 
 	// Verify temporary data was cleared
@@ -234,7 +220,7 @@ func TestUpdateVoucherData(t *testing.T) {
 
 	for _, key := range tempKeys {
 		storedValue, err := store.ReadEntry(ctx, sessionId, key)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		AssertEmptyValue(t, storedValue, "Temporary data not cleared for key %v", key)
 	}
 }

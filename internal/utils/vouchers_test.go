@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	memdb "git.defalsify.org/vise.git/db/mem"
+	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 )
 
 // InitializeTestDb sets up and returns an in-memory database and store.
@@ -61,12 +62,7 @@ func TestMatchVoucher(t *testing.T) {
 }
 
 func TestProcessVouchers(t *testing.T) {
-	holdings := []struct {
-		ContractAddress string `json:"contractAddress"`
-		TokenSymbol     string `json:"tokenSymbol"`
-		TokenDecimals   string `json:"tokenDecimals"`
-		Balance         string `json:"balance"`
-	}{
+	holdings := []dataserviceapi.TokenHoldings{
 		{ContractAddress: "0xd4c288865Ce", TokenSymbol: "SRF", TokenDecimals: "6", Balance: "100"},
 		{ContractAddress: "0x41c188d63Qa", TokenSymbol: "MILO", TokenDecimals: "4", Balance: "200"},
 	}
@@ -112,10 +108,10 @@ func TestGetVoucherData(t *testing.T) {
 	result, err := GetVoucherData(ctx, spdb, "1")
 
 	assert.NoError(t, err)
-	assert.Equal(t, "SRF", result.Symbol)
+	assert.Equal(t, "SRF", result.TokenSymbol)
 	assert.Equal(t, "100", result.Balance)
-	assert.Equal(t, "6", result.Decimal)
-	assert.Equal(t, "0xd4c288865Ce", result.Address)
+	assert.Equal(t, "6", result.TokenDecimals)
+	assert.Equal(t, "0xd4c288865Ce", result.ContractAddress)
 }
 
 func TestStoreTemporaryVoucher(t *testing.T) {
@@ -123,11 +119,11 @@ func TestStoreTemporaryVoucher(t *testing.T) {
 	sessionId := "session123"
 
 	// Test data
-	voucherData := &VoucherMetadata{
-		Symbol:  "SRF",
-		Balance: "200",
-		Decimal: "6",
-		Address: "0xd4c288865Ce0985a481Eef3be02443dF5E2e4Ea9",
+	voucherData := &dataserviceapi.TokenHoldings{
+		TokenSymbol:     "SRF",
+		Balance:         "200",
+		TokenDecimals:   "6",
+		ContractAddress: "0xd4c288865Ce0985a481Eef3be02443dF5E2e4Ea9",
 	}
 
 	// Execute the function being tested
@@ -154,11 +150,11 @@ func TestGetTemporaryVoucherData(t *testing.T) {
 	sessionId := "session123"
 
 	// Test voucher data
-	tempData := &VoucherMetadata{
-		Symbol:  "SRF",
-		Balance: "200",
-		Decimal: "6",
-		Address: "0xd4c288865Ce0985a481Eef3be02443dF5E2e4Ea9",
+	tempData := &dataserviceapi.TokenHoldings{
+		TokenSymbol:     "SRF",
+		Balance:         "200",
+		TokenDecimals:   "6",
+		ContractAddress: "0xd4c288865Ce0985a481Eef3be02443dF5E2e4Ea9",
 	}
 
 	// Store the data
@@ -176,19 +172,19 @@ func TestUpdateVoucherData(t *testing.T) {
 	sessionId := "session123"
 
 	// New voucher data
-	newData := &VoucherMetadata{
-		Symbol:  "SRF",
-		Balance: "200",
-		Decimal: "6",
-		Address: "0xd4c288865Ce0985a481Eef3be02443dF5E2e4Ea9",
+	newData := &dataserviceapi.TokenHoldings{
+		TokenSymbol:     "SRF",
+		Balance:         "200",
+		TokenDecimals:   "6",
+		ContractAddress: "0xd4c288865Ce0985a481Eef3be02443dF5E2e4Ea9",
 	}
 
 	// Old temporary data
-	tempData := &VoucherMetadata{
-		Symbol:  "OLD",
-		Balance: "100",
-		Decimal: "8",
-		Address: "0xold",
+	tempData := &dataserviceapi.TokenHoldings{
+		TokenSymbol:     "OLD",
+		Balance:         "100",
+		TokenDecimals:   "8",
+		ContractAddress: "0xold",
 	}
 	require.NoError(t, StoreTemporaryVoucher(ctx, store, sessionId, tempData))
 
@@ -198,10 +194,10 @@ func TestUpdateVoucherData(t *testing.T) {
 
 	// Verify active data was stored correctly
 	activeEntries := map[DataTyp][]byte{
-		DATA_ACTIVE_SYM:     []byte(newData.Symbol),
+		DATA_ACTIVE_SYM:     []byte(newData.TokenSymbol),
 		DATA_ACTIVE_BAL:     []byte(newData.Balance),
-		DATA_ACTIVE_DECIMAL: []byte(newData.Decimal),
-		DATA_ACTIVE_ADDRESS: []byte(newData.Address),
+		DATA_ACTIVE_DECIMAL: []byte(newData.TokenDecimals),
+		DATA_ACTIVE_ADDRESS: []byte(newData.ContractAddress),
 	}
 
 	for key, expectedValue := range activeEntries {

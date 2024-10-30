@@ -1055,13 +1055,13 @@ func (h *Handlers) SetDefaultVoucher(ctx context.Context, sym string, input []by
 		if db.IsNotFound(err) {
 			publicKey, err := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
 			if err != nil {
-				return res, nil
+				return res, err
 			}
 
 			// Fetch vouchers from the API using the public key
 			vouchersResp, err := h.accountService.FetchVouchers(ctx, string(publicKey))
 			if err != nil {
-				return res, nil
+				return res, err
 			}
 
 			// Return if there is no voucher
@@ -1183,7 +1183,7 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 	}
 
 	res.FlagReset = append(res.FlagReset, flag_incorrect_voucher)
-	res.Content = fmt.Sprintf("%s\n%s", metadata.Symbol, metadata.Balance)
+	res.Content = fmt.Sprintf("%s\n%s", metadata.TokenSymbol, metadata.Balance)
 
 	return res, nil
 }
@@ -1208,6 +1208,6 @@ func (h *Handlers) SetVoucher(ctx context.Context, sym string, input []byte) (re
 		return res, err
 	}
 
-	res.Content = tempData.Symbol
+	res.Content = tempData.TokenSymbol
 	return res, nil
 }

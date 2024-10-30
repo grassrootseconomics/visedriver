@@ -1,12 +1,12 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 	"strings"
-	"context"
 
-	
 	"git.grassecon.net/urdt/ussd/internal/storage"
+	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 )
 
 // VoucherMetadata helps organize voucher data fields
@@ -18,12 +18,7 @@ type VoucherMetadata struct {
 }
 
 // ProcessVouchers converts holdings into formatted strings
-func ProcessVouchers(holdings []struct {
-	ContractAddress string `json:"contractAddress"`
-	TokenSymbol     string `json:"tokenSymbol"`
-	TokenDecimals   string `json:"tokenDecimals"`
-	Balance         string `json:"balance"`
-}) VoucherMetadata {
+func ProcessVouchers(holdings []dataserviceapi.TokenHoldings) VoucherMetadata {
 	var data VoucherMetadata
 	var symbols, balances, decimals, addresses []string
 
@@ -43,7 +38,7 @@ func ProcessVouchers(holdings []struct {
 }
 
 // GetVoucherData retrieves and matches voucher data
-func GetVoucherData(ctx context.Context, db storage.PrefixDb, input string) (*VoucherMetadata, error) {
+func GetVoucherData(ctx context.Context, db storage.PrefixDb, input string) (*dataserviceapi.TokenHoldings, error) {
 	keys := []string{"sym", "bal", "deci", "addr"}
 	data := make(map[string]string)
 
@@ -65,11 +60,11 @@ func GetVoucherData(ctx context.Context, db storage.PrefixDb, input string) (*Vo
 		return nil, nil
 	}
 
-	return &VoucherMetadata{
-		Symbol:  symbol,
-		Balance: balance,
-		Decimal: decimal,
-		Address: address,
+	return &dataserviceapi.TokenHoldings{
+		TokenSymbol:     string(symbol),
+		Balance:         string(balance),
+		TokenDecimals:   string(decimal),
+		ContractAddress: string(address),
 	}, nil
 }
 
@@ -104,12 +99,12 @@ func MatchVoucher(input, symbols, balances, decimals, addresses string) (symbol,
 }
 
 // StoreTemporaryVoucher saves voucher metadata as temporary entries in the DataStore.
-func StoreTemporaryVoucher(ctx context.Context, store DataStore, sessionId string, data *VoucherMetadata) error {
+func StoreTemporaryVoucher(ctx context.Context, store DataStore, sessionId string, data *dataserviceapi.TokenHoldings) error {
 	entries := map[DataTyp][]byte{
-		DATA_TEMPORARY_SYM:     []byte(data.Symbol),
+		DATA_TEMPORARY_SYM:     []byte(data.TokenSymbol),
 		DATA_TEMPORARY_BAL:     []byte(data.Balance),
-		DATA_TEMPORARY_DECIMAL: []byte(data.Decimal),
-		DATA_TEMPORARY_ADDRESS: []byte(data.Address),
+		DATA_TEMPORARY_DECIMAL: []byte(data.TokenDecimals),
+		DATA_TEMPORARY_ADDRESS: []byte(data.ContractAddress),
 	}
 
 	for key, value := range entries {
@@ -121,7 +116,7 @@ func StoreTemporaryVoucher(ctx context.Context, store DataStore, sessionId strin
 }
 
 // GetTemporaryVoucherData retrieves temporary voucher metadata from the DataStore.
-func GetTemporaryVoucherData(ctx context.Context, store DataStore, sessionId string) (*VoucherMetadata, error) {
+func GetTemporaryVoucherData(ctx context.Context, store DataStore, sessionId string) (*dataserviceapi.TokenHoldings, error) {
 	keys := []DataTyp{
 		DATA_TEMPORARY_SYM,
 		DATA_TEMPORARY_BAL,
@@ -129,7 +124,7 @@ func GetTemporaryVoucherData(ctx context.Context, store DataStore, sessionId str
 		DATA_TEMPORARY_ADDRESS,
 	}
 
-	data := &VoucherMetadata{}
+	data := &dataserviceapi.TokenHoldings{}
 	values := make([][]byte, len(keys))
 
 	for i, key := range keys {
@@ -140,22 +135,22 @@ func GetTemporaryVoucherData(ctx context.Context, store DataStore, sessionId str
 		values[i] = value
 	}
 
-	data.Symbol = string(values[0])
+	data.TokenSymbol = string(values[0])
 	data.Balance = string(values[1])
-	data.Decimal = string(values[2])
-	data.Address = string(values[3])
+	data.TokenDecimals = string(values[2])
+	data.ContractAddress = string(values[3])
 
 	return data, nil
 }
 
 // UpdateVoucherData sets the active voucher data and clears the temporary voucher data in the DataStore.
-func UpdateVoucherData(ctx context.Context, store DataStore, sessionId string, data *VoucherMetadata) error {
+func UpdateVoucherData(ctx context.Context, store DataStore, sessionId string, data *dataserviceapi.TokenHoldings) error {
 	// Active voucher data entries
 	activeEntries := map[DataTyp][]byte{
-		DATA_ACTIVE_SYM:     []byte(data.Symbol),
+		DATA_ACTIVE_SYM:     []byte(data.TokenSymbol),
 		DATA_ACTIVE_BAL:     []byte(data.Balance),
-		DATA_ACTIVE_DECIMAL: []byte(data.Decimal),
-		DATA_ACTIVE_ADDRESS: []byte(data.Address),
+		DATA_ACTIVE_DECIMAL: []byte(data.TokenDecimals),
+		DATA_ACTIVE_ADDRESS: []byte(data.ContractAddress),
 	}
 
 	// Clear temporary voucher data entries

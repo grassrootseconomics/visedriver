@@ -24,6 +24,8 @@ import (
 	"github.com/grassrootseconomics/eth-custodial/pkg/api"
 	testdataloader "github.com/peteole/testdata-loader"
 	"github.com/stretchr/testify/require"
+
+	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 )
 
 var (
@@ -1898,12 +1900,10 @@ func TestSetDefaultVoucher(t *testing.T) {
 	if err != nil {
 		t.Logf(err.Error())
 	}
-	
 	flag_no_active_voucher, err := fm.GetFlag("flag_no_active_voucher")
 	if err != nil {
 		t.Logf(err.Error())
 	}
-	
 	// Define session ID and mock data
 	sessionId := "session123"
 	publicKey := "0X13242618721"
@@ -1920,20 +1920,8 @@ func TestSetDefaultVoucher(t *testing.T) {
 			vouchersResp: &models.VoucherHoldingResponse{
 				Ok:          true,
 				Description: "Vouchers fetched successfully",
-				Result: struct {
-					Holdings []struct {
-						ContractAddress string `json:"contractAddress"`
-						TokenSymbol     string `json:"tokenSymbol"`
-						TokenDecimals   string `json:"tokenDecimals"`
-						Balance         string `json:"balance"`
-					} `json:"holdings"`
-				}{
-					Holdings: []struct {
-						ContractAddress string `json:"contractAddress"`
-						TokenSymbol     string `json:"tokenSymbol"`
-						TokenDecimals   string `json:"tokenDecimals"`
-						Balance         string `json:"balance"`
-					}{
+				Result: models.VoucherResult{
+					Holdings: []dataserviceapi.TokenHoldings{
 						{
 							ContractAddress: "0x123",
 							TokenSymbol:     "TOKEN1",
@@ -1950,20 +1938,8 @@ func TestSetDefaultVoucher(t *testing.T) {
 			vouchersResp: &models.VoucherHoldingResponse{
 				Ok:          true,
 				Description: "No vouchers available",
-				Result: struct {
-					Holdings []struct {
-						ContractAddress string `json:"contractAddress"`
-						TokenSymbol     string `json:"tokenSymbol"`
-						TokenDecimals   string `json:"tokenDecimals"`
-						Balance         string `json:"balance"`
-					} `json:"holdings"`
-				}{
-					Holdings: []struct {
-						ContractAddress string `json:"contractAddress"`
-						TokenSymbol     string `json:"tokenSymbol"`
-						TokenDecimals   string `json:"tokenDecimals"`
-						Balance         string `json:"balance"`
-					}{},
+				Result: models.VoucherResult{
+					Holdings: []dataserviceapi.TokenHoldings{},
 				},
 			},
 			expectedResult: resource.Result{
@@ -2025,12 +2001,7 @@ func TestCheckVouchers(t *testing.T) {
 	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_PUBLIC_KEY).Return([]byte(publicKey), nil)
 
 	mockVouchersResponse := &models.VoucherHoldingResponse{}
-	mockVouchersResponse.Result.Holdings = []struct {
-		ContractAddress string `json:"contractAddress"`
-		TokenSymbol     string `json:"tokenSymbol"`
-		TokenDecimals   string `json:"tokenDecimals"`
-		Balance         string `json:"balance"`
-	}{
+	mockVouchersResponse.Result.Holdings = []dataserviceapi.TokenHoldings{
 		{ContractAddress: "0xd4c288865Ce", TokenSymbol: "SRF", TokenDecimals: "6", Balance: "100"},
 		{ContractAddress: "0x41c188d63Qa", TokenSymbol: "MILO", TokenDecimals: "4", Balance: "200"},
 	}

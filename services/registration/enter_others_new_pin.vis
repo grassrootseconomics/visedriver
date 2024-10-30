@@ -1,3 +1,6 @@
+LOAD validate_blocked_number 20
+RELOAD validate_blocked_number
+CATCH unregistered_number flag_unregistered_number 1
 LOAD retrieve_blocked_number 0
 MAP retrieve_blocked_number
 MOUT back 0

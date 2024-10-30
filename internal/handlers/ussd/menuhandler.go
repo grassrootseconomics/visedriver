@@ -63,7 +63,7 @@ type Handlers struct {
 	pe             *persist.Persister
 	st             *state.State
 	ca             cache.Memory
-	userdataStore  utils.DataStore
+	userdataStore  common.DataStore
 	flagManager    *asm.FlagParser
 	accountService server.AccountServiceInterface
 }
@@ -72,7 +72,7 @@ func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, accountService s
 	if userdataStore == nil {
 		return nil, fmt.Errorf("cannot create handler with nil userdata store")
 	}
-	userDb := &utils.UserDataStore{
+	userDb := &common.UserDataStore{
 		Db: userdataStore,
 	}
 	h := &Handlers{

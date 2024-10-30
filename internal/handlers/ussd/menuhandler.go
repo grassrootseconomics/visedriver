@@ -151,9 +151,9 @@ func (h *Handlers) createAccountNoExist(ctx context.Context, sessionId string, r
 	trackingId := okResponse.Result["trackingId"].(string)
 	publicKey := okResponse.Result["publicKey"].(string)
 
-	data := map[utils.DataTyp]string{
-		utils.DATA_TRACKING_ID: trackingId,
-		utils.DATA_PUBLIC_KEY:  publicKey,
+	data := map[common.DataTyp]string{
+		common.DATA_TRACKING_ID: trackingId,
+		common.DATA_PUBLIC_KEY:  publicKey,
 	}
 	store := h.userdataStore
 	for key, value := range data {
@@ -166,7 +166,7 @@ func (h *Handlers) createAccountNoExist(ctx context.Context, sessionId string, r
 	if err != nil {
 		return err
 	}
-	err = store.WriteEntry(ctx, publicKeyNormalized, utils.DATA_PUBLIC_KEY_REVERSE, []byte(sessionId))
+	err = store.WriteEntry(ctx, publicKeyNormalized, common.DATA_PUBLIC_KEY_REVERSE, []byte(sessionId))
 	if err != nil {
 		return err
 	}
@@ -186,7 +186,7 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 		return res, fmt.Errorf("missing session")
 	}
 	store := h.userdataStore
-	_, err = store.ReadEntry(ctx, sessionId, utils.DATA_ACCOUNT_CREATED)
+	_, err = store.ReadEntry(ctx, sessionId, common.DATA_ACCOUNT_CREATED)
 	if err != nil {
 		if db.IsNotFound(err) {
 			logg.Printf(logging.LVL_INFO, "Creating an account because it doesn't exist")
@@ -242,7 +242,7 @@ func (h *Handlers) SaveTemporaryPin(ctx context.Context, sym string, input []byt
 	res.FlagReset = append(res.FlagReset, flag_incorrect_pin)
 
 	store := h.userdataStore
-	err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_PIN, []byte(accountPIN))
+	err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_PIN, []byte(accountPIN))
 	if err != nil {
 		return res, err
 	}
@@ -259,7 +259,7 @@ func (h *Handlers) ConfirmPinChange(ctx context.Context, sym string, input []byt
 	flag_pin_mismatch, _ := h.flagManager.GetFlag("flag_pin_mismatch")
 
 	store := h.userdataStore
-	temporaryPin, err := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_PIN)
+	temporaryPin, err := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_PIN)
 	if err != nil {
 		return res, err
 	}
@@ -268,7 +268,7 @@ func (h *Handlers) ConfirmPinChange(ctx context.Context, sym string, input []byt
 	} else {
 		res.FlagSet = append(res.FlagSet, flag_pin_mismatch)
 	}
-	err = store.WriteEntry(ctx, sessionId, utils.DATA_ACCOUNT_PIN, []byte(temporaryPin))
+	err = store.WriteEntry(ctx, sessionId, common.DATA_ACCOUNT_PIN, []byte(temporaryPin))
 	if err != nil {
 		return res, err
 	}
@@ -290,7 +290,7 @@ func (h *Handlers) VerifyCreatePin(ctx context.Context, sym string, input []byte
 		return res, fmt.Errorf("missing session")
 	}
 	store := h.userdataStore
-	temporaryPin, err := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_PIN)
+	temporaryPin, err := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_PIN)
 	if err != nil {
 		return res, err
 	}
@@ -303,7 +303,7 @@ func (h *Handlers) VerifyCreatePin(ctx context.Context, sym string, input []byte
 		res.FlagSet = []uint32{flag_pin_mismatch}
 	}
 
-	err = store.WriteEntry(ctx, sessionId, utils.DATA_ACCOUNT_PIN, []byte(temporaryPin))
+	err = store.WriteEntry(ctx, sessionId, common.DATA_ACCOUNT_PIN, []byte(temporaryPin))
 	if err != nil {
 		return res, err
 	}
@@ -335,7 +335,7 @@ func (h *Handlers) SaveFirstname(ctx context.Context, sym string, input []byte) 
 		}
 		firstName := string(input)
 		store := h.userdataStore
-		err = store.WriteEntry(ctx, sessionId, utils.DATA_FIRST_NAME, []byte(firstName))
+		err = store.WriteEntry(ctx, sessionId, common.DATA_FIRST_NAME, []byte(firstName))
 		if err != nil {
 			return res, err
 		}
@@ -358,7 +358,7 @@ func (h *Handlers) SaveFamilyname(ctx context.Context, sym string, input []byte)
 		}
 		familyName := string(input)
 		store := h.userdataStore
-		err = store.WriteEntry(ctx, sessionId, utils.DATA_FAMILY_NAME, []byte(familyName))
+		err = store.WriteEntry(ctx, sessionId, common.DATA_FAMILY_NAME, []byte(familyName))
 		if err != nil {
 			return res, err
 		}
@@ -380,7 +380,7 @@ func (h *Handlers) SaveYob(ctx context.Context, sym string, input []byte) (resou
 	if len(input) == 4 {
 		yob := string(input)
 		store := h.userdataStore
-		err = store.WriteEntry(ctx, sessionId, utils.DATA_YOB, []byte(yob))
+		err = store.WriteEntry(ctx, sessionId, common.DATA_YOB, []byte(yob))
 		if err != nil {
 			return res, err
 		}
@@ -403,7 +403,7 @@ func (h *Handlers) SaveLocation(ctx context.Context, sym string, input []byte) (
 		}
 		location := string(input)
 		store := h.userdataStore
-		err = store.WriteEntry(ctx, sessionId, utils.DATA_LOCATION, []byte(location))
+		err = store.WriteEntry(ctx, sessionId, common.DATA_LOCATION, []byte(location))
 		if err != nil {
 			return res, err
 		}
@@ -426,7 +426,7 @@ func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (re
 	}
 	gender := strings.Split(symbol, "_")[1]
 	store := h.userdataStore
-	err = store.WriteEntry(ctx, sessionId, utils.DATA_GENDER, []byte(gender))
+	err = store.WriteEntry(ctx, sessionId, common.DATA_GENDER, []byte(gender))
 	if err != nil {
 		return res, nil
 	}
@@ -445,7 +445,7 @@ func (h *Handlers) SaveOfferings(ctx context.Context, sym string, input []byte) 
 	if len(input) > 0 {
 		offerings := string(input)
 		store := h.userdataStore
-		err = store.WriteEntry(ctx, sessionId, utils.DATA_OFFERINGS, []byte(offerings))
+		err = store.WriteEntry(ctx, sessionId, common.DATA_OFFERINGS, []byte(offerings))
 		if err != nil {
 			return res, nil
 		}
@@ -481,7 +481,7 @@ func (h *Handlers) CheckIdentifier(ctx context.Context, sym string, input []byte
 		return res, fmt.Errorf("missing session")
 	}
 	store := h.userdataStore
-	publicKey, _ := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
+	publicKey, _ := store.ReadEntry(ctx, sessionId, common.DATA_PUBLIC_KEY)
 
 	res.Content = string(publicKey)
 
@@ -502,7 +502,7 @@ func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (res
 	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
 
 	store := h.userdataStore
-	AccountPin, err := store.ReadEntry(ctx, sessionId, utils.DATA_ACCOUNT_PIN)
+	AccountPin, err := store.ReadEntry(ctx, sessionId, common.DATA_ACCOUNT_PIN)
 	if err != nil {
 		return res, err
 	}
@@ -548,7 +548,7 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 		return res, fmt.Errorf("missing session")
 	}
 	store := h.userdataStore
-	publicKey, err := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
+	publicKey, err := store.ReadEntry(ctx, sessionId, common.DATA_PUBLIC_KEY)
 	if err != nil {
 		return res, err
 	}
@@ -654,7 +654,7 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 	store := h.userdataStore
 
 	// get the active sym and active balance
-	activeSym, err := store.ReadEntry(ctx, sessionId, utils.DATA_ACTIVE_SYM)
+	activeSym, err := store.ReadEntry(ctx, sessionId, common.DATA_ACTIVE_SYM)
 	if err != nil {
 		if db.IsNotFound(err) {
 			balance := "0.00"
@@ -665,7 +665,7 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 		return res, err
 	}
 
-	activeBal, err := store.ReadEntry(ctx, sessionId, utils.DATA_ACTIVE_BAL)
+	activeBal, err := store.ReadEntry(ctx, sessionId, common.DATA_ACTIVE_BAL)
 	if err != nil {
 		return res, err
 	}
@@ -687,7 +687,7 @@ func (h *Handlers) FetchCustodialBalances(ctx context.Context, sym string, input
 	balanceType := strings.Split(symbol, "_")[0]
 
 	store := h.userdataStore
-	publicKey, err := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
+	publicKey, err := store.ReadEntry(ctx, sessionId, common.DATA_PUBLIC_KEY)
 	if err != nil {
 		return res, err
 	}
@@ -737,7 +737,7 @@ func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []by
 			return res, nil
 		}
 		store := h.userdataStore
-		err = store.WriteEntry(ctx, sessionId, utils.DATA_RECIPIENT, []byte(recipient))
+		err = store.WriteEntry(ctx, sessionId, common.DATA_RECIPIENT, []byte(recipient))
 		if err != nil {
 			return res, nil
 		}
@@ -760,12 +760,12 @@ func (h *Handlers) TransactionReset(ctx context.Context, sym string, input []byt
 	flag_invalid_recipient, _ := h.flagManager.GetFlag("flag_invalid_recipient")
 	flag_invalid_recipient_with_invite, _ := h.flagManager.GetFlag("flag_invalid_recipient_with_invite")
 	store := h.userdataStore
-	err = store.WriteEntry(ctx, sessionId, utils.DATA_AMOUNT, []byte(""))
+	err = store.WriteEntry(ctx, sessionId, common.DATA_AMOUNT, []byte(""))
 	if err != nil {
 		return res, nil
 	}
 
-	err = store.WriteEntry(ctx, sessionId, utils.DATA_RECIPIENT, []byte(""))
+	err = store.WriteEntry(ctx, sessionId, common.DATA_RECIPIENT, []byte(""))
 	if err != nil {
 		return res, nil
 	}
@@ -787,7 +787,7 @@ func (h *Handlers) ResetTransactionAmount(ctx context.Context, sym string, input
 
 	flag_invalid_amount, _ := h.flagManager.GetFlag("flag_invalid_amount")
 	store := h.userdataStore
-	err = store.WriteEntry(ctx, sessionId, utils.DATA_AMOUNT, []byte(""))
+	err = store.WriteEntry(ctx, sessionId, common.DATA_AMOUNT, []byte(""))
 	if err != nil {
 		return res, nil
 	}
@@ -809,7 +809,7 @@ func (h *Handlers) MaxAmount(ctx context.Context, sym string, input []byte) (res
 	}
 	store := h.userdataStore
 
-	activeBal, err := store.ReadEntry(ctx, sessionId, utils.DATA_ACTIVE_BAL)
+	activeBal, err := store.ReadEntry(ctx, sessionId, common.DATA_ACTIVE_BAL)
 	if err != nil {
 		return res, err
 	}
@@ -834,7 +834,7 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 	var balanceValue float64
 
 	// retrieve the active balance
-	activeBal, err := store.ReadEntry(ctx, sessionId, utils.DATA_ACTIVE_BAL)
+	activeBal, err := store.ReadEntry(ctx, sessionId, common.DATA_ACTIVE_BAL)
 	if err != nil {
 		return res, err
 	}
@@ -860,7 +860,7 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 
 	// Format the amount with 2 decimal places before saving
 	formattedAmount := fmt.Sprintf("%.2f", inputAmount)
-	err = store.WriteEntry(ctx, sessionId, utils.DATA_AMOUNT, []byte(formattedAmount))
+	err = store.WriteEntry(ctx, sessionId, common.DATA_AMOUNT, []byte(formattedAmount))
 	if err != nil {
 		return res, err
 	}
@@ -878,7 +878,7 @@ func (h *Handlers) GetRecipient(ctx context.Context, sym string, input []byte) (
 		return res, fmt.Errorf("missing session")
 	}
 	store := h.userdataStore
-	recipient, _ := store.ReadEntry(ctx, sessionId, utils.DATA_RECIPIENT)
+	recipient, _ := store.ReadEntry(ctx, sessionId, common.DATA_RECIPIENT)
 
 	res.Content = string(recipient)
 
@@ -910,12 +910,12 @@ func (h *Handlers) GetAmount(ctx context.Context, sym string, input []byte) (res
 	store := h.userdataStore
 
 	// retrieve the active symbol
-	activeSym, err := store.ReadEntry(ctx, sessionId, utils.DATA_ACTIVE_SYM)
+	activeSym, err := store.ReadEntry(ctx, sessionId, common.DATA_ACTIVE_SYM)
 	if err != nil {
 		return res, err
 	}
 
-	amount, _ := store.ReadEntry(ctx, sessionId, utils.DATA_AMOUNT)
+	amount, _ := store.ReadEntry(ctx, sessionId, common.DATA_AMOUNT)
 
 	res.Content = fmt.Sprintf("%s %s", string(amount), string(activeSym))
 
@@ -939,11 +939,11 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 	// Use the amount, recipient and sender to call the API and initialize the transaction
 	store := h.userdataStore
 
-	amount, _ := store.ReadEntry(ctx, sessionId, utils.DATA_AMOUNT)
+	amount, _ := store.ReadEntry(ctx, sessionId, common.DATA_AMOUNT)
 
-	recipient, _ := store.ReadEntry(ctx, sessionId, utils.DATA_RECIPIENT)
+	recipient, _ := store.ReadEntry(ctx, sessionId, common.DATA_RECIPIENT)
 
-	activeSym, _ := store.ReadEntry(ctx, sessionId, utils.DATA_ACTIVE_SYM)
+	activeSym, _ := store.ReadEntry(ctx, sessionId, common.DATA_ACTIVE_SYM)
 
 	res.Content = l.Get("Your request has been sent. %s will receive %s %s from %s.", string(recipient), string(amount), string(activeSym), string(sessionId))
 
@@ -983,12 +983,12 @@ func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte)
 	}
 	store := h.userdataStore
 	// Retrieve user data as strings with fallback to defaultValue
-	firstName := getEntryOrDefault(store.ReadEntry(ctx, sessionId, utils.DATA_FIRST_NAME))
-	familyName := getEntryOrDefault(store.ReadEntry(ctx, sessionId, utils.DATA_FAMILY_NAME))
-	yob := getEntryOrDefault(store.ReadEntry(ctx, sessionId, utils.DATA_YOB))
-	gender := getEntryOrDefault(store.ReadEntry(ctx, sessionId, utils.DATA_GENDER))
-	location := getEntryOrDefault(store.ReadEntry(ctx, sessionId, utils.DATA_LOCATION))
-	offerings := getEntryOrDefault(store.ReadEntry(ctx, sessionId, utils.DATA_OFFERINGS))
+	firstName := getEntryOrDefault(store.ReadEntry(ctx, sessionId, common.DATA_FIRST_NAME))
+	familyName := getEntryOrDefault(store.ReadEntry(ctx, sessionId, common.DATA_FAMILY_NAME))
+	yob := getEntryOrDefault(store.ReadEntry(ctx, sessionId, common.DATA_YOB))
+	gender := getEntryOrDefault(store.ReadEntry(ctx, sessionId, common.DATA_GENDER))
+	location := getEntryOrDefault(store.ReadEntry(ctx, sessionId, common.DATA_LOCATION))
+	offerings := getEntryOrDefault(store.ReadEntry(ctx, sessionId, common.DATA_OFFERINGS))
 
 	// Construct the full name
 	name := defaultValue
@@ -1045,11 +1045,11 @@ func (h *Handlers) SetDefaultVoucher(ctx context.Context, sym string, input []by
 	flag_no_active_voucher, _ := h.flagManager.GetFlag("flag_no_active_voucher")
 
 	// check if the user has an active sym
-	_, err = store.ReadEntry(ctx, sessionId, utils.DATA_ACTIVE_SYM)
+	_, err = store.ReadEntry(ctx, sessionId, common.DATA_ACTIVE_SYM)
 
 	if err != nil {
 		if db.IsNotFound(err) {
-			publicKey, err := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
+			publicKey, err := store.ReadEntry(ctx, sessionId, common.DATA_PUBLIC_KEY)
 			if err != nil {
 				return res, nil
 			}
@@ -1072,12 +1072,12 @@ func (h *Handlers) SetDefaultVoucher(ctx context.Context, sym string, input []by
 			defaultBal := firstVoucher.Balance
 
 			// set the active symbol
-			err = store.WriteEntry(ctx, sessionId, utils.DATA_ACTIVE_SYM, []byte(defaultSym))
+			err = store.WriteEntry(ctx, sessionId, common.DATA_ACTIVE_SYM, []byte(defaultSym))
 			if err != nil {
 				return res, err
 			}
 			// set the active balance
-			err = store.WriteEntry(ctx, sessionId, utils.DATA_ACTIVE_BAL, []byte(defaultBal))
+			err = store.WriteEntry(ctx, sessionId, common.DATA_ACTIVE_BAL, []byte(defaultBal))
 			if err != nil {
 				return res, err
 			}
@@ -1103,7 +1103,7 @@ func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) 
 	}
 
 	store := h.userdataStore
-	publicKey, err := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
+	publicKey, err := store.ReadEntry(ctx, sessionId, common.DATA_PUBLIC_KEY)
 	if err != nil {
 		return res, nil
 	}
@@ -1207,11 +1207,11 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 
 	// If a match is found, write the temporary sym and balance
 	if matchedSymbol != "" && matchedBalance != "" {
-		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_SYM, []byte(matchedSymbol))
+		err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_SYM, []byte(matchedSymbol))
 		if err != nil {
 			return res, err
 		}
-		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_BAL, []byte(matchedBalance))
+		err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_BAL, []byte(matchedBalance))
 		if err != nil {
 			return res, err
 		}
@@ -1269,34 +1269,34 @@ func (h *Handlers) SetVoucher(ctx context.Context, sym string, input []byte) (re
 	}
 
 	// get the current temporary symbol
-	temporarySym, err := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_SYM)
+	temporarySym, err := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_SYM)
 	if err != nil {
 		return res, err
 	}
 	// get the current temporary balance
-	temporaryBal, err := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_BAL)
+	temporaryBal, err := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_BAL)
 	if err != nil {
 		return res, err
 	}
 
 	// set the active symbol
-	err = store.WriteEntry(ctx, sessionId, utils.DATA_ACTIVE_SYM, []byte(temporarySym))
+	err = store.WriteEntry(ctx, sessionId, common.DATA_ACTIVE_SYM, []byte(temporarySym))
 	if err != nil {
 		return res, err
 	}
 	// set the active balance
-	err = store.WriteEntry(ctx, sessionId, utils.DATA_ACTIVE_BAL, []byte(temporaryBal))
+	err = store.WriteEntry(ctx, sessionId, common.DATA_ACTIVE_BAL, []byte(temporaryBal))
 	if err != nil {
 		return res, err
 	}
 
 	// reset the temporary symbol
-	err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_SYM, []byte(""))
+	err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_SYM, []byte(""))
 	if err != nil {
 		return res, err
 	}
 	// reset the temporary balance
-	err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_BAL, []byte(""))
+	err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_BAL, []byte(""))
 	if err != nil {
 		return res, err
 	}

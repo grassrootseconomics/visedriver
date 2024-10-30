@@ -39,7 +39,7 @@ func TestNewHandlers(t *testing.T) {
 	}
 	t.Run("Valid UserDataStore", func(t *testing.T) {
 		mockStore := &mocks.MockUserDataStore{}
-		handlers, err := NewHandlers(fm.parser, mockStore, &accountService)
+		handlers, err := NewHandlers(fm.parser, mockStore, nil, &accountService)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -55,7 +55,7 @@ func TestNewHandlers(t *testing.T) {
 	t.Run("Nil UserDataStore", func(t *testing.T) {
 		appFlags := &asm.FlagParser{}
 
-		handlers, err := NewHandlers(appFlags, nil, &accountService)
+		handlers, err := NewHandlers(appFlags, nil, nil, &accountService)
 
 		if err == nil {
 			t.Fatal("expected an error, got none")
@@ -1481,8 +1481,8 @@ func TestValidateAmount(t *testing.T) {
 			},
 		},
 		{
-			name:    "Test with invalid amount format",
-			input:   []byte("0.02ms"),
+			name:      "Test with invalid amount format",
+			input:     []byte("0.02ms"),
 			activeBal: []byte("5"),
 			expectedResult: resource.Result{
 				FlagSet: []uint32{flag_invalid_amount},

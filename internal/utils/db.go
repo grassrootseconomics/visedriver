@@ -28,6 +28,7 @@ const (
 	DATA_ACTIVE_SYM
 	DATA_TEMPORARY_BAL
 	DATA_ACTIVE_BAL
+	DATA_PUBLIC_KEY_REVERSE
 )
 
 func typToBytes(typ DataTyp) []byte {

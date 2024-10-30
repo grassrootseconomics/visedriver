@@ -69,11 +69,12 @@ type Handlers struct {
 	st             *state.State
 	ca             cache.Memory
 	userdataStore  utils.DataStore
+	adminstore     *utils.AdminStore
 	flagManager    *asm.FlagParser
 	accountService server.AccountServiceInterface
 }
 
-func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, accountService server.AccountServiceInterface) (*Handlers, error) {
+func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, adminstore *utils.AdminStore, accountService server.AccountServiceInterface) (*Handlers, error) {
 	if userdataStore == nil {
 		return nil, fmt.Errorf("cannot create handler with nil userdata store")
 	}
@@ -83,6 +84,7 @@ func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, accountService s
 	h := &Handlers{
 		userdataStore:  userDb,
 		flagManager:    appFlags,
+		adminstore:     adminstore,
 		accountService: accountService,
 	}
 	return h, nil
@@ -120,9 +122,7 @@ func (h *Handlers) Init(ctx context.Context, sym string, input []byte) (resource
 	sessionId, _ := ctx.Value("SessionId").(string)
 	flag_admin_privilege, _ := h.flagManager.GetFlag("flag_admin_privilege")
 
-	number, _ := strconv.ParseInt(sessionId, 10, 64)
-	as := utils.NewAdminStore("admin_numbers.txt")
-	isAdmin, _ := as.IsAdmin(number)
+	isAdmin, _ := h.adminstore.IsAdmin(sessionId)
 
 	if isAdmin {
 		r.FlagSet = append(r.FlagSet, flag_admin_privilege)
@@ -220,7 +220,11 @@ func (h *Handlers) CheckPinMisMatch(ctx context.Context, sym string, input []byt
 		return res, fmt.Errorf("missing session")
 	}
 	store := h.userdataStore
-	temporaryPin, err := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_PIN)
+	blockedNumber, err := store.ReadEntry(ctx, sessionId, utils.DATA_BLOCKED_NUMBER)
+	if err != nil {
+		return res, err
+	}
+	temporaryPin, err := store.ReadEntry(ctx, string(blockedNumber), utils.DATA_TEMPORARY_PIN)
 	if err != nil {
 		return res, err
 	}
@@ -272,9 +276,33 @@ func (h *Handlers) SaveTemporaryPin(ctx context.Context, sym string, input []byt
 	}
 
 	res.FlagReset = append(res.FlagReset, flag_incorrect_pin)
+	fmt.Println("Saving:", string(accountPIN))
 
 	store := h.userdataStore
 	err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_PIN, []byte(accountPIN))
+	if err != nil {
+		return res, err
+	}
+
+	return res, nil
+}
+
+func (h *Handlers) SaveOthersTemporaryPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	var err error
+
+	store := h.userdataStore
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+	temporaryPin := string(input)
+	blockedNumber, err := store.ReadEntry(ctx, sessionId, utils.DATA_BLOCKED_NUMBER)
+
+	if err != nil {
+		return res, err
+	}
+	err = store.WriteEntry(ctx, string(blockedNumber), utils.DATA_TEMPORARY_PIN, []byte(temporaryPin))
 	if err != nil {
 		return res, err
 	}
@@ -672,7 +700,6 @@ func (h *Handlers) ResetIncorrectYob(ctx context.Context, sym string, input []by
 	var res resource.Result
 
 	flag_incorrect_date_format, _ := h.flagManager.GetFlag("flag_incorrect_date_format")
-
 	res.FlagReset = append(res.FlagReset, flag_incorrect_date_format)
 	return res, nil
 }
@@ -751,6 +778,28 @@ func (h *Handlers) FetchCustodialBalances(ctx context.Context, sym string, input
 		res.Content = fmt.Sprintf("Your community balance is %s", balance)
 	default:
 		break
+	}
+	return res, nil
+}
+
+func (h *Handlers) ResetOthersPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	store := h.userdataStore
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+	blockedPhonenumber, err := store.ReadEntry(ctx, sessionId, utils.DATA_BLOCKED_NUMBER)
+	if err != nil {
+		return res, err
+	}
+	temporaryPin, err := store.ReadEntry(ctx, string(blockedPhonenumber), utils.DATA_TEMPORARY_PIN)
+	if err != nil {
+		return res, err
+	}
+	err = store.WriteEntry(ctx, string(blockedPhonenumber), utils.DATA_ACCOUNT_PIN, []byte(temporaryPin))
+	if err != nil {
+		return res, nil
 	}
 	return res, nil
 }

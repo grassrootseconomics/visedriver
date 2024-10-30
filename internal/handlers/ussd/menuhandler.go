@@ -19,9 +19,9 @@ import (
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/state"
-	"git.grassecon.net/urdt/ussd/internal/handlers/server"
 	"git.grassecon.net/urdt/ussd/internal/utils"
 	"git.grassecon.net/urdt/ussd/common"
+	"git.grassecon.net/urdt/ussd/remote"
 	"gopkg.in/leonelquinteros/gotext.v1"
 
 	"git.grassecon.net/urdt/ussd/internal/storage"
@@ -65,10 +65,10 @@ type Handlers struct {
 	ca             cache.Memory
 	userdataStore  common.DataStore
 	flagManager    *asm.FlagParser
-	accountService server.AccountServiceInterface
+	accountService remote.AccountServiceInterface
 }
 
-func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, accountService server.AccountServiceInterface) (*Handlers, error) {
+func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, accountService remote.AccountServiceInterface) (*Handlers, error) {
 	if userdataStore == nil {
 		return nil, fmt.Errorf("cannot create handler with nil userdata store")
 	}

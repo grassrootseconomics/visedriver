@@ -19,9 +19,9 @@ import (
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/state"
+	"git.grassecon.net/urdt/ussd/common"
 	"git.grassecon.net/urdt/ussd/internal/handlers/server"
 	"git.grassecon.net/urdt/ussd/internal/utils"
-	"git.grassecon.net/urdt/ussd/common"
 	"gopkg.in/leonelquinteros/gotext.v1"
 
 	"git.grassecon.net/urdt/ussd/internal/storage"
@@ -283,10 +283,7 @@ func (h *Handlers) SaveTemporaryPin(ctx context.Context, sym string, input []byt
 		res.FlagSet = append(res.FlagSet, flag_incorrect_pin)
 		return res, nil
 	}
-
 	res.FlagReset = append(res.FlagReset, flag_incorrect_pin)
-	fmt.Println("Saving:", string(accountPIN))
-
 	store := h.userdataStore
 	err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_PIN, []byte(accountPIN))
 	if err != nil {

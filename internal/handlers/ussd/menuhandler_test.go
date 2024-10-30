@@ -20,6 +20,7 @@ import (
 	"git.grassecon.net/urdt/ussd/internal/testutil/testservice"
 
 	"git.grassecon.net/urdt/ussd/internal/utils"
+	"git.grassecon.net/urdt/ussd/common"
 	"github.com/alecthomas/assert/v2"
 	"github.com/grassrootseconomics/eth-custodial/pkg/api"
 	testdataloader "github.com/peteole/testdata-loader"
@@ -98,7 +99,7 @@ func TestCreateAccount(t *testing.T) {
 				Description: "Account creation successed",
 				Result: map[string]any{
 					"trackingId": "1234567890",
-					"publicKey":  "1235QERYU",
+					"publicKey":  "0xD3adB33f",
 				},
 			},
 			expectedResult: resource.Result{
@@ -119,9 +120,10 @@ func TestCreateAccount(t *testing.T) {
 				flagManager:    fm.parser,
 			}
 
+			publicKey := tt.serverResponse.Result["publicKey"].(string)
 			data := map[utils.DataTyp]string{
 				utils.DATA_TRACKING_ID: tt.serverResponse.Result["trackingId"].(string),
-				utils.DATA_PUBLIC_KEY:  tt.serverResponse.Result["publicKey"].(string),
+				utils.DATA_PUBLIC_KEY:  publicKey,
 			}
 
 			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_ACCOUNT_CREATED).Return([]byte(""), notFoundErr)
@@ -130,6 +132,12 @@ func TestCreateAccount(t *testing.T) {
 			for key, value := range data {
 				mockDataStore.On("WriteEntry", ctx, sessionId, key, []byte(value)).Return(nil)
 			}
+			publicKeyNormalized, err := common.NormalizeHex(publicKey)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			mockDataStore.On("WriteEntry", ctx, publicKeyNormalized, utils.DATA_PUBLIC_KEY_REVERSE, []byte(sessionId)).Return(nil)
 
 			// Call the method you want to test
 			res, err := h.CreateAccount(ctx, "create_account", []byte("some-input"))

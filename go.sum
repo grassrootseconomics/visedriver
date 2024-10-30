@@ -18,6 +18,8 @@ github.com/gofrs/uuid v4.4.0+incompatible h1:3qXRTX8/NbyulANqlc0lchS1gqAVxRgsuW1
 github.com/gofrs/uuid v4.4.0+incompatible/go.mod h1:b2aQJv3Z4Fp6yNu3cdSllBxTCLRxnplIgP/c0N/04lM=
 github.com/grassrootseconomics/eth-custodial v1.3.0-beta h1:twrMBhl89GqDUL9PlkzQxMP/6OST1BByrNDj+rqXDmU=
 github.com/grassrootseconomics/eth-custodial v1.3.0-beta/go.mod h1:7uhRcdnJplX4t6GKCEFkbeDhhjlcaGJeJqevbcvGLZo=
+github.com/grassrootseconomics/ussd-data-service v0.0.0-20241003123429-4904b4438a3a h1:q/YH7nE2j8epNmFnTu0tU1vwtCxtQ6nH+d7hRVV5krU=
+github.com/grassrootseconomics/ussd-data-service v0.0.0-20241003123429-4904b4438a3a/go.mod h1:hdKaKwqiW6/kphK4j/BhmuRlZDLo1+DYo3gYw5O0siw=
 github.com/graygnuorg/go-gdbm v0.0.0-20220711140707-71387d66dce4 h1:U4kkNYryi/qfbBF8gh7Vsbuz+cVmhf5kt6pE9bYYyLo=
 github.com/graygnuorg/go-gdbm v0.0.0-20220711140707-71387d66dce4/go.mod h1:zpZDgZFzeq9s0MIeB1P50NIEWDFFHSFBohI/NbaTD/Y=
 github.com/hexops/gotextdiff v1.0.3 h1:gitA9+qJrrTCsiCl7+kh75nPqQt1cx4ZkudSTLoUqJM=

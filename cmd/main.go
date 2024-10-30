@@ -49,7 +49,7 @@ func main() {
 	ctx = context.WithValue(ctx, "Database", database)
 	pfp := path.Join(scriptDir, "pp.csv")
 
-	as := utils.NewAdminStore("admin_numbers.txt")
+	as, _ := utils.NewAdminStore(ctx, "admin_numbers")
 	as.Seed()
 
 	cfg := engine.Config{
@@ -94,6 +94,7 @@ func main() {
 
 	lhs, err := handlers.NewLocalHandlerService(pfp, true, dbResource, cfg, rs)
 	lhs.SetDataStore(&userdatastore)
+	lhs.SetAdminStore(as)
 	lhs.SetPersister(pe)
 
 	if err != nil {

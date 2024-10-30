@@ -816,7 +816,6 @@ func (h *Handlers) ValidateBlockedNumber(ctx context.Context, sym string, input 
 	var err error
 
 	flag_unregistered_number, _ := h.flagManager.GetFlag("flag_unregistered_number")
-
 	store := h.userdataStore
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
@@ -825,6 +824,7 @@ func (h *Handlers) ValidateBlockedNumber(ctx context.Context, sym string, input 
 	blockedNumber := string(input)
 	_, err = store.ReadEntry(ctx, blockedNumber, utils.DATA_PUBLIC_KEY)
 	if !isValidPhoneNumber(blockedNumber) {
+		res.FlagSet = append(res.FlagSet, flag_unregistered_number)
 		return res, nil
 	}
 	if err != nil {

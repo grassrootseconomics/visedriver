@@ -186,7 +186,7 @@ func TestSaveFirstname(t *testing.T) {
 	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
 
 	// Set up the expected behavior of the mock
-	mockStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_FIRST_NAME, []byte(firstName)).Return(nil)
+	mockStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(firstName)).Return(nil)
 
 	// Create the Handlers instance with the mock store
 	h := &Handlers{
@@ -219,7 +219,7 @@ func TestSaveFamilyname(t *testing.T) {
 	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
 
 	// Set up the expected behavior of the mock
-	mockStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_FAMILY_NAME, []byte(familyName)).Return(nil)
+	mockStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(familyName)).Return(nil)
 
 	// Create the Handlers instance with the mock store
 	h := &Handlers{
@@ -310,7 +310,7 @@ func TestSaveYoB(t *testing.T) {
 	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
 
 	// Set up the expected behavior of the mock
-	mockStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_YOB, []byte(yob)).Return(nil)
+	mockStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(yob)).Return(nil)
 
 	// Create the Handlers instance with the mock store
 	h := &Handlers{
@@ -343,7 +343,7 @@ func TestSaveLocation(t *testing.T) {
 	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
 
 	// Set up the expected behavior of the mock
-	mockStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_LOCATION, []byte(yob)).Return(nil)
+	mockStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(yob)).Return(nil)
 
 	// Create the Handlers instance with the mock store
 	h := &Handlers{
@@ -376,7 +376,7 @@ func TestSaveOfferings(t *testing.T) {
 	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
 
 	// Set up the expected behavior of the mock
-	mockStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_OFFERINGS, []byte(offerings)).Return(nil)
+	mockStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(offerings)).Return(nil)
 
 	// Create the Handlers instance with the mock store
 	h := &Handlers{
@@ -442,10 +442,10 @@ func TestSaveGender(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Set up expectations for the mock database
 			if tt.expectCall {
-				expectedKey := utils.DATA_TEMPORARY_GENDER
+				expectedKey := utils.DATA_TEMPORARY_VALUE
 				mockStore.On("WriteEntry", ctx, sessionId, expectedKey, []byte(tt.expectedGender)).Return(nil)
 			} else {
-				mockStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_GENDER, []byte(tt.expectedGender)).Return(nil)
+				mockStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(tt.expectedGender)).Return(nil)
 			}
 			mockState.ExecPath = append(mockState.ExecPath, tt.executingSymbol)
 			// Create the Handlers instance with the mock store
@@ -463,9 +463,9 @@ func TestSaveGender(t *testing.T) {
 
 			// Verify expectations
 			if tt.expectCall {
-				mockStore.AssertCalled(t, "WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_GENDER, []byte(tt.expectedGender))
+				mockStore.AssertCalled(t, "WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(tt.expectedGender))
 			} else {
-				mockStore.AssertNotCalled(t, "WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_GENDER, []byte(tt.expectedGender))
+				mockStore.AssertNotCalled(t, "WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(tt.expectedGender))
 			}
 		})
 	}

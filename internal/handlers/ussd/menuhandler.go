@@ -338,13 +338,13 @@ func (h *Handlers) SaveFirstname(ctx context.Context, sym string, input []byte) 
 	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
 	allowUpdate := h.st.MatchFlag(flag_allow_update, true)
 	if allowUpdate {
-		temporaryFirstName, _ := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_FIRST_NAME)
+		temporaryFirstName, _ := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE)
 		err = store.WriteEntry(ctx, sessionId, utils.DATA_FIRST_NAME, []byte(temporaryFirstName))
 		if err != nil {
 			return res, err
 		}
 	} else {
-		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_FIRST_NAME, []byte(firstName))
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(firstName))
 		if err != nil {
 			return res, err
 		}
@@ -368,13 +368,13 @@ func (h *Handlers) SaveFamilyname(ctx context.Context, sym string, input []byte)
 	allowUpdate := h.st.MatchFlag(flag_allow_update, true)
 
 	if allowUpdate {
-		temporaryFamilyName, _ := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_FAMILY_NAME)
+		temporaryFamilyName, _ := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE)
 		err = store.WriteEntry(ctx, sessionId, utils.DATA_FAMILY_NAME, []byte(temporaryFamilyName))
 		if err != nil {
 			return res, err
 		}
 	} else {
-		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_FAMILY_NAME, []byte(familyName))
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(familyName))
 		if err != nil {
 			return res, err
 		}
@@ -396,13 +396,13 @@ func (h *Handlers) SaveYob(ctx context.Context, sym string, input []byte) (resou
 	allowUpdate := h.st.MatchFlag(flag_allow_update, true)
 
 	if allowUpdate {
-		temporaryYob, _ := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_YOB)
+		temporaryYob, _ := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE)
 		err = store.WriteEntry(ctx, sessionId, utils.DATA_YOB, []byte(temporaryYob))
 		if err != nil {
 			return res, err
 		}
 	} else {
-		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_YOB, []byte(yob))
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(yob))
 		if err != nil {
 			return res, err
 		}
@@ -426,13 +426,13 @@ func (h *Handlers) SaveLocation(ctx context.Context, sym string, input []byte) (
 	allowUpdate := h.st.MatchFlag(flag_allow_update, true)
 
 	if allowUpdate {
-		temporaryLocation, _ := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_LOCATION)
+		temporaryLocation, _ := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE)
 		err = store.WriteEntry(ctx, sessionId, utils.DATA_LOCATION, []byte(temporaryLocation))
 		if err != nil {
 			return res, err
 		}
 	} else {
-		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_LOCATION, []byte(location))
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(location))
 		if err != nil {
 			return res, err
 		}
@@ -456,13 +456,13 @@ func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (re
 	allowUpdate := h.st.MatchFlag(flag_allow_update, true)
 
 	if allowUpdate {
-		temporaryGender, _ := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_GENDER)
+		temporaryGender, _ := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE)
 		err = store.WriteEntry(ctx, sessionId, utils.DATA_GENDER, []byte(temporaryGender))
 		if err != nil {
 			return res, err
 		}
 	} else {
-		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_GENDER, []byte(gender))
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(gender))
 		if err != nil {
 			return res, err
 		}
@@ -486,13 +486,13 @@ func (h *Handlers) SaveOfferings(ctx context.Context, sym string, input []byte) 
 	allowUpdate := h.st.MatchFlag(flag_allow_update, true)
 
 	if allowUpdate {
-		temporaryOfferings, _ := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_OFFERINGS)
+		temporaryOfferings, _ := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE)
 		err = store.WriteEntry(ctx, sessionId, utils.DATA_OFFERINGS, []byte(temporaryOfferings))
 		if err != nil {
 			return res, err
 		}
 	} else {
-		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_OFFERINGS, []byte(offerings))
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(offerings))
 		if err != nil {
 			return res, err
 		}

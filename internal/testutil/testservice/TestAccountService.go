@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 
 	"git.grassecon.net/urdt/ussd/internal/models"
-	"github.com/grassrootseconomics/eth-custodial/pkg/api"
 	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 )
 
@@ -27,19 +26,9 @@ func (tas *TestAccountService) CheckBalance(ctx context.Context, publicKey strin
 	return balanceResponse, nil
 }
 
-func (tas *TestAccountService) CheckAccountStatus(ctx context.Context, trackingId string) (*models.TrackStatusResult, error) {
+func (tas *TestAccountService) TrackAccountStatus(ctx context.Context, publicKey string) (*models.TrackStatusResult, error) {
 	return &models.TrackStatusResult {
 		Active: true,
-	}, nil
-}
-
-func (tas *TestAccountService) TrackAccountStatus(ctx context.Context, publicKey string) (*api.OKResponse, error) {
-	return &api.OKResponse{
-		Ok:          true,
-		Description: "Account creation succeeded",
-		Result: map[string]any{
-			"active": true,
-		},
 	}, nil
 }
 

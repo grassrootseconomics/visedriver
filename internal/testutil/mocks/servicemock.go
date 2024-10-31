@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"git.grassecon.net/urdt/ussd/internal/models"
-	"github.com/grassrootseconomics/eth-custodial/pkg/api"
 	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 	"github.com/stretchr/testify/mock"
 )
@@ -24,13 +23,8 @@ func (m *MockAccountService) CheckBalance(ctx context.Context, publicKey string)
 	return args.Get(0).(*models.BalanceResult), args.Error(1)
 }
 
-func (m *MockAccountService) TrackAccountStatus(ctx context.Context, trackingId string) (*api.OKResponse, error) {
+func (m *MockAccountService) TrackAccountStatus(ctx context.Context, trackingId string) (*models.TrackStatusResult, error) {
 	args := m.Called(trackingId)
-	return args.Get(0).(*api.OKResponse), args.Error(1)
-}
-
-func (m *MockAccountService) CheckAccountStatus(ctx context.Context,publicKey string) (*models.TrackStatusResult, error) {
-	args := m.Called(publicKey)
 	return args.Get(0).(*models.TrackStatusResult), args.Error(1)
 }
 

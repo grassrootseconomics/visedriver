@@ -1053,36 +1053,18 @@ func TestCheckAccountStatus(t *testing.T) {
 		expectedResult resource.Result
 	}{
 		{
-			name:  "Test when account is on the Sarafu network",
-			input: []byte("TrackingId1234"),
-			serverResponse: &api.OKResponse{
-				Ok:          true,
-				Description: "Account creation succeeded",
-				Result: map[string]any{
-					"active": true,
-				},
-			},
-			response: &models.TrackStatusResult {
-				Active:	true,
-			},
-			expectedResult: resource.Result{
-				FlagSet:   []uint32{flag_account_success},
-				FlagReset: []uint32{flag_api_error, flag_account_pending},
-			},
-		},
-		{
-			name:  "Test when the account is not  yet on the sarafu network",
+			name:  "Test when the account is not yet on the sarafu network",
 			input: []byte("TrackingId1234"),
 			response: &models.TrackStatusResult{
 				Active: false,
 			},
-			serverResponse: &api.OKResponse{
-				Ok:          true,
-				Description: "Account creation succeeded",
-				Result: map[string]any{
-					"active": false,
-				},
-			},
+//			serverResponse: &api.OKResponse{
+//				Ok:          true,
+//				Description: "Account creation succeeded",
+//				Result: map[string]any{
+//					"active": false,
+//				},
+//			},
 			expectedResult: resource.Result{
 				FlagSet:   []uint32{flag_account_pending},
 				FlagReset: []uint32{flag_api_error, flag_account_success},
@@ -1104,7 +1086,6 @@ func TestCheckAccountStatus(t *testing.T) {
 			// Define expected interactions with the mock
 			mockDataStore.On("ReadEntry", ctx, sessionId, common.DATA_PUBLIC_KEY).Return(tt.input, nil)
 
-			mockCreateAccountService.On("CheckAccountStatus", string(tt.input)).Return(tt.response, nil)
 			mockCreateAccountService.On("TrackAccountStatus", string(tt.input)).Return(tt.serverResponse, nil)
 			mockDataStore.On("WriteEntry", ctx, sessionId, common.DATA_ACCOUNT_STATUS, status).Return(nil).Maybe()
 

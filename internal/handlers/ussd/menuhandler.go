@@ -557,17 +557,16 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 	if err != nil {
 		return res, err
 	}
-	okResponse, err = h.accountService.TrackAccountStatus(ctx, string(publicKey))
+	r, err := h.accountService.TrackAccountStatus(ctx, string(publicKey))
 	if err != nil {
 		res.FlagSet = append(res.FlagSet, flag_api_error)
 		return res, err
 	}
 	res.FlagReset = append(res.FlagReset, flag_api_error)
-	isActive := okResponse.Result["active"].(bool)
 	if !ok {
 		return res, err
 	}
-	if isActive {
+	if r.Active {
 		res.FlagSet = append(res.FlagSet, flag_account_success)
 		res.FlagReset = append(res.FlagReset, flag_account_pending)
 	} else {

@@ -20,9 +20,7 @@ var (
 type AccountServiceInterface interface {
 	CheckBalance(ctx context.Context, publicKey string) (*models.BalanceResult, error)
 	CreateAccount(ctx context.Context) (*models.AccountResult, error)
-	// TODO: poorly named method seems to be checking transaction
-	CheckAccountStatus(ctx context.Context, trackingId string) (*models.TrackStatusResult, error)
-	TrackAccountStatus(ctx context.Context, publicKey string) (*api.OKResponse, error)
+	TrackAccountStatus(ctx context.Context, publicKey string) (*models.TrackStatusResult, error)
 	FetchVouchers(ctx context.Context, publicKey string) ([]dataserviceapi.TokenHoldings, error)
 }
 
@@ -38,7 +36,7 @@ type AccountService struct {
 //   - string: The status of the transaction as a string. If there is an error during the request or processing, this will be an empty string.
 //   - error: An error if any occurred during the HTTP request, reading the response, or unmarshalling the JSON data.
 //     If no error occurs, this will be nil
-func (as *AccountService) CheckAccountStatus(ctx context.Context, trackingId string) (*models.TrackStatusResult, error) {
+func (as *AccountService) TrackAccountStatus(ctx context.Context, trackingId string) (*models.TrackStatusResult, error) {
 	var r models.TrackStatusResult
 
 	ep, err := url.JoinPath(config.TrackURL, trackingId)
@@ -59,60 +57,13 @@ func (as *AccountService) CheckAccountStatus(ctx context.Context, trackingId str
 	return &r, nil
 }
 
-func (as *AccountService) TrackAccountStatus(ctx context.Context, publicKey string) (*api.OKResponse, error) {
-	var okResponse  api.OKResponse
-	var errResponse api.ErrResponse
-	var err error
-	
-	ep, err := url.JoinPath(config.TrackURL, publicKey)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", ep, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-GE-KEY", "xd")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		errResponse.Description = err.Error()
-		return nil, err
-	}
-	if resp.StatusCode >= http.StatusBadRequest {
-		err := json.Unmarshal([]byte(body), &errResponse)
-		if err != nil {
-			return nil, err
-		}
-		return nil, errors.New(errResponse.Description)
-	}
-	err = json.Unmarshal([]byte(body), &okResponse)
-	if err != nil {
-		return nil, err
-	}
-	if len(okResponse.Result) == 0 {
-		return nil, errors.New("Empty api result")
-	}
-	return &okResponse, nil
-
-}
-
 // CheckBalance retrieves the balance for a given public key from the custodial balance API endpoint.
 // Parameters:
 //   - publicKey: The public key associated with the account whose balance needs to be checked.
 func (as *AccountService) CheckBalance(ctx context.Context, publicKey string) (*models.BalanceResult, error) {
 	var balanceResult models.BalanceResult
 
-	ep, err := url.JoinPath(config.BalanceURL,  publicKey)
+	ep, err := url.JoinPath(config.BalanceURL, publicKey)
 	if err != nil {
 		return nil, err
 	}

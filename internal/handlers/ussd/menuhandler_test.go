@@ -19,8 +19,8 @@ import (
 	"git.grassecon.net/urdt/ussd/internal/testutil/mocks"
 	"git.grassecon.net/urdt/ussd/internal/testutil/testservice"
 
-	"git.grassecon.net/urdt/ussd/internal/utils"
 	"git.grassecon.net/urdt/ussd/common"
+	"git.grassecon.net/urdt/ussd/internal/utils"
 	"github.com/alecthomas/assert/v2"
 	"github.com/grassrootseconomics/eth-custodial/pkg/api"
 	testdataloader "github.com/peteole/testdata-loader"
@@ -271,7 +271,7 @@ func TestSaveTemporaryPin(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			// Set up the expected behavior of the mock
-			mockStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_PIN, []byte(tt.input)).Return(nil)
+			mockStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(tt.input)).Return(nil)
 
 			// Call the method
 			res, err := h.SaveTemporaryPin(ctx, "save_pin", tt.input)
@@ -1013,7 +1013,7 @@ func TestVerifyCreatePin(t *testing.T) {
 		},
 	}
 
-	typ := utils.DATA_TEMPORARY_PIN
+	typ := utils.DATA_TEMPORARY_VALUE
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1806,7 +1806,7 @@ func TestConfirmPin(t *testing.T) {
 			// Set up the expected behavior of the mock
 			mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_ACCOUNT_PIN, []byte(tt.temporarypin)).Return(nil)
 
-			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_PIN).Return(tt.temporarypin, nil)
+			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_VALUE).Return(tt.temporarypin, nil)
 
 			//Call the function under test
 			res, _ := h.ConfirmPinChange(ctx, "confirm_pin_change", tt.temporarypin)
@@ -2078,16 +2078,9 @@ func TestViewVoucher(t *testing.T) {
 	}
 
 	// Set up expectations for mockDataStore
-	expectedData := map[utils.DataTyp]string{
-		utils.DATA_TEMPORARY_SYM:     "SRF",
-		utils.DATA_TEMPORARY_BAL:     "100",
-		utils.DATA_TEMPORARY_DECIMAL: "6",
-		utils.DATA_TEMPORARY_ADDRESS: "0xd4c288865Ce",
-	}
+	expectedData := fmt.Sprintf("%s,%s,%s,%s", "SRF", "100", "6", "0xd4c288865Ce")
 
-	for dataType, dataValue := range expectedData {
-		mockDataStore.On("WriteEntry", ctx, sessionId, dataType, []byte(dataValue)).Return(nil)
-	}
+	mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(expectedData)).Return(nil)
 
 	res, err := h.ViewVoucher(ctx, "view_voucher", []byte("1"))
 	assert.NoError(t, err)
@@ -2111,6 +2104,8 @@ func TestSetVoucher(t *testing.T) {
 		ContractAddress: "0xd4c288865Ce0985a481Eef3be02443dF5E2e4Ea9",
 	}
 
+	expectedData := fmt.Sprintf("%s,%s,%s,%s", "SRF", "200", "6", "0xd4c288865Ce0985a481Eef3be02443dF5E2e4Ea9")
+
 	// Define the expected active entries
 	activeEntries := map[utils.DataTyp][]byte{
 		utils.DATA_ACTIVE_SYM:     []byte(tempData.TokenSymbol),
@@ -2120,10 +2115,7 @@ func TestSetVoucher(t *testing.T) {
 	}
 
 	// Mocking ReadEntry calls for temporary data retrieval
-	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_SYM).Return([]byte(tempData.TokenSymbol), nil)
-	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_BAL).Return([]byte(tempData.Balance), nil)
-	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_DECIMAL).Return([]byte(tempData.TokenDecimals), nil)
-	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_ADDRESS).Return([]byte(tempData.ContractAddress), nil)
+	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_VALUE).Return([]byte(expectedData), nil)
 
 	// Mocking WriteEntry calls for setting active data
 	for key, value := range activeEntries {

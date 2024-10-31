@@ -222,7 +222,7 @@ func (h *Handlers) VerifyNewPin(ctx context.Context, sym string, input []byte) (
 	return res, nil
 }
 
-// SaveTemporaryPin saves the valid PIN input to the DATA_TEMPORARY_PIN
+// SaveTemporaryPin saves the valid PIN input to the DATA_TEMPORARY_VALUE
 // during the account creation process
 // and during the change PIN process
 func (h *Handlers) SaveTemporaryPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
@@ -247,7 +247,7 @@ func (h *Handlers) SaveTemporaryPin(ctx context.Context, sym string, input []byt
 	res.FlagReset = append(res.FlagReset, flag_incorrect_pin)
 
 	store := h.userdataStore
-	err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_PIN, []byte(accountPIN))
+	err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(accountPIN))
 	if err != nil {
 		return res, err
 	}
@@ -264,7 +264,7 @@ func (h *Handlers) ConfirmPinChange(ctx context.Context, sym string, input []byt
 	flag_pin_mismatch, _ := h.flagManager.GetFlag("flag_pin_mismatch")
 
 	store := h.userdataStore
-	temporaryPin, err := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_PIN)
+	temporaryPin, err := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE)
 	if err != nil {
 		return res, err
 	}
@@ -295,7 +295,7 @@ func (h *Handlers) VerifyCreatePin(ctx context.Context, sym string, input []byte
 		return res, fmt.Errorf("missing session")
 	}
 	store := h.userdataStore
-	temporaryPin, err := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_PIN)
+	temporaryPin, err := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE)
 	if err != nil {
 		return res, err
 	}

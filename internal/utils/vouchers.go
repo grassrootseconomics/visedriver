@@ -77,10 +77,7 @@ func MatchVoucher(input, symbols, balances, decimals, addresses string) (symbol,
 
 	for i, sym := range symList {
 		parts := strings.SplitN(sym, ":", 2)
-		if len(parts) != 2 {
-			continue
-		}
-
+	
 		if input == parts[0] || strings.EqualFold(input, parts[1]) {
 			symbol = parts[1]
 			if i < len(balList) {

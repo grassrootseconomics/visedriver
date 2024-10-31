@@ -6,6 +6,7 @@ import (
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
+	"git.grassecon.net/urdt/ussd/internal/handlers/server"
 	"git.grassecon.net/urdt/ussd/internal/handlers/ussd"
 )
 
@@ -52,16 +53,16 @@ func (ls *LocalHandlerService) SetDataStore(db *db.Db) {
 	ls.UserdataStore = db
 }
 
-func (ls *LocalHandlerService) GetHandler() (*ussd.Handlers, error) {
-	ussdHandlers, err := ussd.NewHandlers(ls.Parser, *ls.UserdataStore)
+func (ls *LocalHandlerService) GetHandler(accountService server.AccountServiceInterface) (*ussd.Handlers, error) {
+	ussdHandlers, err := ussd.NewHandlers(ls.Parser, *ls.UserdataStore,accountService)
 	if err != nil {
 		return nil, err
 	}
 	ussdHandlers = ussdHandlers.WithPersister(ls.Pe)
 	ls.DbRs.AddLocalFunc("set_language", ussdHandlers.SetLanguage)
 	ls.DbRs.AddLocalFunc("create_account", ussdHandlers.CreateAccount)
-	ls.DbRs.AddLocalFunc("save_pin", ussdHandlers.SavePin)
-	ls.DbRs.AddLocalFunc("verify_pin", ussdHandlers.VerifyPin)
+	ls.DbRs.AddLocalFunc("save_temporary_pin", ussdHandlers.SaveTemporaryPin)
+	ls.DbRs.AddLocalFunc("verify_create_pin", ussdHandlers.VerifyCreatePin)
 	ls.DbRs.AddLocalFunc("check_identifier", ussdHandlers.CheckIdentifier)
 	ls.DbRs.AddLocalFunc("check_account_status", ussdHandlers.CheckAccountStatus)
 	ls.DbRs.AddLocalFunc("authorize_account", ussdHandlers.Authorize)
@@ -82,17 +83,21 @@ func (ls *LocalHandlerService) GetHandler() (*ussd.Handlers, error) {
 	ls.DbRs.AddLocalFunc("save_location", ussdHandlers.SaveLocation)
 	ls.DbRs.AddLocalFunc("save_yob", ussdHandlers.SaveYob)
 	ls.DbRs.AddLocalFunc("save_offerings", ussdHandlers.SaveOfferings)
-	ls.DbRs.AddLocalFunc("quit_with_balance", ussdHandlers.QuitWithBalance)
 	ls.DbRs.AddLocalFunc("reset_account_authorized", ussdHandlers.ResetAccountAuthorized)
 	ls.DbRs.AddLocalFunc("reset_allow_update", ussdHandlers.ResetAllowUpdate)
 	ls.DbRs.AddLocalFunc("get_profile_info", ussdHandlers.GetProfileInfo)
 	ls.DbRs.AddLocalFunc("verify_yob", ussdHandlers.VerifyYob)
 	ls.DbRs.AddLocalFunc("reset_incorrect_date_format", ussdHandlers.ResetIncorrectYob)
 	ls.DbRs.AddLocalFunc("initiate_transaction", ussdHandlers.InitiateTransaction)
-	ls.DbRs.AddLocalFunc("save_temporary_pin", ussdHandlers.SaveTemporaryPin)
 	ls.DbRs.AddLocalFunc("verify_new_pin", ussdHandlers.VerifyNewPin)
 	ls.DbRs.AddLocalFunc("confirm_pin_change", ussdHandlers.ConfirmPinChange)
 	ls.DbRs.AddLocalFunc("quit_with_help", ussdHandlers.QuitWithHelp)
+	ls.DbRs.AddLocalFunc("fetch_custodial_balances", ussdHandlers.FetchCustodialBalances)
+	ls.DbRs.AddLocalFunc("set_default_voucher", ussdHandlers.SetDefaultVoucher)
+	ls.DbRs.AddLocalFunc("check_vouchers", ussdHandlers.CheckVouchers)
+	ls.DbRs.AddLocalFunc("get_vouchers", ussdHandlers.GetVoucherList)
+	ls.DbRs.AddLocalFunc("view_voucher", ussdHandlers.ViewVoucher)
+	ls.DbRs.AddLocalFunc("set_voucher", ussdHandlers.SetVoucher)
 
 	return ussdHandlers, nil
 }

@@ -1,15 +1,10 @@
 package models
 
-import (
-	"encoding/json"
-
-)
-
 type AccountResponse struct {
-	Ok     bool `json:"ok"`
-	Result struct {
-		CustodialId json.Number `json:"custodialId"`
-		PublicKey   string      `json:"publicKey"`
-		TrackingId  string      `json:"trackingId"`
+	Ok          bool   `json:"ok"`
+	Description string `json:"description"` // Include the description field
+	Result      struct {
+		PublicKey  string `json:"publicKey"`
+		TrackingId string `json:"trackingId"`
 	} `json:"result"`
 }

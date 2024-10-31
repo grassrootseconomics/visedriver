@@ -815,7 +815,6 @@ func TestAuthorize(t *testing.T) {
 	// Create required mocks
 	mockDataStore := new(mocks.MockUserDataStore)
 	mockCreateAccountService := new(mocks.MockAccountService)
-	//expectedResult := resource.Result{}
 	mockState := state.NewState(16)
 	flag_incorrect_pin, _ := fm.GetFlag("flag_incorrect_pin")
 	flag_account_authorized, _ := fm.GetFlag("flag_account_authorized")

@@ -705,7 +705,6 @@ func (h *Handlers) FetchCustodialBalances(ctx context.Context, sym string, input
 	}
 	res.FlagReset = append(res.FlagReset, flag_api_error)
 
-	//balance := balanceResponse.Result.Balance
 	balance := balanceResponse.Balance
 
 	switch balanceType {

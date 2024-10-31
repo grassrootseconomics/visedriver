@@ -18,15 +18,12 @@ var (
 )
 
 type AccountServiceInterface interface {
-	//CheckBalance(ctx context.Context, publicKey string) (*models.BalanceResponse, error)
 	CheckBalance(ctx context.Context, publicKey string) (*models.BalanceResult, error)
 	CreateAccount(ctx context.Context) (*models.AccountResult, error)
-	//CheckAccountStatus(ctx context.Context, trackingId string) (*models.TrackStatusResponse, error)
 	// TODO: poorly named method seems to be checking transaction
 	CheckAccountStatus(ctx context.Context, trackingId string) (*models.TrackStatusResult, error)
 	TrackAccountStatus(ctx context.Context, publicKey string) (*api.OKResponse, error)
 	FetchVouchers(ctx context.Context, publicKey string) ([]dataserviceapi.TokenHoldings, error)
-	//FetchVouchers(ctx context.Context, publicKey string) (*api.OKResponse, error)
 }
 
 type AccountService struct {
@@ -169,19 +166,6 @@ func (as *AccountService) FetchVouchers(ctx context.Context, publicKey string) (
 	}
 
 	return r, nil
-
-//
-//	file, err := os.Open("sample_tokens.json")
-//	if err != nil {
-//		return nil, err
-//	}
-//	defer file.Close()
-//	var holdings models.VoucherHoldingResponse
-//
-//	if err := json.NewDecoder(file).Decode(&holdings); err != nil {
-//		return nil, err
-//	}
-//	return &holdings, nil
 }
 
 func doRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKResponse, error) {

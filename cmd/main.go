@@ -15,7 +15,6 @@ import (
 	"git.grassecon.net/urdt/ussd/internal/handlers"
 	"git.grassecon.net/urdt/ussd/internal/handlers/server"
 	"git.grassecon.net/urdt/ussd/internal/storage"
-	"git.grassecon.net/urdt/ussd/internal/utils"
 )
 
 var (
@@ -48,9 +47,6 @@ func main() {
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
 	ctx = context.WithValue(ctx, "Database", database)
 	pfp := path.Join(scriptDir, "pp.csv")
-
-	as, _ := utils.NewAdminStore(ctx, "admin_numbers")
-	as.Seed()
 
 	cfg := engine.Config{
 		Root:       "root",
@@ -92,11 +88,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	lhs, err := handlers.NewLocalHandlerService(pfp, true, dbResource, cfg, rs)
+	lhs, err := handlers.NewLocalHandlerService(ctx, pfp, true, dbResource, cfg, rs)
 	lhs.SetDataStore(&userdatastore)
-	lhs.SetAdminStore(as)
 	lhs.SetPersister(pe)
 
+	if err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+
+	err = lhs.AdminStore.Seed()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)

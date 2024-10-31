@@ -143,7 +143,7 @@ func GetTemporaryVoucherData(ctx context.Context, store DataStore, sessionId str
 	return data, nil
 }
 
-// UpdateVoucherData sets the active voucher data and clears the temporary voucher data in the DataStore.
+// UpdateVoucherData sets the active voucher data in the DataStore.
 func UpdateVoucherData(ctx context.Context, store DataStore, sessionId string, data *dataserviceapi.TokenHoldings) error {
 	// Active voucher data entries
 	activeEntries := map[DataTyp][]byte{
@@ -153,23 +153,8 @@ func UpdateVoucherData(ctx context.Context, store DataStore, sessionId string, d
 		DATA_ACTIVE_ADDRESS: []byte(data.ContractAddress),
 	}
 
-	// Clear temporary voucher data entries
-	tempEntries := map[DataTyp][]byte{
-		DATA_TEMPORARY_SYM:     []byte(""),
-		DATA_TEMPORARY_BAL:     []byte(""),
-		DATA_TEMPORARY_DECIMAL: []byte(""),
-		DATA_TEMPORARY_ADDRESS: []byte(""),
-	}
-
 	// Write active data
 	for key, value := range activeEntries {
-		if err := store.WriteEntry(ctx, sessionId, key, value); err != nil {
-			return err
-		}
-	}
-
-	// Clear temporary data
-	for key, value := range tempEntries {
 		if err := store.WriteEntry(ctx, sessionId, key, value); err != nil {
 			return err
 		}

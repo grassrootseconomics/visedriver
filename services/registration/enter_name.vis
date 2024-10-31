@@ -1,5 +1,5 @@
 CATCH incorrect_pin flag_incorrect_pin 1
-CATCH profile_update_success flag_allow_update 1
+CATCH update_firstname flag_allow_update 1
 MOUT back 0
 HALT
 LOAD save_firstname 0

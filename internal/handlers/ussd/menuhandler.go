@@ -1117,7 +1117,7 @@ func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) 
 		return res, nil
 	}
 
-	data := utils.ProcessVouchers(vouchersResp)
+	data := common.ProcessVouchers(vouchersResp)
 
 	// Store all voucher data
 	dataMap := map[string]string{
@@ -1167,7 +1167,7 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 		return res, nil
 	}
 
-	metadata, err := utils.GetVoucherData(ctx, h.prefixDb, inputStr)
+	metadata, err := common.GetVoucherData(ctx, h.prefixDb, inputStr)
 	if err != nil {
 		return res, fmt.Errorf("failed to retrieve voucher data: %v", err)
 	}
@@ -1177,7 +1177,7 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 		return res, nil
 	}
 
-	if err := utils.StoreTemporaryVoucher(ctx, h.userdataStore, sessionId, metadata); err != nil {
+	if err := common.StoreTemporaryVoucher(ctx, h.userdataStore, sessionId, metadata); err != nil {
 		return res, err
 	}
 
@@ -1198,13 +1198,13 @@ func (h *Handlers) SetVoucher(ctx context.Context, sym string, input []byte) (re
 
 
 	// Get temporary data
-	tempData, err := utils.GetTemporaryVoucherData(ctx, h.userdataStore, sessionId)
+	tempData, err := common.GetTemporaryVoucherData(ctx, h.userdataStore, sessionId)
 	if err != nil {
 		return res, err
 	}
 
 	// Set as active and clear temporary data
-	if err := utils.UpdateVoucherData(ctx, h.userdataStore, sessionId, tempData); err != nil {
+	if err := common.UpdateVoucherData(ctx, h.userdataStore, sessionId, tempData); err != nil {
 		return res, err
 	}
 

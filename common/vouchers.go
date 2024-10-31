@@ -1,4 +1,4 @@
-package utils
+package common
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"git.grassecon.net/urdt/ussd/internal/storage"
-	"git.grassecon.net/urdt/ussd/common"
 	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 )
 
@@ -96,13 +95,13 @@ func MatchVoucher(input, symbols, balances, decimals, addresses string) (symbol,
 	return
 }
 
-// StoreTemporaryVoucher saves voucher metadata as temporary entries in the common.DataStore.
-func StoreTemporaryVoucher(ctx context.Context, store common.DataStore, sessionId string, data *dataserviceapi.TokenHoldings) error {
-	entries := map[common.DataTyp][]byte{
-		common.DATA_TEMPORARY_SYM:     []byte(data.TokenSymbol),
-		common.DATA_TEMPORARY_BAL:     []byte(data.Balance),
-		common.DATA_TEMPORARY_DECIMAL: []byte(data.TokenDecimals),
-		common.DATA_TEMPORARY_ADDRESS: []byte(data.ContractAddress),
+// StoreTemporaryVoucher saves voucher metadata as temporary entries in the DataStore.
+func StoreTemporaryVoucher(ctx context.Context, store DataStore, sessionId string, data *dataserviceapi.TokenHoldings) error {
+	entries := map[DataTyp][]byte{
+		DATA_TEMPORARY_SYM:     []byte(data.TokenSymbol),
+		DATA_TEMPORARY_BAL:     []byte(data.Balance),
+		DATA_TEMPORARY_DECIMAL: []byte(data.TokenDecimals),
+		DATA_TEMPORARY_ADDRESS: []byte(data.ContractAddress),
 	}
 
 	for key, value := range entries {
@@ -113,13 +112,13 @@ func StoreTemporaryVoucher(ctx context.Context, store common.DataStore, sessionI
 	return nil
 }
 
-// GetTemporaryVoucherData retrieves temporary voucher metadata from the common.DataStore.
-func GetTemporaryVoucherData(ctx context.Context, store common.DataStore, sessionId string) (*dataserviceapi.TokenHoldings, error) {
-	keys := []common.DataTyp{
-		common.DATA_TEMPORARY_SYM,
-		common.DATA_TEMPORARY_BAL,
-		common.DATA_TEMPORARY_DECIMAL,
-		common.DATA_TEMPORARY_ADDRESS,
+// GetTemporaryVoucherData retrieves temporary voucher metadata from the DataStore.
+func GetTemporaryVoucherData(ctx context.Context, store DataStore, sessionId string) (*dataserviceapi.TokenHoldings, error) {
+	keys := []DataTyp{
+		DATA_TEMPORARY_SYM,
+		DATA_TEMPORARY_BAL,
+		DATA_TEMPORARY_DECIMAL,
+		DATA_TEMPORARY_ADDRESS,
 	}
 
 	data := &dataserviceapi.TokenHoldings{}
@@ -141,14 +140,14 @@ func GetTemporaryVoucherData(ctx context.Context, store common.DataStore, sessio
 	return data, nil
 }
 
-// UpdateVoucherData sets the active voucher data and clears the temporary voucher data in the common.DataStore.
-func UpdateVoucherData(ctx context.Context, store common.DataStore, sessionId string, data *dataserviceapi.TokenHoldings) error {
+// UpdateVoucherData sets the active voucher data and clears the temporary voucher data in the DataStore.
+func UpdateVoucherData(ctx context.Context, store DataStore, sessionId string, data *dataserviceapi.TokenHoldings) error {
 	// Active voucher data entries
-	activeEntries := map[common.DataTyp][]byte{
-		common.DATA_ACTIVE_SYM:     []byte(data.TokenSymbol),
-		common.DATA_ACTIVE_BAL:     []byte(data.Balance),
-		common.DATA_ACTIVE_DECIMAL: []byte(data.TokenDecimals),
-		common.DATA_ACTIVE_ADDRESS: []byte(data.ContractAddress),
+	activeEntries := map[DataTyp][]byte{
+		DATA_ACTIVE_SYM:     []byte(data.TokenSymbol),
+		DATA_ACTIVE_BAL:     []byte(data.Balance),
+		DATA_ACTIVE_DECIMAL: []byte(data.TokenDecimals),
+		DATA_ACTIVE_ADDRESS: []byte(data.ContractAddress),
 	}
 
 	// Write active data

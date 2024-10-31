@@ -66,6 +66,7 @@ type Handlers struct {
 	userdataStore  utils.DataStore
 	flagManager    *asm.FlagParser
 	accountService server.AccountServiceInterface
+	prefixDb       storage.PrefixDb
 }
 
 func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, accountService server.AccountServiceInterface) (*Handlers, error) {
@@ -75,10 +76,14 @@ func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, accountService s
 	userDb := &utils.UserDataStore{
 		Db: userdataStore,
 	}
+	// Instantiate the SubPrefixDb with "vouchers" prefix
+	prefixDb := storage.NewSubPrefixDb(userdataStore, []byte("vouchers"))
+
 	h := &Handlers{
 		userdataStore:  userDb,
 		flagManager:    appFlags,
 		accountService: accountService,
+		prefixDb:       prefixDb,
 	}
 	return h, nil
 }
@@ -1051,13 +1056,13 @@ func (h *Handlers) SetDefaultVoucher(ctx context.Context, sym string, input []by
 		if db.IsNotFound(err) {
 			publicKey, err := store.ReadEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY)
 			if err != nil {
-				return res, nil
+				return res, err
 			}
 
 			// Fetch vouchers from the API using the public key
 			vouchersResp, err := h.accountService.FetchVouchers(ctx, string(publicKey))
 			if err != nil {
-				return res, nil
+				return res, err
 			}
 
 			// Return if there is no voucher
@@ -1114,41 +1119,23 @@ func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) 
 		return res, nil
 	}
 
-	// process voucher data
-	voucherSymbolList, voucherBalanceList := ProcessVouchers(vouchersResp.Result.Holdings)
+	data := utils.ProcessVouchers(vouchersResp.Result.Holdings)
 
-	prefixdb := storage.NewSubPrefixDb(store, []byte("vouchers"))
-	err = prefixdb.Put(ctx, []byte("sym"), []byte(voucherSymbolList))
-	if err != nil {
-		return res, nil
+	// Store all voucher data
+	dataMap := map[string]string{
+		"sym":  data.Symbols,
+		"bal":  data.Balances,
+		"deci": data.Decimals,
+		"addr": data.Addresses,
 	}
 
-	err = prefixdb.Put(ctx, []byte("bal"), []byte(voucherBalanceList))
-	if err != nil {
-		return res, nil
+	for key, value := range dataMap {
+		if err := h.prefixDb.Put(ctx, []byte(key), []byte(value)); err != nil {
+			return res, nil
+		}
 	}
 
 	return res, nil
-}
-
-// ProcessVouchers formats the holdings into symbol and balance lists.
-func ProcessVouchers(holdings []struct {
-	ContractAddress string `json:"contractAddress"`
-	TokenSymbol     string `json:"tokenSymbol"`
-	TokenDecimals   string `json:"tokenDecimals"`
-	Balance         string `json:"balance"`
-}) (string, string) {
-	var numberedSymbols, numberedBalances []string
-
-	for i, voucher := range holdings {
-		numberedSymbols = append(numberedSymbols, fmt.Sprintf("%d:%s", i+1, voucher.TokenSymbol))
-		numberedBalances = append(numberedBalances, fmt.Sprintf("%d:%s", i+1, voucher.Balance))
-	}
-
-	voucherSymbolList := strings.Join(numberedSymbols, "\n")
-	voucherBalanceList := strings.Join(numberedBalances, "\n")
-
-	return voucherSymbolList, voucherBalanceList
 }
 
 // GetVoucherList fetches the list of vouchers and formats them
@@ -1156,12 +1143,9 @@ func (h *Handlers) GetVoucherList(ctx context.Context, sym string, input []byte)
 	var res resource.Result
 
 	// Read vouchers from the store
-	store := h.userdataStore
-	prefixdb := storage.NewSubPrefixDb(store, []byte("vouchers"))
-
-	voucherData, err := prefixdb.Get(ctx, []byte("sym"))
+	voucherData, err := h.prefixDb.Get(ctx, []byte("sym"))
 	if err != nil {
-		return res, nil
+		return res, err
 	}
 
 	res.Content = string(voucherData)
@@ -1172,8 +1156,6 @@ func (h *Handlers) GetVoucherList(ctx context.Context, sym string, input []byte)
 // ViewVoucher retrieves the token holding and balance from the subprefixDB
 func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
-	store := h.userdataStore
-
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
 		return res, fmt.Errorf("missing session")
@@ -1182,126 +1164,51 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 	flag_incorrect_voucher, _ := h.flagManager.GetFlag("flag_incorrect_voucher")
 
 	inputStr := string(input)
-
 	if inputStr == "0" || inputStr == "99" {
 		res.FlagReset = append(res.FlagReset, flag_incorrect_voucher)
 		return res, nil
 	}
 
-	prefixdb := storage.NewSubPrefixDb(store, []byte("vouchers"))
-
-	// Retrieve the voucher symbol list
-	voucherSymbolList, err := prefixdb.Get(ctx, []byte("sym"))
+	metadata, err := utils.GetVoucherData(ctx, h.prefixDb, inputStr)
 	if err != nil {
-		return res, fmt.Errorf("failed to retrieve voucher symbol list: %v", err)
+		return res, fmt.Errorf("failed to retrieve voucher data: %v", err)
 	}
 
-	// Retrieve the voucher balance list
-	voucherBalanceList, err := prefixdb.Get(ctx, []byte("bal"))
-	if err != nil {
-		return res, fmt.Errorf("failed to retrieve voucher balance list: %v", err)
-	}
-
-	// match the voucher symbol and balance with the input
-	matchedSymbol, matchedBalance := MatchVoucher(inputStr, string(voucherSymbolList), string(voucherBalanceList))
-
-	// If a match is found, write the temporary sym and balance
-	if matchedSymbol != "" && matchedBalance != "" {
-		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_SYM, []byte(matchedSymbol))
-		if err != nil {
-			return res, err
-		}
-		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_BAL, []byte(matchedBalance))
-		if err != nil {
-			return res, err
-		}
-
-		res.FlagReset = append(res.FlagReset, flag_incorrect_voucher)
-		res.Content = fmt.Sprintf("%s\n%s", matchedSymbol, matchedBalance)
-	} else {
+	if metadata == nil {
 		res.FlagSet = append(res.FlagSet, flag_incorrect_voucher)
+		return res, nil
 	}
+
+	if err := utils.StoreTemporaryVoucher(ctx, h.userdataStore, sessionId, metadata); err != nil {
+		return res, err
+	}
+
+	res.FlagReset = append(res.FlagReset, flag_incorrect_voucher)
+	res.Content = fmt.Sprintf("%s\n%s", metadata.TokenSymbol, metadata.Balance)
 
 	return res, nil
 }
 
-// MatchVoucher finds the matching voucher symbol and balance based on the input.
-func MatchVoucher(inputStr string, voucherSymbols, voucherBalances string) (string, string) {
-	// Split the lists into slices for processing
-	symbols := strings.Split(voucherSymbols, "\n")
-	balances := strings.Split(voucherBalances, "\n")
-
-	var matchedSymbol, matchedBalance string
-
-	for i, symbol := range symbols {
-		symbolParts := strings.SplitN(symbol, ":", 2)
-		if len(symbolParts) != 2 {
-			continue
-		}
-		voucherNum := symbolParts[0]
-		voucherSymbol := symbolParts[1]
-
-		// Check if input matches either the number or the symbol
-		if inputStr == voucherNum || strings.EqualFold(inputStr, voucherSymbol) {
-			matchedSymbol = voucherSymbol
-			// Ensure there's a corresponding balance
-			if i < len(balances) {
-				matchedBalance = strings.SplitN(balances[i], ":", 2)[1]
-			}
-			break
-		}
-	}
-
-	return matchedSymbol, matchedBalance
-}
-
-// SetVoucher retrieves the temporary sym and balance,
-// sets them as the active data and
-// clears the temporary data
+// SetVoucher retrieves the temp voucher data and sets it as the active data
 func (h *Handlers) SetVoucher(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
-	var err error
-	store := h.userdataStore
 
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
 
-	// get the current temporary symbol
-	temporarySym, err := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_SYM)
-	if err != nil {
-		return res, err
-	}
-	// get the current temporary balance
-	temporaryBal, err := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_BAL)
+	// Get temporary data
+	tempData, err := utils.GetTemporaryVoucherData(ctx, h.userdataStore, sessionId)
 	if err != nil {
 		return res, err
 	}
 
-	// set the active symbol
-	err = store.WriteEntry(ctx, sessionId, utils.DATA_ACTIVE_SYM, []byte(temporarySym))
-	if err != nil {
-		return res, err
-	}
-	// set the active balance
-	err = store.WriteEntry(ctx, sessionId, utils.DATA_ACTIVE_BAL, []byte(temporaryBal))
-	if err != nil {
+	// Set as active and clear temporary data
+	if err := utils.UpdateVoucherData(ctx, h.userdataStore, sessionId, tempData); err != nil {
 		return res, err
 	}
 
-	// reset the temporary symbol
-	err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_SYM, []byte(""))
-	if err != nil {
-		return res, err
-	}
-	// reset the temporary balance
-	err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_BAL, []byte(""))
-	if err != nil {
-		return res, err
-	}
-
-	res.Content = string(temporarySym)
-
+	res.Content = tempData.TokenSymbol
 	return res, nil
 }

@@ -2119,14 +2119,6 @@ func TestSetVoucher(t *testing.T) {
 		utils.DATA_ACTIVE_ADDRESS: []byte(tempData.ContractAddress),
 	}
 
-	// Define the temporary entries to be cleared
-	tempEntries := map[utils.DataTyp][]byte{
-		utils.DATA_TEMPORARY_SYM:     []byte(""),
-		utils.DATA_TEMPORARY_BAL:     []byte(""),
-		utils.DATA_TEMPORARY_DECIMAL: []byte(""),
-		utils.DATA_TEMPORARY_ADDRESS: []byte(""),
-	}
-
 	// Mocking ReadEntry calls for temporary data retrieval
 	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_SYM).Return([]byte(tempData.TokenSymbol), nil)
 	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_BAL).Return([]byte(tempData.Balance), nil)
@@ -2135,11 +2127,6 @@ func TestSetVoucher(t *testing.T) {
 
 	// Mocking WriteEntry calls for setting active data
 	for key, value := range activeEntries {
-		mockDataStore.On("WriteEntry", ctx, sessionId, key, value).Return(nil)
-	}
-
-	// Mocking WriteEntry calls for clearing temporary data
-	for key, value := range tempEntries {
 		mockDataStore.On("WriteEntry", ctx, sessionId, key, value).Return(nil)
 	}
 

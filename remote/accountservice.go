@@ -36,10 +36,10 @@ type AccountService struct {
 //   - string: The status of the transaction as a string. If there is an error during the request or processing, this will be an empty string.
 //   - error: An error if any occurred during the HTTP request, reading the response, or unmarshalling the JSON data.
 //     If no error occurs, this will be nil
-func (as *AccountService) TrackAccountStatus(ctx context.Context, trackingId string) (*models.TrackStatusResult, error) {
+func (as *AccountService) TrackAccountStatus(ctx context.Context, publicKey string) (*models.TrackStatusResult, error) {
 	var r models.TrackStatusResult
 
-	ep, err := url.JoinPath(config.TrackURL, trackingId)
+	ep, err := url.JoinPath(config.TrackURL, publicKey)
 	if err != nil {
 		return nil, err
 	}

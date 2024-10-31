@@ -20,7 +20,7 @@ import (
 
 	"git.grassecon.net/urdt/ussd/common"
 	"github.com/alecthomas/assert/v2"
-	"github.com/grassrootseconomics/eth-custodial/pkg/api"
+//	"github.com/grassrootseconomics/eth-custodial/pkg/api"
 	testdataloader "github.com/peteole/testdata-loader"
 	"github.com/stretchr/testify/require"
 
@@ -1048,7 +1048,7 @@ func TestCheckAccountStatus(t *testing.T) {
 	tests := []struct {
 		name           string
 		input          []byte
-		serverResponse *api.OKResponse
+		//serverResponse *api.OKResponse
 		response       *models.TrackStatusResult
 		expectedResult resource.Result
 	}{
@@ -1086,7 +1086,8 @@ func TestCheckAccountStatus(t *testing.T) {
 			// Define expected interactions with the mock
 			mockDataStore.On("ReadEntry", ctx, sessionId, common.DATA_PUBLIC_KEY).Return(tt.input, nil)
 
-			mockCreateAccountService.On("TrackAccountStatus", string(tt.input)).Return(tt.serverResponse, nil)
+			//mockCreateAccountService.On("TrackAccountStatus", string(tt.input)).Return(tt.serverResponse, nil)
+			mockCreateAccountService.On("TrackAccountStatus", string(tt.input)).Return(tt.response, nil)
 			mockDataStore.On("WriteEntry", ctx, sessionId, common.DATA_ACCOUNT_STATUS, status).Return(nil).Maybe()
 
 			// Call the method under test

@@ -33,7 +33,6 @@ var (
 	translationDir = path.Join(scriptDir, "locale")
 	okResponse     *api.OKResponse
 	errResponse    *api.ErrResponse
-	backOption     = []byte("0")
 )
 
 // Define the regex patterns as  constants
@@ -399,13 +398,18 @@ func (h *Handlers) SaveFirstname(ctx context.Context, sym string, input []byte) 
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-	if len(input) > 0 {
-		if bytes.Equal(input, backOption) {
-			return res, nil
+	firstName := string(input)
+	store := h.userdataStore
+	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+	allowUpdate := h.st.MatchFlag(flag_allow_update, true)
+	if allowUpdate {
+		temporaryFirstName, _ := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_FIRST_NAME)
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_FIRST_NAME, []byte(temporaryFirstName))
+		if err != nil {
+			return res, err
 		}
-		firstName := string(input)
-		store := h.userdataStore
-		err = store.WriteEntry(ctx, sessionId, utils.DATA_FIRST_NAME, []byte(firstName))
+	} else {
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_FIRST_NAME, []byte(firstName))
 		if err != nil {
 			return res, err
 		}
@@ -422,20 +426,24 @@ func (h *Handlers) SaveFamilyname(ctx context.Context, sym string, input []byte)
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-	if len(input) > 0 {
-		if bytes.Equal(input, backOption) {
-			return res, nil
-		}
-		familyName := string(input)
-		store := h.userdataStore
-		err = store.WriteEntry(ctx, sessionId, utils.DATA_FAMILY_NAME, []byte(familyName))
+	store := h.userdataStore
+	familyName := string(input)
+
+	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+	allowUpdate := h.st.MatchFlag(flag_allow_update, true)
+
+	if allowUpdate {
+		temporaryFamilyName, _ := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_FAMILY_NAME)
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_FAMILY_NAME, []byte(temporaryFamilyName))
 		if err != nil {
 			return res, err
 		}
 	} else {
-		return res, fmt.Errorf("a family name cannot be less than one character")
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_FAMILY_NAME, []byte(familyName))
+		if err != nil {
+			return res, err
+		}
 	}
-
 	return res, nil
 }
 
@@ -447,11 +455,19 @@ func (h *Handlers) SaveYob(ctx context.Context, sym string, input []byte) (resou
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
+	yob := string(input)
+	store := h.userdataStore
+	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+	allowUpdate := h.st.MatchFlag(flag_allow_update, true)
 
-	if len(input) == 4 {
-		yob := string(input)
-		store := h.userdataStore
-		err = store.WriteEntry(ctx, sessionId, utils.DATA_YOB, []byte(yob))
+	if allowUpdate {
+		temporaryYob, _ := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_YOB)
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_YOB, []byte(temporaryYob))
+		if err != nil {
+			return res, err
+		}
+	} else {
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_YOB, []byte(yob))
 		if err != nil {
 			return res, err
 		}
@@ -468,13 +484,20 @@ func (h *Handlers) SaveLocation(ctx context.Context, sym string, input []byte) (
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-	if len(input) > 0 {
-		if bytes.Equal(input, backOption) {
-			return res, nil
+	location := string(input)
+	store := h.userdataStore
+
+	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+	allowUpdate := h.st.MatchFlag(flag_allow_update, true)
+
+	if allowUpdate {
+		temporaryLocation, _ := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_LOCATION)
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_LOCATION, []byte(temporaryLocation))
+		if err != nil {
+			return res, err
 		}
-		location := string(input)
-		store := h.userdataStore
-		err = store.WriteEntry(ctx, sessionId, utils.DATA_LOCATION, []byte(location))
+	} else {
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_LOCATION, []byte(location))
 		if err != nil {
 			return res, err
 		}
@@ -492,14 +515,22 @@ func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (re
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-	if bytes.Equal(input, backOption) {
-		return res, nil
-	}
 	gender := strings.Split(symbol, "_")[1]
 	store := h.userdataStore
-	err = store.WriteEntry(ctx, sessionId, utils.DATA_GENDER, []byte(gender))
-	if err != nil {
-		return res, nil
+	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+	allowUpdate := h.st.MatchFlag(flag_allow_update, true)
+
+	if allowUpdate {
+		temporaryGender, _ := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_GENDER)
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_GENDER, []byte(temporaryGender))
+		if err != nil {
+			return res, err
+		}
+	} else {
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_GENDER, []byte(gender))
+		if err != nil {
+			return res, err
+		}
 	}
 
 	return res, nil
@@ -513,12 +544,22 @@ func (h *Handlers) SaveOfferings(ctx context.Context, sym string, input []byte) 
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-	if len(input) > 0 {
-		offerings := string(input)
-		store := h.userdataStore
-		err = store.WriteEntry(ctx, sessionId, utils.DATA_OFFERINGS, []byte(offerings))
+	offerings := string(input)
+	store := h.userdataStore
+
+	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+	allowUpdate := h.st.MatchFlag(flag_allow_update, true)
+
+	if allowUpdate {
+		temporaryOfferings, _ := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_OFFERINGS)
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_OFFERINGS, []byte(temporaryOfferings))
 		if err != nil {
-			return res, nil
+			return res, err
+		}
+	} else {
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_OFFERINGS, []byte(offerings))
+		if err != nil {
+			return res, err
 		}
 	}
 

@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"context"
+
 	"git.defalsify.org/vise.git/asm"
 	"git.defalsify.org/vise.git/db"
 	"git.defalsify.org/vise.git/engine"
@@ -34,16 +36,21 @@ type LocalHandlerService struct {
 	Rs            resource.Resource
 }
 
-func NewLocalHandlerService(fp string, debug bool, dbResource *resource.DbResource, cfg engine.Config, rs resource.Resource) (*LocalHandlerService, error) {
+func NewLocalHandlerService(ctx context.Context, fp string, debug bool, dbResource *resource.DbResource, cfg engine.Config, rs resource.Resource) (*LocalHandlerService, error) {
 	parser, err := getParser(fp, debug)
 	if err != nil {
 		return nil, err
 	}
+	adminstore, err := utils.NewAdminStore(ctx, "admin_numbers")
+	if err != nil {
+		return nil, err
+	}
 	return &LocalHandlerService{
-		Parser: parser,
-		DbRs:   dbResource,
-		Cfg:    cfg,
-		Rs:     rs,
+		Parser:     parser,
+		DbRs:       dbResource,
+		AdminStore: adminstore,
+		Cfg:        cfg,
+		Rs:         rs,
 	}, nil
 }
 

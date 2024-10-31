@@ -5,14 +5,14 @@ go 1.23.0
 toolchain go1.23.2
 
 require (
-	git.defalsify.org/vise.git v0.2.1-0.20241017112704-307fa6fcdc6b
+	git.defalsify.org/vise.git v0.2.1-0.20241031204035-b588301738ed
 	github.com/alecthomas/assert/v2 v2.2.2
 	github.com/grassrootseconomics/eth-custodial v1.3.0-beta
 	github.com/peteole/testdata-loader v0.3.0
 	gopkg.in/leonelquinteros/gotext.v1 v1.3.1
 )
 
-require github.com/grassrootseconomics/ussd-data-service v0.0.0-20241003123429-4904b4438a3a // indirect
+require github.com/grassrootseconomics/ussd-data-service v0.0.0-20241003123429-4904b4438a3a
 
 require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect

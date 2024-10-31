@@ -107,12 +107,6 @@ func main() {
 	lhs, err := handlers.NewLocalHandlerService(ctx, pfp, true, dbResource, cfg, rs)
 	lhs.SetDataStore(&userdataStore)
 
-	err = lhs.AdminStore.Seed()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
-		os.Exit(1)
-	}
-
 	accountService := server.AccountService{}
 
 	hl, err := lhs.GetHandler(&accountService)

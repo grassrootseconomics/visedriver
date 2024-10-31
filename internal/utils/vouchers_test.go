@@ -32,11 +32,6 @@ func InitializeTestDb(t *testing.T) (context.Context, *common.UserDataStore) {
 	return ctx, store
 }
 
-// AssertEmptyValue checks if a value is empty/nil/zero
-func AssertEmptyValue(t *testing.T, value []byte, msgAndArgs ...interface{}) {
-	assert.Equal(t, len(value), 0, msgAndArgs...)
-}
-
 func TestMatchVoucher(t *testing.T) {
 	symbols := "1:SRF\n2:MILO"
 	balances := "1:100\n2:200"
@@ -205,19 +200,5 @@ func TestUpdateVoucherData(t *testing.T) {
 		storedValue, err := store.ReadEntry(ctx, sessionId, key)
 		require.NoError(t, err)
 		require.Equal(t, expectedValue, storedValue, "Active data mismatch for key %v", key)
-	}
-
-	// Verify temporary data was cleared
-	tempKeys := []common.DataTyp{
-		common.DATA_TEMPORARY_SYM,
-		common.DATA_TEMPORARY_BAL,
-		common.DATA_TEMPORARY_DECIMAL,
-		common.DATA_TEMPORARY_ADDRESS,
-	}
-
-	for _, key := range tempKeys {
-		storedValue, err := store.ReadEntry(ctx, sessionId, key)
-		require.NoError(t, err)
-		AssertEmptyValue(t, storedValue, "Temporary data not cleared for key %v", key)
 	}
 }

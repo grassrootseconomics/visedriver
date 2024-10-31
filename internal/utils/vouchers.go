@@ -78,10 +78,7 @@ func MatchVoucher(input, symbols, balances, decimals, addresses string) (symbol,
 
 	for i, sym := range symList {
 		parts := strings.SplitN(sym, ":", 2)
-		if len(parts) != 2 {
-			continue
-		}
-
+	
 		if input == parts[0] || strings.EqualFold(input, parts[1]) {
 			symbol = parts[1]
 			if i < len(balList) {
@@ -154,23 +151,8 @@ func UpdateVoucherData(ctx context.Context, store common.DataStore, sessionId st
 		common.DATA_ACTIVE_ADDRESS: []byte(data.ContractAddress),
 	}
 
-	// Clear temporary voucher data entries
-	tempEntries := map[common.DataTyp][]byte{
-		common.DATA_TEMPORARY_SYM:     []byte(""),
-		common.DATA_TEMPORARY_BAL:     []byte(""),
-		common.DATA_TEMPORARY_DECIMAL: []byte(""),
-		common.DATA_TEMPORARY_ADDRESS: []byte(""),
-	}
-
 	// Write active data
 	for key, value := range activeEntries {
-		if err := store.WriteEntry(ctx, sessionId, key, value); err != nil {
-			return err
-		}
-	}
-
-	// Clear temporary data
-	for key, value := range tempEntries {
 		if err := store.WriteEntry(ctx, sessionId, key, value); err != nil {
 			return err
 		}

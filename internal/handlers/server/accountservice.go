@@ -1,98 +1,147 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"os"
 
 	"git.grassecon.net/urdt/ussd/config"
 	"git.grassecon.net/urdt/ussd/internal/models"
+	"github.com/grassrootseconomics/eth-custodial/pkg/api"
+)
+
+var (
+	okResponse  api.OKResponse
+	errResponse api.ErrResponse
 )
 
 type AccountServiceInterface interface {
-	CheckBalance(publicKey string) (string, error)
-	CreateAccount() (*models.AccountResponse, error)
-	CheckAccountStatus(trackingId string) (string, error)
+	CheckBalance(ctx context.Context, publicKey string) (*models.BalanceResponse, error)
+	CreateAccount(ctx context.Context) (*api.OKResponse, error)
+	CheckAccountStatus(ctx context.Context, trackingId string) (*models.TrackStatusResponse, error)
+	TrackAccountStatus(ctx context.Context, publicKey string) (*api.OKResponse, error)
+	FetchVouchers(ctx context.Context, publicKey string) (*models.VoucherHoldingResponse, error)
 }
 
 type AccountService struct {
 }
 
-
-
-// CheckAccountStatus retrieves the status of an account transaction based on the provided tracking ID.
-//
 // Parameters:
 //   - trackingId: A unique identifier for the account.This should be obtained from a previous call to
 //     CreateAccount or a similar function that returns an AccountResponse. The `trackingId` field in the
 //     AccountResponse struct can be used here to check the account status during a transaction.
 //
-//
 // Returns:
 //   - string: The status of the transaction as a string. If there is an error during the request or processing, this will be an empty string.
 //   - error: An error if any occurred during the HTTP request, reading the response, or unmarshalling the JSON data.
-//     If no error occurs, this will be nil.
-//
-func (as *AccountService) CheckAccountStatus(trackingId string) (string, error) {
-	resp, err := http.Get(config.TrackStatusURL + trackingId)
+//     If no error occurs, this will be nil
+func (as *AccountService) CheckAccountStatus(ctx context.Context, trackingId string) (*models.TrackStatusResponse, error) {
+	resp, err := http.Get(config.BalanceURL + trackingId)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	var trackResp models.TrackStatusResponse
 	err = json.Unmarshal(body, &trackResp)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
+	return &trackResp, nil
 
-	status := trackResp.Result.Transaction.Status
-
-	return status, nil
 }
 
-
-// CheckBalance retrieves the balance for a given public key from the custodial balance API endpoint.
-// Parameters:
-//   - publicKey: The public key associated with the account whose balance needs to be checked.
-func (as *AccountService) CheckBalance(publicKey string) (string, error) {
-
-	resp, err := http.Get(config.BalanceURL + publicKey)
+func (as *AccountService) TrackAccountStatus(ctx context.Context, publicKey string) (*api.OKResponse, error) {
+	var err error
+	// Construct the URL with the path parameter
+	url := fmt.Sprintf("%s/%s", config.TrackURL, publicKey)
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return "0.0", err
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-GE-KEY", "xd")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "0.0", err
+		errResponse.Description = err.Error()
+		return nil, err
 	}
+	if resp.StatusCode >= http.StatusBadRequest {
+		err := json.Unmarshal([]byte(body), &errResponse)
+		if err != nil {
+			return nil, err
+		}
+		return nil, errors.New(errResponse.Description)
+	}
+	err = json.Unmarshal([]byte(body), &okResponse)
+	if err != nil {
+		return nil, err
+	}
+	if len(okResponse.Result) == 0 {
+		return nil, errors.New("Empty api result")
+	}
+	return &okResponse, nil
 
+}
+
+// CheckBalance retrieves the balance for a given public key from the custodial balance API endpoint.
+// Parameters:
+//   - publicKey: The public key associated with the account whose balance needs to be checked.
+func (as *AccountService) CheckBalance(ctx context.Context, publicKey string) (*models.BalanceResponse, error) {
+	resp, err := http.Get(config.BalanceURL + publicKey)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
 	var balanceResp models.BalanceResponse
 	err = json.Unmarshal(body, &balanceResp)
 	if err != nil {
-		return "0.0", err
+		return nil, err
 	}
-
-	balance := balanceResp.Result.Balance
-	return balance, nil
+	return &balanceResp, nil
 }
 
-
-//CreateAccount creates a new account in the custodial system.
+// CreateAccount creates a new account in the custodial system.
 // Returns:
 //   - *models.AccountResponse: A pointer to an AccountResponse struct containing the details of the created account.
 //     If there is an error during the request or processing, this will be nil.
 //   - error: An error if any occurred during the HTTP request, reading the response, or unmarshalling the JSON data.
 //     If no error occurs, this will be nil.
-func (as *AccountService) CreateAccount() (*models.AccountResponse, error) {
-	resp, err := http.Post(config.CreateAccountURL, "application/json", nil)
+func (as *AccountService) CreateAccount(ctx context.Context) (*api.OKResponse, error) {
+	var err error
+
+	// Create a new request
+	req, err := http.NewRequest("POST", config.CreateAccountURL, nil)
 	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-GE-KEY", "xd")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		errResponse.Description = err.Error()
 		return nil, err
 	}
 	defer resp.Body.Close()
@@ -101,12 +150,36 @@ func (as *AccountService) CreateAccount() (*models.AccountResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	var accountResp models.AccountResponse
-	err = json.Unmarshal(body, &accountResp)
+	if resp.StatusCode >= http.StatusBadRequest {
+		err := json.Unmarshal([]byte(body), &errResponse)
+		if err != nil {
+			return nil, err
+		}
+		return nil, errors.New(errResponse.Description)
+	}
+	err = json.Unmarshal([]byte(body), &okResponse)
 	if err != nil {
 		return nil, err
 	}
+	if len(okResponse.Result) == 0 {
+		return nil, errors.New("Empty api result")
+	}
+	return &okResponse, nil
+}
 
-	return &accountResp, nil
+// FetchVouchers retrieves the token holdings for a given public key from the custodial holdings API endpoint
+// Parameters:
+//   - publicKey: The public key associated with the account.
+func (as *AccountService) FetchVouchers(ctx context.Context, publicKey string) (*models.VoucherHoldingResponse, error) {
+	file, err := os.Open("sample_tokens.json")
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	var holdings models.VoucherHoldingResponse
+
+	if err := json.NewDecoder(file).Decode(&holdings); err != nil {
+		return nil, err
+	}
+	return &holdings, nil
 }

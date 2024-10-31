@@ -149,12 +149,12 @@ func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (r
 
 func (h *Handlers) createAccountNoExist(ctx context.Context, sessionId string, res *resource.Result) error {
 	flag_account_created, _ := h.flagManager.GetFlag("flag_account_created")
-	okResponse, err := h.accountService.CreateAccount(ctx)
+	r, err := h.accountService.CreateAccount(ctx)
 	if err != nil {
 		return err
 	}
-	trackingId := okResponse.Result["trackingId"].(string)
-	publicKey := okResponse.Result["publicKey"].(string)
+	trackingId := r.TrackingId
+	publicKey := r.PublicKey
 
 	data := map[common.DataTyp]string{
 		common.DATA_TRACKING_ID: trackingId,
@@ -682,6 +682,7 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 
 func (h *Handlers) FetchCustodialBalances(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
+
 	flag_api_error, _ := h.flagManager.GetFlag("flag_api_call_error")
 
 	sessionId, ok := ctx.Value("SessionId").(string)
@@ -699,14 +700,13 @@ func (h *Handlers) FetchCustodialBalances(ctx context.Context, sym string, input
 
 	balanceResponse, err := h.accountService.CheckBalance(ctx, string(publicKey))
 	if err != nil {
-		return res, nil
-	}
-	if !balanceResponse.Ok {
 		res.FlagSet = append(res.FlagSet, flag_api_error)
 		return res, nil
 	}
 	res.FlagReset = append(res.FlagReset, flag_api_error)
-	balance := balanceResponse.Result.Balance
+
+	//balance := balanceResponse.Result.Balance
+	balance := balanceResponse.Balance
 
 	switch balanceType {
 	case "my":
@@ -1066,13 +1066,13 @@ func (h *Handlers) SetDefaultVoucher(ctx context.Context, sym string, input []by
 			}
 
 			// Return if there is no voucher
-			if len(vouchersResp.Result.Holdings) == 0 {
+			if len(vouchersResp) == 0 {
 				res.FlagSet = append(res.FlagSet, flag_no_active_voucher)
 				return res, nil
 			}
 
 			// Use only the first voucher
-			firstVoucher := vouchersResp.Result.Holdings[0]
+			firstVoucher := vouchersResp[0]
 			defaultSym := firstVoucher.TokenSymbol
 			defaultBal := firstVoucher.Balance
 
@@ -1119,7 +1119,7 @@ func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) 
 		return res, nil
 	}
 
-	data := utils.ProcessVouchers(vouchersResp.Result.Holdings)
+	data := utils.ProcessVouchers(vouchersResp)
 
 	// Store all voucher data
 	dataMap := map[string]string{

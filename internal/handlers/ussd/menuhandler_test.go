@@ -1159,7 +1159,6 @@ func TestCheckAccountStatus(t *testing.T) {
 
 			// Assert that expectations were met
 			mockDataStore.AssertExpectations(t)
-
 		})
 	}
 

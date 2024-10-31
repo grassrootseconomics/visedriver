@@ -7,6 +7,7 @@ import (
 
 	"git.grassecon.net/urdt/ussd/internal/models"
 	"github.com/grassrootseconomics/eth-custodial/pkg/api"
+	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 )
 
 type TestAccountService struct {
@@ -75,20 +76,8 @@ func (tas *TestAccountService) TrackAccountStatus(ctx context.Context, publicKey
 func (tas *TestAccountService) FetchVouchers(ctx context.Context, publicKey string) (*models.VoucherHoldingResponse, error) {
 	return &models.VoucherHoldingResponse{
 		Ok: true,
-		Result: struct {
-			Holdings []struct {
-				ContractAddress string `json:"contractAddress"`
-				TokenSymbol     string `json:"tokenSymbol"`
-				TokenDecimals   string `json:"tokenDecimals"`
-				Balance         string `json:"balance"`
-			} `json:"holdings"`
-		}{
-			Holdings: []struct {
-				ContractAddress string `json:"contractAddress"`
-				TokenSymbol     string `json:"tokenSymbol"`
-				TokenDecimals   string `json:"tokenDecimals"`
-				Balance         string `json:"balance"`
-			}{
+		Result: models.VoucherResult{
+			Holdings: []dataserviceapi.TokenHoldings{
 				{
 					ContractAddress: "0x6CC75A06ac72eB4Db2eE22F781F5D100d8ec03ee",
 					TokenSymbol:     "SRF",

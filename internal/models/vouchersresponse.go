@@ -1,15 +1,14 @@
 package models
 
-// VoucherHoldingResponse represents a single voucher holding
+import dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
+
 type VoucherHoldingResponse struct {
-	Ok          bool   `json:"ok"`
-	Description string `json:"description"`
-	Result      struct {
-		Holdings []struct {
-			ContractAddress string `json:"contractAddress"`
-			TokenSymbol     string `json:"tokenSymbol"`
-			TokenDecimals   string `json:"tokenDecimals"`
-			Balance         string `json:"balance"`
-		} `json:"holdings"`
-	} `json:"result"`
+	Ok          bool          `json:"ok"`
+	Description string        `json:"description"`
+	Result      VoucherResult `json:"result"`
+}
+
+// VoucherResult holds the list of token holdings
+type VoucherResult struct {
+	Holdings []dataserviceapi.TokenHoldings `json:"holdings"`
 }

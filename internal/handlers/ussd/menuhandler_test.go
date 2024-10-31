@@ -7,7 +7,6 @@ import (
 	"log"
 	"path"
 	"testing"
-	"time"
 
 	"git.defalsify.org/vise.git/asm"
 	"git.defalsify.org/vise.git/db"
@@ -1064,11 +1063,7 @@ func TestCheckAccountStatus(t *testing.T) {
 				},
 			},
 			response: &models.TrackStatusResult {
-				CreatedAt:     time.Now(),
-				Status:        "SUCCESS",
-				TransferValue: json.Number("0.5"),
-				TxHash:        "0x123abc456def",
-				TxType:        "transfer",
+				Active:	true,
 			},
 			expectedResult: resource.Result{
 				FlagSet:   []uint32{flag_account_success},
@@ -1079,11 +1074,7 @@ func TestCheckAccountStatus(t *testing.T) {
 			name:  "Test when the account is not  yet on the sarafu network",
 			input: []byte("TrackingId1234"),
 			response: &models.TrackStatusResult{
-				CreatedAt:     time.Now(),
-				Status:        "SUCCESS",
-				TransferValue: json.Number("0.5"),
-				TxHash:        "0x123abc456def",
-				TxType:        "transfer",
+				Active: false,
 			},
 			serverResponse: &api.OKResponse{
 				Ok:          true,
@@ -1109,13 +1100,13 @@ func TestCheckAccountStatus(t *testing.T) {
 				flagManager:    fm.parser,
 			}
 
-			status := tt.response.Status
+			status := tt.response.Active
 			// Define expected interactions with the mock
 			mockDataStore.On("ReadEntry", ctx, sessionId, common.DATA_PUBLIC_KEY).Return(tt.input, nil)
 
 			mockCreateAccountService.On("CheckAccountStatus", string(tt.input)).Return(tt.response, nil)
 			mockCreateAccountService.On("TrackAccountStatus", string(tt.input)).Return(tt.serverResponse, nil)
-			mockDataStore.On("WriteEntry", ctx, sessionId, common.DATA_ACCOUNT_STATUS, []byte(status)).Return(nil).Maybe()
+			mockDataStore.On("WriteEntry", ctx, sessionId, common.DATA_ACCOUNT_STATUS, status).Return(nil).Maybe()
 
 			// Call the method under test
 			res, _ := h.CheckAccountStatus(ctx, "check_account_status", tt.input)

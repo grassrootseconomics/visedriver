@@ -3,7 +3,6 @@ package testservice
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"git.grassecon.net/urdt/ussd/internal/models"
 	"github.com/grassrootseconomics/eth-custodial/pkg/api"
@@ -30,11 +29,7 @@ func (tas *TestAccountService) CheckBalance(ctx context.Context, publicKey strin
 
 func (tas *TestAccountService) CheckAccountStatus(ctx context.Context, trackingId string) (*models.TrackStatusResult, error) {
 	return &models.TrackStatusResult {
-		CreatedAt: time.Now(),
-		Status: "SUCCESS",
-		TransferValue: json.Number("0.5"),
-		TxHash: "0x123abc456def",
-		TxType: "transfer",
+		Active: true,
 	}, nil
 }
 

@@ -88,18 +88,14 @@ func TestCreateAccount(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		serverResponse *api.OKResponse
+		serverResponse *models.AccountResult
 		expectedResult resource.Result
 	}{
 		{
 			name: "Test account creation success",
-			serverResponse: &api.OKResponse{
-				Ok:          true,
-				Description: "Account creation successed",
-				Result: map[string]any{
-					"trackingId": "1234567890",
-					"publicKey":  "0xD3adB33f",
-				},
+			serverResponse: &models.AccountResult{
+				TrackingId: "1234567890",
+				PublicKey: "0xD3adB33f",
 			},
 			expectedResult: resource.Result{
 				FlagSet: []uint32{flag_account_created},
@@ -119,9 +115,9 @@ func TestCreateAccount(t *testing.T) {
 				flagManager:    fm.parser,
 			}
 
-			publicKey := tt.serverResponse.Result["publicKey"].(string)
+			publicKey := tt.serverResponse.PublicKey
 			data := map[common.DataTyp]string{
-				common.DATA_TRACKING_ID: tt.serverResponse.Result["trackingId"].(string),
+				common.DATA_TRACKING_ID: tt.serverResponse.TrackingId,
 				common.DATA_PUBLIC_KEY:  publicKey,
 			}
 
@@ -1055,7 +1051,7 @@ func TestCheckAccountStatus(t *testing.T) {
 		name           string
 		input          []byte
 		serverResponse *api.OKResponse
-		response       *models.TrackStatusResponse
+		response       *models.TrackStatusResult
 		expectedResult resource.Result
 	}{
 		{
@@ -1068,25 +1064,12 @@ func TestCheckAccountStatus(t *testing.T) {
 					"active": true,
 				},
 			},
-			response: &models.TrackStatusResponse{
-				Ok: true,
-				Result: struct {
-					Transaction struct {
-						CreatedAt     time.Time   "json:\"createdAt\""
-						Status        string      "json:\"status\""
-						TransferValue json.Number "json:\"transferValue\""
-						TxHash        string      "json:\"txHash\""
-						TxType        string      "json:\"txType\""
-					}
-				}{
-					Transaction: models.Transaction{
-						CreatedAt:     time.Now(),
-						Status:        "SUCCESS",
-						TransferValue: json.Number("0.5"),
-						TxHash:        "0x123abc456def",
-						TxType:        "transfer",
-					},
-				},
+			response: &models.TrackStatusResult {
+				CreatedAt:     time.Now(),
+				Status:        "SUCCESS",
+				TransferValue: json.Number("0.5"),
+				TxHash:        "0x123abc456def",
+				TxType:        "transfer",
 			},
 			expectedResult: resource.Result{
 				FlagSet:   []uint32{flag_account_success},
@@ -1096,25 +1079,12 @@ func TestCheckAccountStatus(t *testing.T) {
 		{
 			name:  "Test when the account is not  yet on the sarafu network",
 			input: []byte("TrackingId1234"),
-			response: &models.TrackStatusResponse{
-				Ok: true,
-				Result: struct {
-					Transaction struct {
-						CreatedAt     time.Time   "json:\"createdAt\""
-						Status        string      "json:\"status\""
-						TransferValue json.Number "json:\"transferValue\""
-						TxHash        string      "json:\"txHash\""
-						TxType        string      "json:\"txType\""
-					}
-				}{
-					Transaction: models.Transaction{
-						CreatedAt:     time.Now(),
-						Status:        "SUCCESS",
-						TransferValue: json.Number("0.5"),
-						TxHash:        "0x123abc456def",
-						TxType:        "transfer",
-					},
-				},
+			response: &models.TrackStatusResult{
+				CreatedAt:     time.Now(),
+				Status:        "SUCCESS",
+				TransferValue: json.Number("0.5"),
+				TxHash:        "0x123abc456def",
+				TxType:        "transfer",
 			},
 			serverResponse: &api.OKResponse{
 				Ok:          true,
@@ -1140,7 +1110,7 @@ func TestCheckAccountStatus(t *testing.T) {
 				flagManager:    fm.parser,
 			}
 
-			status := tt.response.Result.Transaction.Status
+			status := tt.response.Status
 			// Define expected interactions with the mock
 			mockDataStore.On("ReadEntry", ctx, sessionId, common.DATA_PUBLIC_KEY).Return(tt.input, nil)
 
@@ -1833,36 +1803,14 @@ func TestFetchCustodialBalances(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		balanceResonse *models.BalanceResponse
+		balanceResponse *models.BalanceResult
 		expectedResult resource.Result
 	}{
 		{
 			name: "Test when fetch custodial balances is not a success",
-			balanceResonse: &models.BalanceResponse{
-				Ok: false,
-				Result: struct {
-					Balance string      `json:"balance"`
-					Nonce   json.Number `json:"nonce"`
-				}{
-					Balance: "0.003 CELO",
-					Nonce:   json.Number("0"),
-				},
-			},
-			expectedResult: resource.Result{
-				FlagSet: []uint32{flag_api_error},
-			},
-		},
-		{
-			name: "Test when fetch custodial balances is a success",
-			balanceResonse: &models.BalanceResponse{
-				Ok: true,
-				Result: struct {
-					Balance string      `json:"balance"`
-					Nonce   json.Number `json:"nonce"`
-				}{
-					Balance: "0.003 CELO",
-					Nonce:   json.Number("0"),
-				},
+			balanceResponse: &models.BalanceResult{
+				Balance: "0.003 CELO",
+				Nonce:   json.Number("0"),
 			},
 			expectedResult: resource.Result{
 				FlagReset: []uint32{flag_api_error},
@@ -1886,7 +1834,7 @@ func TestFetchCustodialBalances(t *testing.T) {
 
 			// Set up the expected behavior of the mock
 			mockDataStore.On("ReadEntry", ctx, sessionId, common.DATA_PUBLIC_KEY).Return([]byte(publicKey), nil)
-			mockCreateAccountService.On("CheckBalance", string(publicKey)).Return(tt.balanceResonse, nil)
+			mockCreateAccountService.On("CheckBalance", string(publicKey)).Return(tt.balanceResponse, nil)
 
 			// Call the method
 			res, _ := h.FetchCustodialBalances(ctx, "fetch_custodial_balances", []byte(""))
@@ -1918,35 +1866,24 @@ func TestSetDefaultVoucher(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		vouchersResp   *models.VoucherHoldingResponse
+		vouchersResp   []dataserviceapi.TokenHoldings
 		expectedResult resource.Result
 	}{
 		{
 			name: "Test set default voucher when no active voucher exists",
-			vouchersResp: &models.VoucherHoldingResponse{
-				Ok:          true,
-				Description: "Vouchers fetched successfully",
-				Result: models.VoucherResult{
-					Holdings: []dataserviceapi.TokenHoldings{
-						{
-							ContractAddress: "0x123",
-							TokenSymbol:     "TOKEN1",
-							TokenDecimals:   "18",
-							Balance:         "100",
-						},
-					},
+			vouchersResp: []dataserviceapi.TokenHoldings {
+				dataserviceapi.TokenHoldings{
+					ContractAddress: "0x123",
+					TokenSymbol:     "TOKEN1",
+					TokenDecimals:   "18",
+					Balance:         "100",
 				},
 			},
 			expectedResult: resource.Result{},
 		},
 		{
 			name: "Test no vouchers available",
-			vouchersResp: &models.VoucherHoldingResponse{
-				Ok:          true,
-				Description: "No vouchers available",
-				Result: models.VoucherResult{
-					Holdings: []dataserviceapi.TokenHoldings{},
-				},
+			vouchersResp: []dataserviceapi.TokenHoldings {
 			},
 			expectedResult: resource.Result{
 				FlagSet: []uint32{flag_no_active_voucher},
@@ -1970,8 +1907,8 @@ func TestSetDefaultVoucher(t *testing.T) {
 
 			mockAccountService.On("FetchVouchers", string(publicKey)).Return(tt.vouchersResp, nil)
 
-			if len(tt.vouchersResp.Result.Holdings) > 0 {
-				firstVoucher := tt.vouchersResp.Result.Holdings[0]
+			if len(tt.vouchersResp) > 0 {
+				firstVoucher := tt.vouchersResp[0]
 				mockDataStore.On("WriteEntry", ctx, sessionId, common.DATA_ACTIVE_SYM, []byte(firstVoucher.TokenSymbol)).Return(nil)
 				mockDataStore.On("WriteEntry", ctx, sessionId, common.DATA_ACTIVE_BAL, []byte(firstVoucher.Balance)).Return(nil)
 			}
@@ -2006,8 +1943,7 @@ func TestCheckVouchers(t *testing.T) {
 
 	mockDataStore.On("ReadEntry", ctx, sessionId, common.DATA_PUBLIC_KEY).Return([]byte(publicKey), nil)
 
-	mockVouchersResponse := &models.VoucherHoldingResponse{}
-	mockVouchersResponse.Result.Holdings = []dataserviceapi.TokenHoldings{
+	mockVouchersResponse := []dataserviceapi.TokenHoldings{
 		{ContractAddress: "0xd4c288865Ce", TokenSymbol: "SRF", TokenDecimals: "6", Balance: "100"},
 		{ContractAddress: "0x41c188d63Qa", TokenSymbol: "MILO", TokenDecimals: "4", Balance: "200"},
 	}

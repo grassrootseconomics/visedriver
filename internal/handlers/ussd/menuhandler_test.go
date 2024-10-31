@@ -19,6 +19,7 @@ import (
 	"git.grassecon.net/urdt/ussd/internal/testutil/testservice"
 
 	"git.grassecon.net/urdt/ussd/common"
+	"git.grassecon.net/urdt/ussd/internal/utils"
 	"github.com/alecthomas/assert/v2"
 //	"github.com/grassrootseconomics/eth-custodial/pkg/api"
 	testdataloader "github.com/peteole/testdata-loader"
@@ -168,8 +169,11 @@ func TestWithPersister_PanicWhenAlreadySet(t *testing.T) {
 }
 
 func TestSaveFirstname(t *testing.T) {
-	// Create a new instance of MockMyDataStore
+	// Create new mocks
 	mockStore := new(mocks.MockUserDataStore)
+	mockState := state.NewState(16)
+
+	fm, err := NewFlagManager(flagsPath)
 
 	// Define test data
 	sessionId := "session123"
@@ -177,11 +181,17 @@ func TestSaveFirstname(t *testing.T) {
 	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
 
 	// Set up the expected behavior of the mock
+<<<<<<< HEAD
 	mockStore.On("WriteEntry", ctx, sessionId, common.DATA_FIRST_NAME, []byte(firstName)).Return(nil)
+=======
+	mockStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(firstName)).Return(nil)
+>>>>>>> master
 
 	// Create the Handlers instance with the mock store
 	h := &Handlers{
 		userdataStore: mockStore,
+		flagManager:   fm.parser,
+		st:            mockState,
 	}
 
 	// Call the method
@@ -198,6 +208,9 @@ func TestSaveFirstname(t *testing.T) {
 func TestSaveFamilyname(t *testing.T) {
 	// Create a new instance of UserDataStore
 	mockStore := new(mocks.MockUserDataStore)
+	mockState := state.NewState(16)
+
+	fm, err := NewFlagManager(flagsPath)
 
 	// Define test data
 	sessionId := "session123"
@@ -205,11 +218,17 @@ func TestSaveFamilyname(t *testing.T) {
 	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
 
 	// Set up the expected behavior of the mock
+<<<<<<< HEAD
 	mockStore.On("WriteEntry", ctx, sessionId, common.DATA_FAMILY_NAME, []byte(familyName)).Return(nil)
+=======
+	mockStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(familyName)).Return(nil)
+>>>>>>> master
 
 	// Create the Handlers instance with the mock store
 	h := &Handlers{
 		userdataStore: mockStore,
+		st:            mockState,
+		flagManager:   fm.parser,
 	}
 
 	// Call the method
@@ -265,7 +284,11 @@ func TestSaveTemporaryPin(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			// Set up the expected behavior of the mock
+<<<<<<< HEAD
 			mockStore.On("WriteEntry", ctx, sessionId, common.DATA_TEMPORARY_PIN, []byte(tt.input)).Return(nil)
+=======
+			mockStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(tt.input)).Return(nil)
+>>>>>>> master
 
 			// Call the method
 			res, err := h.SaveTemporaryPin(ctx, "save_pin", tt.input)
@@ -282,8 +305,11 @@ func TestSaveTemporaryPin(t *testing.T) {
 }
 
 func TestSaveYoB(t *testing.T) {
-	// Create a new instance of MockMyDataStore
+	// Create  new instances
 	mockStore := new(mocks.MockUserDataStore)
+	mockState := state.NewState(16)
+
+	fm, err := NewFlagManager(flagsPath)
 
 	// Define test data
 	sessionId := "session123"
@@ -291,11 +317,17 @@ func TestSaveYoB(t *testing.T) {
 	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
 
 	// Set up the expected behavior of the mock
+<<<<<<< HEAD
 	mockStore.On("WriteEntry", ctx, sessionId, common.DATA_YOB, []byte(yob)).Return(nil)
+=======
+	mockStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(yob)).Return(nil)
+>>>>>>> master
 
 	// Create the Handlers instance with the mock store
 	h := &Handlers{
 		userdataStore: mockStore,
+		st:            mockState,
+		flagManager:   fm.parser,
 	}
 
 	// Call the method
@@ -312,6 +344,9 @@ func TestSaveYoB(t *testing.T) {
 func TestSaveLocation(t *testing.T) {
 	// Create a new instance of MockMyDataStore
 	mockStore := new(mocks.MockUserDataStore)
+	mockState := state.NewState(16)
+
+	fm, err := NewFlagManager(flagsPath)
 
 	// Define test data
 	sessionId := "session123"
@@ -319,11 +354,17 @@ func TestSaveLocation(t *testing.T) {
 	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
 
 	// Set up the expected behavior of the mock
+<<<<<<< HEAD
 	mockStore.On("WriteEntry", ctx, sessionId, common.DATA_LOCATION, []byte(yob)).Return(nil)
+=======
+	mockStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(yob)).Return(nil)
+>>>>>>> master
 
 	// Create the Handlers instance with the mock store
 	h := &Handlers{
 		userdataStore: mockStore,
+		st:            mockState,
+		flagManager:   fm.parser,
 	}
 
 	// Call the method
@@ -340,6 +381,9 @@ func TestSaveLocation(t *testing.T) {
 func TestSaveOfferings(t *testing.T) {
 	// Create a new instance of MockUserDataStore
 	mockStore := new(mocks.MockUserDataStore)
+	mockState := state.NewState(16)
+
+	fm, err := NewFlagManager(flagsPath)
 
 	// Define test data
 	sessionId := "session123"
@@ -347,11 +391,17 @@ func TestSaveOfferings(t *testing.T) {
 	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
 
 	// Set up the expected behavior of the mock
+<<<<<<< HEAD
 	mockStore.On("WriteEntry", ctx, sessionId, common.DATA_OFFERINGS, []byte(offerings)).Return(nil)
+=======
+	mockStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(offerings)).Return(nil)
+>>>>>>> master
 
 	// Create the Handlers instance with the mock store
 	h := &Handlers{
 		userdataStore: mockStore,
+		st:            mockState,
+		flagManager:   fm.parser,
 	}
 
 	// Call the method
@@ -366,9 +416,11 @@ func TestSaveOfferings(t *testing.T) {
 }
 
 func TestSaveGender(t *testing.T) {
-	// Create a new instance of MockMyDataStore
+	// Create a new mock instances
 	mockStore := new(mocks.MockUserDataStore)
 	mockState := state.NewState(16)
+
+	fm, _ := NewFlagManager(flagsPath)
 
 	// Define the session ID and context
 	sessionId := "session123"
@@ -409,16 +461,24 @@ func TestSaveGender(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Set up expectations for the mock database
 			if tt.expectCall {
+<<<<<<< HEAD
 				expectedKey := common.DATA_GENDER
 				mockStore.On("WriteEntry", ctx, sessionId, expectedKey, []byte(tt.expectedGender)).Return(nil)
 			} else {
 				mockStore.On("WriteEntry", ctx, sessionId, common.DATA_GENDER, []byte(tt.expectedGender)).Return(nil)
+=======
+				expectedKey := utils.DATA_TEMPORARY_VALUE
+				mockStore.On("WriteEntry", ctx, sessionId, expectedKey, []byte(tt.expectedGender)).Return(nil)
+			} else {
+				mockStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(tt.expectedGender)).Return(nil)
+>>>>>>> master
 			}
 			mockState.ExecPath = append(mockState.ExecPath, tt.executingSymbol)
 			// Create the Handlers instance with the mock store
 			h := &Handlers{
 				userdataStore: mockStore,
 				st:            mockState,
+				flagManager:   fm.parser,
 			}
 
 			// Call the method
@@ -429,9 +489,15 @@ func TestSaveGender(t *testing.T) {
 
 			// Verify expectations
 			if tt.expectCall {
+<<<<<<< HEAD
 				mockStore.AssertCalled(t, "WriteEntry", ctx, sessionId, common.DATA_GENDER, []byte(tt.expectedGender))
 			} else {
 				mockStore.AssertNotCalled(t, "WriteEntry", ctx, sessionId, common.DATA_GENDER, []byte(tt.expectedGender))
+=======
+				mockStore.AssertCalled(t, "WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(tt.expectedGender))
+			} else {
+				mockStore.AssertNotCalled(t, "WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(tt.expectedGender))
+>>>>>>> master
 			}
 		})
 	}
@@ -1006,7 +1072,11 @@ func TestVerifyCreatePin(t *testing.T) {
 		},
 	}
 
+<<<<<<< HEAD
 	typ := common.DATA_TEMPORARY_PIN
+=======
+	typ := utils.DATA_TEMPORARY_VALUE
+>>>>>>> master
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1746,7 +1816,11 @@ func TestConfirmPin(t *testing.T) {
 			// Set up the expected behavior of the mock
 			mockDataStore.On("WriteEntry", ctx, sessionId, common.DATA_ACCOUNT_PIN, []byte(tt.temporarypin)).Return(nil)
 
+<<<<<<< HEAD
 			mockDataStore.On("ReadEntry", ctx, sessionId, common.DATA_TEMPORARY_PIN).Return(tt.temporarypin, nil)
+=======
+			mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_VALUE).Return(tt.temporarypin, nil)
+>>>>>>> master
 
 			//Call the function under test
 			res, _ := h.ConfirmPinChange(ctx, "confirm_pin_change", tt.temporarypin)
@@ -1984,16 +2058,9 @@ func TestViewVoucher(t *testing.T) {
 	}
 
 	// Set up expectations for mockDataStore
-	expectedData := map[common.DataTyp]string{
-		common.DATA_TEMPORARY_SYM:     "SRF",
-		common.DATA_TEMPORARY_BAL:     "100",
-		common.DATA_TEMPORARY_DECIMAL: "6",
-		common.DATA_TEMPORARY_ADDRESS: "0xd4c288865Ce",
-	}
+	expectedData := fmt.Sprintf("%s,%s,%s,%s", "SRF", "100", "6", "0xd4c288865Ce")
 
-	for dataType, dataValue := range expectedData {
-		mockDataStore.On("WriteEntry", ctx, sessionId, dataType, []byte(dataValue)).Return(nil)
-	}
+	mockDataStore.On("WriteEntry", ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(expectedData)).Return(nil)
 
 	res, err := h.ViewVoucher(ctx, "view_voucher", []byte("1"))
 	assert.NoError(t, err)
@@ -2017,6 +2084,8 @@ func TestSetVoucher(t *testing.T) {
 		ContractAddress: "0xd4c288865Ce0985a481Eef3be02443dF5E2e4Ea9",
 	}
 
+	expectedData := fmt.Sprintf("%s,%s,%s,%s", "SRF", "200", "6", "0xd4c288865Ce0985a481Eef3be02443dF5E2e4Ea9")
+
 	// Define the expected active entries
 	activeEntries := map[common.DataTyp][]byte{
 		common.DATA_ACTIVE_SYM:     []byte(tempData.TokenSymbol),
@@ -2025,27 +2094,11 @@ func TestSetVoucher(t *testing.T) {
 		common.DATA_ACTIVE_ADDRESS: []byte(tempData.ContractAddress),
 	}
 
-	// Define the temporary entries to be cleared
-	tempEntries := map[common.DataTyp][]byte{
-		common.DATA_TEMPORARY_SYM:     []byte(""),
-		common.DATA_TEMPORARY_BAL:     []byte(""),
-		common.DATA_TEMPORARY_DECIMAL: []byte(""),
-		common.DATA_TEMPORARY_ADDRESS: []byte(""),
-	}
-
 	// Mocking ReadEntry calls for temporary data retrieval
-	mockDataStore.On("ReadEntry", ctx, sessionId, common.DATA_TEMPORARY_SYM).Return([]byte(tempData.TokenSymbol), nil)
-	mockDataStore.On("ReadEntry", ctx, sessionId, common.DATA_TEMPORARY_BAL).Return([]byte(tempData.Balance), nil)
-	mockDataStore.On("ReadEntry", ctx, sessionId, common.DATA_TEMPORARY_DECIMAL).Return([]byte(tempData.TokenDecimals), nil)
-	mockDataStore.On("ReadEntry", ctx, sessionId, common.DATA_TEMPORARY_ADDRESS).Return([]byte(tempData.ContractAddress), nil)
+	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_TEMPORARY_VALUE).Return([]byte(expectedData), nil)
 
 	// Mocking WriteEntry calls for setting active data
 	for key, value := range activeEntries {
-		mockDataStore.On("WriteEntry", ctx, sessionId, key, value).Return(nil)
-	}
-
-	// Mocking WriteEntry calls for clearing temporary data
-	for key, value := range tempEntries {
 		mockDataStore.On("WriteEntry", ctx, sessionId, key, value).Return(nil)
 	}
 

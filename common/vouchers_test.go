@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/alecthomas/assert/v2"
@@ -127,18 +128,11 @@ func TestStoreTemporaryVoucher(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify stored data
-	expectedEntries := map[common.DataTyp][]byte{
-		common.DATA_TEMPORARY_SYM:     []byte("SRF"),
-		common.DATA_TEMPORARY_BAL:     []byte("200"),
-		common.DATA_TEMPORARY_DECIMAL: []byte("6"),
-		common.DATA_TEMPORARY_ADDRESS: []byte("0xd4c288865Ce0985a481Eef3be02443dF5E2e4Ea9"),
-	}
+	expectedData := fmt.Sprintf("%s,%s,%s,%s", "SRF", "200", "6", "0xd4c288865Ce0985a481Eef3be02443dF5E2e4Ea9")
 
-	for key, expectedValue := range expectedEntries {
-		storedValue, err := store.ReadEntry(ctx, sessionId, key)
-		require.NoError(t, err)
-		require.Equal(t, expectedValue, storedValue, "Mismatch for key %v", key)
-	}
+	storedValue, err := store.ReadEntry(ctx, sessionId, DATA_TEMPORARY_VALUE)
+	require.NoError(t, err)
+	require.Equal(t, expectedData, string(storedValue), "Mismatch for key %v", DATA_TEMPORARY_VALUE)
 }
 
 func TestGetTemporaryVoucherData(t *testing.T) {

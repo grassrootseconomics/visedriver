@@ -77,7 +77,7 @@ func MatchVoucher(input, symbols, balances, decimals, addresses string) (symbol,
 
 	for i, sym := range symList {
 		parts := strings.SplitN(sym, ":", 2)
-	
+
 		if input == parts[0] || strings.EqualFold(input, parts[1]) {
 			symbol = parts[1]
 			if i < len(balList) {
@@ -97,45 +97,30 @@ func MatchVoucher(input, symbols, balances, decimals, addresses string) (symbol,
 
 // StoreTemporaryVoucher saves voucher metadata as temporary entries in the DataStore.
 func StoreTemporaryVoucher(ctx context.Context, store DataStore, sessionId string, data *dataserviceapi.TokenHoldings) error {
-	entries := map[DataTyp][]byte{
-		DATA_TEMPORARY_SYM:     []byte(data.TokenSymbol),
-		DATA_TEMPORARY_BAL:     []byte(data.Balance),
-		DATA_TEMPORARY_DECIMAL: []byte(data.TokenDecimals),
-		DATA_TEMPORARY_ADDRESS: []byte(data.ContractAddress),
+	tempData := fmt.Sprintf("%s,%s,%s,%s", data.TokenSymbol, data.Balance, data.TokenDecimals, data.ContractAddress)
+
+	if err := store.WriteEntry(ctx, sessionId, DATA_TEMPORARY_VALUE, []byte(tempData)); err != nil {
+		return err
 	}
 
-	for key, value := range entries {
-		if err := store.WriteEntry(ctx, sessionId, key, value); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
 // GetTemporaryVoucherData retrieves temporary voucher metadata from the DataStore.
 func GetTemporaryVoucherData(ctx context.Context, store DataStore, sessionId string) (*dataserviceapi.TokenHoldings, error) {
-	keys := []DataTyp{
-		DATA_TEMPORARY_SYM,
-		DATA_TEMPORARY_BAL,
-		DATA_TEMPORARY_DECIMAL,
-		DATA_TEMPORARY_ADDRESS,
+	temp_data, err := store.ReadEntry(ctx, sessionId, DATA_TEMPORARY_VALUE)
+	if err != nil {
+		return nil, err
 	}
+
+	values := strings.SplitN(string(temp_data), ",", 4)
 
 	data := &dataserviceapi.TokenHoldings{}
-	values := make([][]byte, len(keys))
 
-	for i, key := range keys {
-		value, err := store.ReadEntry(ctx, sessionId, key)
-		if err != nil {
-			return nil, err
-		}
-		values[i] = value
-	}
-
-	data.TokenSymbol = string(values[0])
-	data.Balance = string(values[1])
-	data.TokenDecimals = string(values[2])
-	data.ContractAddress = string(values[3])
+	data.TokenSymbol = values[0]
+	data.Balance = values[1]
+	data.TokenDecimals = values[2]
+	data.ContractAddress = values[3]
 
 	return data, nil
 }

@@ -19,9 +19,9 @@ import (
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/state"
-	"git.grassecon.net/urdt/ussd/internal/utils"
 	"git.grassecon.net/urdt/ussd/common"
-	"git.grassecon.net/urdt/ussd/remote"
+	"git.grassecon.net/urdt/ussd/internal/handlers/server"
+	"git.grassecon.net/urdt/ussd/internal/utils"
 	"gopkg.in/leonelquinteros/gotext.v1"
 
 	"git.grassecon.net/urdt/ussd/internal/storage"
@@ -33,7 +33,6 @@ var (
 	translationDir = path.Join(scriptDir, "locale")
 	okResponse     *api.OKResponse
 	errResponse    *api.ErrResponse
-	backOption     = []byte("0")
 )
 
 // FlagManager handles centralized flag management
@@ -222,7 +221,7 @@ func (h *Handlers) VerifyNewPin(ctx context.Context, sym string, input []byte) (
 	return res, nil
 }
 
-// SaveTemporaryPin saves the valid PIN input to the DATA_TEMPORARY_PIN
+// SaveTemporaryPin saves the valid PIN input to the DATA_TEMPORARY_VALUE
 // during the account creation process
 // and during the change PIN process
 func (h *Handlers) SaveTemporaryPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
@@ -247,7 +246,7 @@ func (h *Handlers) SaveTemporaryPin(ctx context.Context, sym string, input []byt
 	res.FlagReset = append(res.FlagReset, flag_incorrect_pin)
 
 	store := h.userdataStore
-	err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_PIN, []byte(accountPIN))
+	err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(accountPIN))
 	if err != nil {
 		return res, err
 	}
@@ -264,7 +263,7 @@ func (h *Handlers) ConfirmPinChange(ctx context.Context, sym string, input []byt
 	flag_pin_mismatch, _ := h.flagManager.GetFlag("flag_pin_mismatch")
 
 	store := h.userdataStore
-	temporaryPin, err := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_PIN)
+	temporaryPin, err := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE)
 	if err != nil {
 		return res, err
 	}
@@ -295,7 +294,7 @@ func (h *Handlers) VerifyCreatePin(ctx context.Context, sym string, input []byte
 		return res, fmt.Errorf("missing session")
 	}
 	store := h.userdataStore
-	temporaryPin, err := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_PIN)
+	temporaryPin, err := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE)
 	if err != nil {
 		return res, err
 	}
@@ -334,13 +333,18 @@ func (h *Handlers) SaveFirstname(ctx context.Context, sym string, input []byte) 
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-	if len(input) > 0 {
-		if bytes.Equal(input, backOption) {
-			return res, nil
+	firstName := string(input)
+	store := h.userdataStore
+	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+	allowUpdate := h.st.MatchFlag(flag_allow_update, true)
+	if allowUpdate {
+		temporaryFirstName, _ := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE)
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_FIRST_NAME, []byte(temporaryFirstName))
+		if err != nil {
+			return res, err
 		}
-		firstName := string(input)
-		store := h.userdataStore
-		err = store.WriteEntry(ctx, sessionId, common.DATA_FIRST_NAME, []byte(firstName))
+	} else {
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(firstName))
 		if err != nil {
 			return res, err
 		}
@@ -357,20 +361,25 @@ func (h *Handlers) SaveFamilyname(ctx context.Context, sym string, input []byte)
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-	if len(input) > 0 {
-		if bytes.Equal(input, backOption) {
-			return res, nil
-		}
-		familyName := string(input)
-		store := h.userdataStore
-		err = store.WriteEntry(ctx, sessionId, common.DATA_FAMILY_NAME, []byte(familyName))
+
+	store := h.userdataStore
+	familyName := string(input)
+
+	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+	allowUpdate := h.st.MatchFlag(flag_allow_update, true)
+
+	if allowUpdate {
+		temporaryFamilyName, _ := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE)
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_FAMILY_NAME, []byte(temporaryFamilyName))
 		if err != nil {
 			return res, err
 		}
 	} else {
-		return res, fmt.Errorf("a family name cannot be less than one character")
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(familyName))
+		if err != nil {
+			return res, err
+		}
 	}
-
 	return res, nil
 }
 
@@ -382,10 +391,19 @@ func (h *Handlers) SaveYob(ctx context.Context, sym string, input []byte) (resou
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-	if len(input) == 4 {
-		yob := string(input)
-		store := h.userdataStore
-		err = store.WriteEntry(ctx, sessionId, common.DATA_YOB, []byte(yob))
+	yob := string(input)
+	store := h.userdataStore
+	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+	allowUpdate := h.st.MatchFlag(flag_allow_update, true)
+
+	if allowUpdate {
+		temporaryYob, _ := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE)
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_YOB, []byte(temporaryYob))
+		if err != nil {
+			return res, err
+		}
+	} else {
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(yob))
 		if err != nil {
 			return res, err
 		}
@@ -402,13 +420,20 @@ func (h *Handlers) SaveLocation(ctx context.Context, sym string, input []byte) (
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-	if len(input) > 0 {
-		if bytes.Equal(input, backOption) {
-			return res, nil
+	location := string(input)
+	store := h.userdataStore
+
+	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+	allowUpdate := h.st.MatchFlag(flag_allow_update, true)
+
+	if allowUpdate {
+		temporaryLocation, _ := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE)
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_LOCATION, []byte(temporaryLocation))
+		if err != nil {
+			return res, err
 		}
-		location := string(input)
-		store := h.userdataStore
-		err = store.WriteEntry(ctx, sessionId, common.DATA_LOCATION, []byte(location))
+	} else {
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(location))
 		if err != nil {
 			return res, err
 		}
@@ -426,14 +451,22 @@ func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (re
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-	if bytes.Equal(input, backOption) {
-		return res, nil
-	}
 	gender := strings.Split(symbol, "_")[1]
 	store := h.userdataStore
-	err = store.WriteEntry(ctx, sessionId, common.DATA_GENDER, []byte(gender))
-	if err != nil {
-		return res, nil
+	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+	allowUpdate := h.st.MatchFlag(flag_allow_update, true)
+
+	if allowUpdate {
+		temporaryGender, _ := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE)
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_GENDER, []byte(temporaryGender))
+		if err != nil {
+			return res, err
+		}
+	} else {
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(gender))
+		if err != nil {
+			return res, err
+		}
 	}
 
 	return res, nil
@@ -447,12 +480,23 @@ func (h *Handlers) SaveOfferings(ctx context.Context, sym string, input []byte) 
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-	if len(input) > 0 {
-		offerings := string(input)
-		store := h.userdataStore
-		err = store.WriteEntry(ctx, sessionId, common.DATA_OFFERINGS, []byte(offerings))
+
+	offerings := string(input)
+	store := h.userdataStore
+
+	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+	allowUpdate := h.st.MatchFlag(flag_allow_update, true)
+
+	if allowUpdate {
+		temporaryOfferings, _ := store.ReadEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE)
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_OFFERINGS, []byte(temporaryOfferings))
 		if err != nil {
-			return res, nil
+			return res, err
+		}
+	} else {
+		err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(offerings))
+		if err != nil {
+			return res, err
 		}
 	}
 

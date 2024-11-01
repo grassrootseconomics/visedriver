@@ -237,7 +237,7 @@ func (h *Handlers) CheckPinMisMatch(ctx context.Context, sym string, input []byt
 	if err != nil {
 		return res, err
 	}
-	temporaryPin, err := store.ReadEntry(ctx, string(blockedNumber), utils.DATA_TEMPORARY_PIN)
+	temporaryPin, err := store.ReadEntry(ctx, string(blockedNumber), utils.DATA_TEMPORARY_VALUE)
 	if err != nil {
 		return res, err
 	}
@@ -312,7 +312,7 @@ func (h *Handlers) SaveOthersTemporaryPin(ctx context.Context, sym string, input
 	if err != nil {
 		return res, err
 	}
-	err = store.WriteEntry(ctx, string(blockedNumber), utils.DATA_TEMPORARY_PIN, []byte(temporaryPin))
+	err = store.WriteEntry(ctx, string(blockedNumber), utils.DATA_TEMPORARY_VALUE, []byte(temporaryPin))
 	if err != nil {
 		return res, err
 	}
@@ -845,7 +845,7 @@ func (h *Handlers) ResetOthersPin(ctx context.Context, sym string, input []byte)
 	if err != nil {
 		return res, err
 	}
-	temporaryPin, err := store.ReadEntry(ctx, string(blockedPhonenumber), utils.DATA_TEMPORARY_PIN)
+	temporaryPin, err := store.ReadEntry(ctx, string(blockedPhonenumber), utils.DATA_TEMPORARY_VALUE)
 	if err != nil {
 		return res, err
 	}

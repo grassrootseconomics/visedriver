@@ -16,6 +16,7 @@ import (
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/state"
 	"git.grassecon.net/urdt/ussd/internal/models"
+	"git.grassecon.net/urdt/ussd/internal/storage"
 	"git.grassecon.net/urdt/ussd/internal/testutil/mocks"
 	"git.grassecon.net/urdt/ussd/internal/testutil/testservice"
 
@@ -26,6 +27,7 @@ import (
 	testdataloader "github.com/peteole/testdata-loader"
 	"github.com/stretchr/testify/require"
 
+	memdb "git.defalsify.org/vise.git/db/mem"
 	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 )
 
@@ -2021,18 +2023,23 @@ func TestSetDefaultVoucher(t *testing.T) {
 func TestCheckVouchers(t *testing.T) {
 	mockDataStore := new(mocks.MockUserDataStore)
 	mockAccountService := new(mocks.MockAccountService)
-	mockSubPrefixDb := new(mocks.MockSubPrefixDb)
 
 	sessionId := "session123"
 	publicKey := "0X13242618721"
+	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
+
+	db := memdb.NewMemDb()
+	err := db.Connect(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	spdb := storage.NewSubPrefixDb(db, []byte("vouchers"))
 
 	h := &Handlers{
 		userdataStore:  mockDataStore,
 		accountService: mockAccountService,
-		prefixDb:       mockSubPrefixDb,
+		prefixDb:       spdb,
 	}
-
-	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
 
 	mockDataStore.On("ReadEntry", ctx, sessionId, utils.DATA_PUBLIC_KEY).Return([]byte(publicKey), nil)
 
@@ -2042,38 +2049,53 @@ func TestCheckVouchers(t *testing.T) {
 		{ContractAddress: "0x41c188d63Qa", TokenSymbol: "MILO", TokenDecimals: "4", Balance: "200"},
 	}
 
+	expectedSym := []byte("1:SRF\n2:MILO")
+
 	mockAccountService.On("FetchVouchers", string(publicKey)).Return(mockVouchersResponse, nil)
 
-	mockSubPrefixDb.On("Put", ctx, []byte("sym"), []byte("1:SRF\n2:MILO")).Return(nil)
-	mockSubPrefixDb.On("Put", ctx, []byte("bal"), []byte("1:100\n2:200")).Return(nil)
-	mockSubPrefixDb.On("Put", ctx, []byte("deci"), []byte("1:6\n2:4")).Return(nil)
-	mockSubPrefixDb.On("Put", ctx, []byte("addr"), []byte("1:0xd4c288865Ce\n2:0x41c188d63Qa")).Return(nil)
-
-	_, err := h.CheckVouchers(ctx, "check_vouchers", []byte(""))
-
+	_, err = h.CheckVouchers(ctx, "check_vouchers", []byte(""))
 	assert.NoError(t, err)
+
+	// Read voucher sym data from the store
+	voucherData, err := spdb.Get(ctx, []byte("sym"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// assert that the data is stored correctly
+	assert.Equal(t, expectedSym, voucherData)
 
 	mockDataStore.AssertExpectations(t)
 	mockAccountService.AssertExpectations(t)
 }
 
 func TestGetVoucherList(t *testing.T) {
-	mockSubPrefixDb := new(mocks.MockSubPrefixDb)
-
 	sessionId := "session123"
 	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
 
+	db := memdb.NewMemDb()
+	err := db.Connect(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	spdb := storage.NewSubPrefixDb(db, []byte("vouchers"))
+
 	h := &Handlers{
-		prefixDb: mockSubPrefixDb,
+		prefixDb: spdb,
 	}
 
-	mockSubPrefixDb.On("Get", ctx, []byte("sym")).Return([]byte("1:SRF\n2:MILO"), nil)
+	expectedSym := []byte("1:SRF\n2:MILO")
+
+	// Put voucher sym data from the store
+	err = spdb.Put(ctx, []byte("sym"), expectedSym)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	res, err := h.GetVoucherList(ctx, "", []byte(""))
-	assert.NoError(t, err)
-	assert.Contains(t, res.Content, "1:SRF\n2:MILO")
 
-	mockSubPrefixDb.AssertExpectations(t)
+	assert.NoError(t, err)
+	assert.Equal(t, res.Content, string(expectedSym))
 }
 
 func TestViewVoucher(t *testing.T) {
@@ -2082,27 +2104,37 @@ func TestViewVoucher(t *testing.T) {
 		t.Logf(err.Error())
 	}
 	mockDataStore := new(mocks.MockUserDataStore)
-	mockSubPrefixDb := new(mocks.MockSubPrefixDb)
 
 	sessionId := "session123"
 	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
 
+	db := memdb.NewMemDb()
+	err = db.Connect(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	spdb := storage.NewSubPrefixDb(db, []byte("vouchers"))
+
 	h := &Handlers{
 		userdataStore: mockDataStore,
 		flagManager:   fm.parser,
-		prefixDb:      mockSubPrefixDb,
+		prefixDb:      spdb,
 	}
 
 	// Define mock voucher data
-	mockVoucherData := map[string]string{
-		"sym":  "1:SRF",
-		"bal":  "1:100",
-		"deci": "1:6",
-		"addr": "1:0xd4c288865Ce",
+	mockData := map[string][]byte{
+		"sym":  []byte("1:SRF\n2:MILO"),
+		"bal":  []byte("1:100\n2:200"),
+		"deci": []byte("1:6\n2:4"),
+		"addr": []byte("1:0xd4c288865Ce\n2:0x41c188d63Qa"),
 	}
 
-	for key, value := range mockVoucherData {
-		mockSubPrefixDb.On("Get", ctx, []byte(key)).Return([]byte(value), nil)
+	// Put the data
+	for key, value := range mockData {
+		err = spdb.Put(ctx, []byte(key), []byte(value))
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	// Set up expectations for mockDataStore
@@ -2115,7 +2147,6 @@ func TestViewVoucher(t *testing.T) {
 	assert.Contains(t, res.Content, "SRF\n100")
 
 	mockDataStore.AssertExpectations(t)
-	mockSubPrefixDb.AssertExpectations(t)
 }
 
 func TestSetVoucher(t *testing.T) {

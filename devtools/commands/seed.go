@@ -23,7 +23,7 @@ type Config struct {
 
 func Seed(ctx context.Context) error {
 	var config Config
-	adminstore, err := utils.NewAdminStore(ctx, "admin_numbers")
+	adminstore, err := utils.NewAdminStore(ctx, "../admin_numbers")
 	store := adminstore.FsStore
 	if err != nil {
 		return err

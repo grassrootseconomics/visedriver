@@ -9,13 +9,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"git.grassecon.net/urdt/ussd/internal/storage"
-	"git.grassecon.net/urdt/ussd/common"
 	memdb "git.defalsify.org/vise.git/db/mem"
 	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 )
 
 // InitializeTestDb sets up and returns an in-memory database and store.
-func InitializeTestDb(t *testing.T) (context.Context, *common.UserDataStore) {
+func InitializeTestDb(t *testing.T) (context.Context, *UserDataStore) {
 	ctx := context.Background()
 
 	// Initialize memDb
@@ -23,8 +22,8 @@ func InitializeTestDb(t *testing.T) (context.Context, *common.UserDataStore) {
 	err := db.Connect(ctx, "")
 	require.NoError(t, err, "Failed to connect to memDb")
 
-	// Create common.UserDataStore with memDb
-	store := &common.UserDataStore{Db: db}
+	// Create UserDataStore with memDb
+	store := &UserDataStore{Db: db}
 
 	t.Cleanup(func() {
 		db.Close() // Ensure the DB is closed after each test
@@ -183,11 +182,11 @@ func TestUpdateVoucherData(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify active data was stored correctly
-	activeEntries := map[common.DataTyp][]byte{
-		common.DATA_ACTIVE_SYM:     []byte(newData.TokenSymbol),
-		common.DATA_ACTIVE_BAL:     []byte(newData.Balance),
-		common.DATA_ACTIVE_DECIMAL: []byte(newData.TokenDecimals),
-		common.DATA_ACTIVE_ADDRESS: []byte(newData.ContractAddress),
+	activeEntries := map[DataTyp][]byte{
+		DATA_ACTIVE_SYM:     []byte(newData.TokenSymbol),
+		DATA_ACTIVE_BAL:     []byte(newData.Balance),
+		DATA_ACTIVE_DECIMAL: []byte(newData.TokenDecimals),
+		DATA_ACTIVE_ADDRESS: []byte(newData.ContractAddress),
 	}
 
 	for key, expectedValue := range activeEntries {

@@ -114,3 +114,7 @@ func(tdb *ThreadGdbmDb) Close() error {
 	tdb.db = nil
 	return err
 }
+
+func(tdb *ThreadGdbmDb) Dump(ctx context.Context, key []byte) (*db.Dumper, error) {
+	return tdb.db.Dump(ctx, key)
+}

@@ -22,6 +22,7 @@ type AccountServiceInterface interface {
 	CreateAccount(ctx context.Context) (*models.AccountResult, error)
 	TrackAccountStatus(ctx context.Context, publicKey string) (*models.TrackStatusResult, error)
 	FetchVouchers(ctx context.Context, publicKey string) ([]dataserviceapi.TokenHoldings, error)
+	FetchTransactions(ctx context.Context, publicKey string) ([]dataserviceapi.Last10TxResponse, error)
 }
 
 type AccountService struct {
@@ -100,13 +101,18 @@ func (as *AccountService) CreateAccount(ctx context.Context) (*models.AccountRes
 	return &r, nil
 }
 
-// FetchVouchers retrieves the token holdings for a given public key from the custodial holdings API endpoint
+// FetchVouchers retrieves the token holdings for a given public key from the data indexer API endpoint
 // Parameters:
 //   - publicKey: The public key associated with the account.
 func (as *AccountService) FetchVouchers(ctx context.Context, publicKey string) ([]dataserviceapi.TokenHoldings, error) {
 	var r []dataserviceapi.TokenHoldings
 
-	req, err := http.NewRequest("GET", config.VoucherHoldingsURL, nil)
+	ep, err := url.JoinPath(config.VoucherHoldingsURL, publicKey)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", ep, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -118,6 +124,32 @@ func (as *AccountService) FetchVouchers(ctx context.Context, publicKey string) (
 
 	return r, nil
 }
+
+
+// FetchTransactions retrieves the last 10 transactions for a given public key from the data indexer API endpoint
+// Parameters:
+//   - publicKey: The public key associated with the account.
+func (as *AccountService) FetchTransactions(ctx context.Context, publicKey string) ([]dataserviceapi.Last10TxResponse, error) {
+	var r []dataserviceapi.Last10TxResponse
+
+	ep, err := url.JoinPath(config.VoucherTransfersURL, publicKey)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", ep, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err =  doDataRequest(ctx, req, r)
+	if err != nil {
+		return nil, err
+	}
+
+	return r, nil
+}
+
 
 func doRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKResponse, error) {
 	var okResponse  api.OKResponse

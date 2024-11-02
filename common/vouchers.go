@@ -37,6 +37,15 @@ func ProcessVouchers(holdings []dataserviceapi.TokenHoldings) VoucherMetadata {
 	return data
 }
 
+//func StoreVouchers(db storage.PrefixDb, data VoucherMetadata) {
+//		value, err := db.Put(ctx, []byte(key))
+//		if err != nil {
+//			return nil, fmt.Errorf("failed to get %s: %v", key, err)
+//		}
+//		data[key] = string(value)
+//	}
+//}
+
 // GetVoucherData retrieves and matches voucher data
 func GetVoucherData(ctx context.Context, db storage.PrefixDb, input string) (*dataserviceapi.TokenHoldings, error) {
 	keys := []string{"sym", "bal", "deci", "addr"}

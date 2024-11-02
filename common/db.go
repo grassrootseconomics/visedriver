@@ -30,7 +30,7 @@ const (
 	DATA_PUBLIC_KEY_REVERSE
 	DATA_ACTIVE_DECIMAL
 	DATA_ACTIVE_ADDRESS
-
+	DATA_TRANSACTIONS
 )
 
 func typToBytes(typ DataTyp) []byte {

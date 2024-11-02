@@ -35,6 +35,12 @@ var (
 	errResponse    *api.ErrResponse
 )
 
+// Define the regex patterns as  constants
+const (
+	phoneRegex = `(\(\d{3}\)\s?|\d{3}[-.\s]?)?\d{3}[-.\s]?\d{4}`
+	pinPattern = `^\d{4}$`
+)
+
 // FlagManager handles centralized flag management
 type FlagManager struct {
 	parser *asm.FlagParser
@@ -63,12 +69,13 @@ type Handlers struct {
 	st             *state.State
 	ca             cache.Memory
 	userdataStore  common.DataStore
+	adminstore     *utils.AdminStore
 	flagManager    *asm.FlagParser
 	accountService remote.AccountServiceInterface
 	prefixDb       storage.PrefixDb
 }
 
-func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, accountService remote.AccountServiceInterface) (*Handlers, error) {
+func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, adminstore *utils.AdminStore, accountService remote.AccountServiceInterface) (*Handlers, error) {
 	if userdataStore == nil {
 		return nil, fmt.Errorf("cannot create handler with nil userdata store")
 	}
@@ -81,18 +88,21 @@ func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, accountService r
 	h := &Handlers{
 		userdataStore:  userDb,
 		flagManager:    appFlags,
+		adminstore:     adminstore,
 		accountService: accountService,
 		prefixDb:       prefixDb,
 	}
 	return h, nil
 }
 
-// Define the regex pattern as a constant
-const pinPattern = `^\d{4}$`
-
 // isValidPIN checks whether the given input is a 4 digit number
 func isValidPIN(pin string) bool {
 	match, _ := regexp.MatchString(pinPattern, pin)
+	return match
+}
+
+func isValidPhoneNumber(phonenumber string) bool {
+	match, _ := regexp.MatchString(phoneRegex, phonenumber)
 	return match
 }
 
@@ -106,13 +116,25 @@ func (h *Handlers) WithPersister(pe *persist.Persister) *Handlers {
 
 func (h *Handlers) Init(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var r resource.Result
-
 	if h.pe == nil {
 		logg.WarnCtxf(ctx, "handler init called before it is ready or more than once", "state", h.st, "cache", h.ca)
 		return r, nil
 	}
+
 	h.st = h.pe.GetState()
 	h.ca = h.pe.GetMemory()
+
+	sessionId, _ := ctx.Value("SessionId").(string)
+	flag_admin_privilege, _ := h.flagManager.GetFlag("flag_admin_privilege")
+
+	isAdmin, _ := h.adminstore.IsAdmin(sessionId)
+
+	if isAdmin {
+		r.FlagSet = append(r.FlagSet, flag_admin_privilege)
+	} else {
+		r.FlagReset = append(r.FlagReset, flag_admin_privilege)
+	}
+
 	if h.st == nil || h.ca == nil {
 		logg.ErrorCtxf(ctx, "perister fail in handler", "state", h.st, "cache", h.ca)
 		return r, fmt.Errorf("cannot get state and memory for handler")
@@ -203,6 +225,30 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 	return res, nil
 }
 
+func (h *Handlers) CheckPinMisMatch(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	res := resource.Result{}
+	flag_pin_mismatch, _ := h.flagManager.GetFlag("flag_pin_mismatch")
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+	store := h.userdataStore
+	blockedNumber, err := store.ReadEntry(ctx, sessionId, utils.DATA_BLOCKED_NUMBER)
+	if err != nil {
+		return res, err
+	}
+	temporaryPin, err := store.ReadEntry(ctx, string(blockedNumber), utils.DATA_TEMPORARY_VALUE)
+	if err != nil {
+		return res, err
+	}
+	if bytes.Equal(temporaryPin, input) {
+		res.FlagReset = append(res.FlagReset, flag_pin_mismatch)
+	} else {
+		res.FlagSet = append(res.FlagSet, flag_pin_mismatch)
+	}
+	return res, nil
+}
+
 func (h *Handlers) VerifyNewPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	_, ok := ctx.Value("SessionId").(string)
@@ -234,7 +280,6 @@ func (h *Handlers) SaveTemporaryPin(ctx context.Context, sym string, input []byt
 	}
 
 	flag_incorrect_pin, _ := h.flagManager.GetFlag("flag_incorrect_pin")
-
 	accountPIN := string(input)
 
 	// Validate that the PIN is a 4-digit number
@@ -242,11 +287,32 @@ func (h *Handlers) SaveTemporaryPin(ctx context.Context, sym string, input []byt
 		res.FlagSet = append(res.FlagSet, flag_incorrect_pin)
 		return res, nil
 	}
-
 	res.FlagReset = append(res.FlagReset, flag_incorrect_pin)
-
 	store := h.userdataStore
 	err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(accountPIN))
+	if err != nil {
+		return res, err
+	}
+
+	return res, nil
+}
+
+func (h *Handlers) SaveOthersTemporaryPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	var err error
+
+	store := h.userdataStore
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+	temporaryPin := string(input)
+	blockedNumber, err := store.ReadEntry(ctx, sessionId, utils.DATA_BLOCKED_NUMBER)
+
+	if err != nil {
+		return res, err
+	}
+	err = store.WriteEntry(ctx, string(blockedNumber), utils.DATA_TEMPORARY_VALUE, []byte(temporaryPin))
 	if err != nil {
 		return res, err
 	}
@@ -298,7 +364,6 @@ func (h *Handlers) VerifyCreatePin(ctx context.Context, sym string, input []byte
 	if err != nil {
 		return res, err
 	}
-
 	if bytes.Equal(input, temporaryPin) {
 		res.FlagSet = []uint32{flag_valid_pin}
 		res.FlagReset = []uint32{flag_pin_mismatch}
@@ -513,6 +578,14 @@ func (h *Handlers) ResetAllowUpdate(ctx context.Context, sym string, input []byt
 	return res, nil
 }
 
+// ResetAllowUpdate resets the allowupdate flag that allows a user to update  profile data.
+func (h *Handlers) ResetValidPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	flag_valid_pin, _ := h.flagManager.GetFlag("flag_valid_pin")
+	res.FlagReset = append(res.FlagReset, flag_valid_pin)
+	return res, nil
+}
+
 // ResetAccountAuthorized resets the account authorization flag after a successful PIN entry.
 func (h *Handlers) ResetAccountAuthorized(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
@@ -596,12 +669,14 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
+
 	store := h.userdataStore
 	publicKey, err := store.ReadEntry(ctx, sessionId, common.DATA_PUBLIC_KEY)
 	if err != nil {
 		return res, err
 	}
 	r, err := h.accountService.TrackAccountStatus(ctx, string(publicKey))
+
 	if err != nil {
 		res.FlagSet = append(res.FlagSet, flag_api_error)
 		return res, err
@@ -656,7 +731,6 @@ func (h *Handlers) VerifyYob(ctx context.Context, sym string, input []byte) (res
 	var err error
 
 	flag_incorrect_date_format, _ := h.flagManager.GetFlag("flag_incorrect_date_format")
-
 	date := string(input)
 	_, err = strconv.Atoi(date)
 	if err != nil {
@@ -679,7 +753,6 @@ func (h *Handlers) ResetIncorrectYob(ctx context.Context, sym string, input []by
 	var res resource.Result
 
 	flag_incorrect_date_format, _ := h.flagManager.GetFlag("flag_incorrect_date_format")
-
 	res.FlagReset = append(res.FlagReset, flag_incorrect_date_format)
 	return res, nil
 }
@@ -757,6 +830,67 @@ func (h *Handlers) FetchCustodialBalances(ctx context.Context, sym string, input
 		res.Content = fmt.Sprintf("Your community balance is %s", balance)
 	default:
 		break
+	}
+	return res, nil
+}
+
+func (h *Handlers) ResetOthersPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	store := h.userdataStore
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+	blockedPhonenumber, err := store.ReadEntry(ctx, sessionId, utils.DATA_BLOCKED_NUMBER)
+	if err != nil {
+		return res, err
+	}
+	temporaryPin, err := store.ReadEntry(ctx, string(blockedPhonenumber), utils.DATA_TEMPORARY_VALUE)
+	if err != nil {
+		return res, err
+	}
+	err = store.WriteEntry(ctx, string(blockedPhonenumber), utils.DATA_ACCOUNT_PIN, []byte(temporaryPin))
+	if err != nil {
+		return res, nil
+	}
+	return res, nil
+}
+
+func (h *Handlers) ResetUnregisteredNumber(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	flag_unregistered_number, _ := h.flagManager.GetFlag("flag_unregistered_number")
+	res.FlagReset = append(res.FlagReset, flag_unregistered_number)
+	return res, nil
+}
+
+func (h *Handlers) ValidateBlockedNumber(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	var err error
+
+	flag_unregistered_number, _ := h.flagManager.GetFlag("flag_unregistered_number")
+	store := h.userdataStore
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+	blockedNumber := string(input)
+	_, err = store.ReadEntry(ctx, blockedNumber, utils.DATA_PUBLIC_KEY)
+	if !isValidPhoneNumber(blockedNumber) {
+		res.FlagSet = append(res.FlagSet, flag_unregistered_number)
+		return res, nil
+	}
+	if err != nil {
+		if db.IsNotFound(err) {
+			logg.Printf(logging.LVL_INFO, "Invalid or unregistered number")
+			res.FlagSet = append(res.FlagSet, flag_unregistered_number)
+			return res, nil
+		} else {
+			return res, err
+		}
+	}
+	err = store.WriteEntry(ctx, sessionId, utils.DATA_BLOCKED_NUMBER, []byte(blockedNumber))
+	if err != nil {
+		return res, nil
 	}
 	return res, nil
 }
@@ -928,6 +1062,22 @@ func (h *Handlers) GetRecipient(ctx context.Context, sym string, input []byte) (
 	recipient, _ := store.ReadEntry(ctx, sessionId, common.DATA_RECIPIENT)
 
 	res.Content = string(recipient)
+
+	return res, nil
+}
+
+// RetrieveBlockedNumber gets the current number during the pin reset for other's is in progress.
+func (h *Handlers) RetrieveBlockedNumber(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+	store := h.userdataStore
+	blockedNumber, _ := store.ReadEntry(ctx, sessionId, utils.DATA_BLOCKED_NUMBER)
+
+	res.Content = string(blockedNumber)
 
 	return res, nil
 }

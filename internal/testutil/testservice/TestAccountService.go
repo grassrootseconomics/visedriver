@@ -42,3 +42,7 @@ func (tas *TestAccountService) FetchVouchers(ctx context.Context, publicKey stri
 		},
 	}, nil 
 }
+
+func (tas *TestAccountService) FetchTransactions(ctx context.Context, publicKey string) ([]dataserviceapi.Last10TxResponse, error) {
+	return []dataserviceapi.Last10TxResponse{}, nil
+}

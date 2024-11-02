@@ -10,6 +10,7 @@ import (
 	"git.defalsify.org/vise.git/resource"
 
 	"git.grassecon.net/urdt/ussd/internal/handlers/ussd"
+	"git.grassecon.net/urdt/ussd/internal/utils"
 	"git.grassecon.net/urdt/ussd/remote"
 )
 

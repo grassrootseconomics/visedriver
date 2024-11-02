@@ -233,11 +233,11 @@ func (h *Handlers) CheckPinMisMatch(ctx context.Context, sym string, input []byt
 		return res, fmt.Errorf("missing session")
 	}
 	store := h.userdataStore
-	blockedNumber, err := store.ReadEntry(ctx, sessionId, utils.DATA_BLOCKED_NUMBER)
+	blockedNumber, err := store.ReadEntry(ctx, sessionId, common.DATA_BLOCKED_NUMBER)
 	if err != nil {
 		return res, err
 	}
-	temporaryPin, err := store.ReadEntry(ctx, string(blockedNumber), utils.DATA_TEMPORARY_VALUE)
+	temporaryPin, err := store.ReadEntry(ctx, string(blockedNumber), common.DATA_TEMPORARY_VALUE)
 	if err != nil {
 		return res, err
 	}
@@ -307,12 +307,12 @@ func (h *Handlers) SaveOthersTemporaryPin(ctx context.Context, sym string, input
 		return res, fmt.Errorf("missing session")
 	}
 	temporaryPin := string(input)
-	blockedNumber, err := store.ReadEntry(ctx, sessionId, utils.DATA_BLOCKED_NUMBER)
+	blockedNumber, err := store.ReadEntry(ctx, sessionId, common.DATA_BLOCKED_NUMBER)
 
 	if err != nil {
 		return res, err
 	}
-	err = store.WriteEntry(ctx, string(blockedNumber), utils.DATA_TEMPORARY_VALUE, []byte(temporaryPin))
+	err = store.WriteEntry(ctx, string(blockedNumber), common.DATA_TEMPORARY_VALUE, []byte(temporaryPin))
 	if err != nil {
 		return res, err
 	}
@@ -841,15 +841,15 @@ func (h *Handlers) ResetOthersPin(ctx context.Context, sym string, input []byte)
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-	blockedPhonenumber, err := store.ReadEntry(ctx, sessionId, utils.DATA_BLOCKED_NUMBER)
+	blockedPhonenumber, err := store.ReadEntry(ctx, sessionId, common.DATA_BLOCKED_NUMBER)
 	if err != nil {
 		return res, err
 	}
-	temporaryPin, err := store.ReadEntry(ctx, string(blockedPhonenumber), utils.DATA_TEMPORARY_VALUE)
+	temporaryPin, err := store.ReadEntry(ctx, string(blockedPhonenumber), common.DATA_TEMPORARY_VALUE)
 	if err != nil {
 		return res, err
 	}
-	err = store.WriteEntry(ctx, string(blockedPhonenumber), utils.DATA_ACCOUNT_PIN, []byte(temporaryPin))
+	err = store.WriteEntry(ctx, string(blockedPhonenumber), common.DATA_ACCOUNT_PIN, []byte(temporaryPin))
 	if err != nil {
 		return res, nil
 	}
@@ -874,7 +874,7 @@ func (h *Handlers) ValidateBlockedNumber(ctx context.Context, sym string, input 
 		return res, fmt.Errorf("missing session")
 	}
 	blockedNumber := string(input)
-	_, err = store.ReadEntry(ctx, blockedNumber, utils.DATA_PUBLIC_KEY)
+	_, err = store.ReadEntry(ctx, blockedNumber, common.DATA_PUBLIC_KEY)
 	if !isValidPhoneNumber(blockedNumber) {
 		res.FlagSet = append(res.FlagSet, flag_unregistered_number)
 		return res, nil
@@ -888,7 +888,7 @@ func (h *Handlers) ValidateBlockedNumber(ctx context.Context, sym string, input 
 			return res, err
 		}
 	}
-	err = store.WriteEntry(ctx, sessionId, utils.DATA_BLOCKED_NUMBER, []byte(blockedNumber))
+	err = store.WriteEntry(ctx, sessionId, common.DATA_BLOCKED_NUMBER, []byte(blockedNumber))
 	if err != nil {
 		return res, nil
 	}
@@ -1075,7 +1075,7 @@ func (h *Handlers) RetrieveBlockedNumber(ctx context.Context, sym string, input 
 		return res, fmt.Errorf("missing session")
 	}
 	store := h.userdataStore
-	blockedNumber, _ := store.ReadEntry(ctx, sessionId, utils.DATA_BLOCKED_NUMBER)
+	blockedNumber, _ := store.ReadEntry(ctx, sessionId, common.DATA_BLOCKED_NUMBER)
 
 	res.Content = string(blockedNumber)
 

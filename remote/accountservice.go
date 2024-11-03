@@ -11,7 +11,7 @@ import (
 	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 	"github.com/grassrootseconomics/eth-custodial/pkg/api"
 	"git.grassecon.net/urdt/ussd/config"
-	"git.grassecon.net/urdt/ussd/internal/models"
+	"git.grassecon.net/urdt/ussd/models"
 )
 
 var (

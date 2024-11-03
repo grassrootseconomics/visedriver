@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"git.grassecon.net/urdt/ussd/internal/models"
+	"git.grassecon.net/urdt/ussd/models"
 	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 )
 

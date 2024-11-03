@@ -2,6 +2,8 @@ package common
 
 import (
 	"encoding/binary"
+
+	"git.defalsify.org/vise.git/logging"
 )
 
 type DataTyp uint16
@@ -31,6 +33,10 @@ const (
 	DATA_ACTIVE_DECIMAL
 	DATA_ACTIVE_ADDRESS
 	DATA_TRANSACTIONS
+)
+
+var (
+	logg = logging.NewVanilla().WithDomain("urdt-common")
 )
 
 func typToBytes(typ DataTyp) []byte {

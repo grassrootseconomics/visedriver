@@ -23,6 +23,7 @@ type AccountServiceInterface interface {
 	TrackAccountStatus(ctx context.Context, publicKey string) (*models.TrackStatusResult, error)
 	FetchVouchers(ctx context.Context, publicKey string) ([]dataserviceapi.TokenHoldings, error)
 	FetchTransactions(ctx context.Context, publicKey string) ([]dataserviceapi.Last10TxResponse, error)
+	VoucherData(ctx context.Context, address string) (*models.VoucherDataResult, error)
 }
 
 type AccountService struct {
@@ -150,6 +151,26 @@ func (as *AccountService) FetchTransactions(ctx context.Context, publicKey strin
 	return r, nil
 }
 
+
+// VoucherData retrieves voucher metadata from the data indexer API endpoint.
+// Parameters:
+//   - address: The voucher address.
+func (as *AccountService) VoucherData(ctx context.Context, address string) (*models.VoucherDataResult, error) {
+	var voucherDataResult models.VoucherDataResult
+
+	ep, err := url.JoinPath(config.VoucherDataURL, address)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", ep, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = doCustodialRequest(ctx, req, &voucherDataResult)
+	return &voucherDataResult, err
+}
 
 func doRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKResponse, error) {
 	var okResponse  api.OKResponse

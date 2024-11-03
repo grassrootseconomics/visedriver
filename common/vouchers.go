@@ -84,6 +84,7 @@ func MatchVoucher(input, symbols, balances, decimals, addresses string) (symbol,
 	decList := strings.Split(decimals, "\n")
 	addrList := strings.Split(addresses, "\n")
 
+	logg.Tracef("found" , "symlist", symList, "syms", symbols, "input", input)
 	for i, sym := range symList {
 		parts := strings.SplitN(sym, ":", 2)
 
@@ -136,6 +137,7 @@ func GetTemporaryVoucherData(ctx context.Context, store DataStore, sessionId str
 
 // UpdateVoucherData sets the active voucher data and clears the temporary voucher data in the DataStore.
 func UpdateVoucherData(ctx context.Context, store DataStore, sessionId string, data *dataserviceapi.TokenHoldings) error {
+	logg.TraceCtxf(ctx, "dtal", "data", data)
 	// Active voucher data entries
 	activeEntries := map[DataTyp][]byte{
 		DATA_ACTIVE_SYM:     []byte(data.TokenSymbol),

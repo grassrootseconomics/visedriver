@@ -38,3 +38,8 @@ func (m *MockAccountService) FetchTransactions(ctx context.Context, publicKey st
 	args := m.Called(publicKey)
 	return args.Get(0).([]dataserviceapi.Last10TxResponse), args.Error(1)
 }
+
+func(m MockAccountService) VoucherData(ctx context.Context, address string) (*models.VoucherDataResult, error) {
+	args := m.Called(address)
+	return args.Get(0).(*models.VoucherDataResult), args.Error(1)
+}

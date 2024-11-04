@@ -46,3 +46,7 @@ func (tas *TestAccountService) FetchVouchers(ctx context.Context, publicKey stri
 func (tas *TestAccountService) FetchTransactions(ctx context.Context, publicKey string) ([]dataserviceapi.Last10TxResponse, error) {
 	return []dataserviceapi.Last10TxResponse{}, nil
 }
+
+func(m TestAccountService) VoucherData(ctx context.Context, address string) (*models.VoucherDataResult, error) {
+	return &models.VoucherDataResult{}, nil
+}

@@ -202,7 +202,6 @@ func doRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKRespons
 	if len(okResponse.Result) == 0 {
 		return nil, errors.New("Empty api result")
 	}
-	return &okResponse, nil
 
 	v, err := json.Marshal(okResponse.Result)
 	if err != nil {

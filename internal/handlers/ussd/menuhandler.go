@@ -1254,7 +1254,8 @@ func (h *Handlers) SetDefaultVoucher(ctx context.Context, sym string, input []by
 			// Fetch vouchers from the API using the public key
 			vouchersResp, err := h.accountService.FetchVouchers(ctx, string(publicKey))
 			if err != nil {
-				return res, err
+				res.FlagSet = append(res.FlagSet, flag_no_active_voucher)
+				return res, nil
 			}
 
 			// Return if there is no voucher

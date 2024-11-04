@@ -12,10 +12,10 @@ import (
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/state"
-	"git.grassecon.net/urdt/ussd/models"
 	"git.grassecon.net/urdt/ussd/internal/storage"
 	"git.grassecon.net/urdt/ussd/internal/testutil/mocks"
 	"git.grassecon.net/urdt/ussd/internal/testutil/testservice"
+	"git.grassecon.net/urdt/ussd/models"
 
 	"git.grassecon.net/urdt/ussd/common"
 	"github.com/alecthomas/assert/v2"
@@ -122,7 +122,7 @@ func TestCreateAccount(t *testing.T) {
 			name: "Test account creation success",
 			serverResponse: &models.AccountResult{
 				TrackingId: "1234567890",
-				PublicKey: "0xD3adB33f",
+				PublicKey:  "0xD3adB33f",
 			},
 			expectedResult: resource.Result{
 				FlagSet: []uint32{flag_account_created},
@@ -176,7 +176,7 @@ func TestSaveFirstname(t *testing.T) {
 	sessionId := "session123"
 	ctx, store := InitializeTestStore(t)
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
-	
+
 	fm, _ := NewFlagManager(flagsPath)
 
 	flag_allow_update, _ := fm.GetFlag("flag_allow_update")
@@ -215,7 +215,7 @@ func TestSaveFamilyname(t *testing.T) {
 	sessionId := "session123"
 	ctx, store := InitializeTestStore(t)
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
-	
+
 	fm, _ := NewFlagManager(flagsPath)
 
 	flag_allow_update, _ := fm.GetFlag("flag_allow_update")
@@ -254,7 +254,7 @@ func TestSaveYoB(t *testing.T) {
 	sessionId := "session123"
 	ctx, store := InitializeTestStore(t)
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
-	
+
 	fm, _ := NewFlagManager(flagsPath)
 
 	flag_allow_update, _ := fm.GetFlag("flag_allow_update")
@@ -265,7 +265,7 @@ func TestSaveYoB(t *testing.T) {
 
 	// Define test data
 	yob := "1980"
-	
+
 	if err := store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(yob)); err != nil {
 		t.Fatal(err)
 	}
@@ -293,7 +293,7 @@ func TestSaveLocation(t *testing.T) {
 	sessionId := "session123"
 	ctx, store := InitializeTestStore(t)
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
-	
+
 	fm, _ := NewFlagManager(flagsPath)
 
 	flag_allow_update, _ := fm.GetFlag("flag_allow_update")
@@ -304,7 +304,7 @@ func TestSaveLocation(t *testing.T) {
 
 	// Define test data
 	location := "Kilifi"
-	
+
 	if err := store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(location)); err != nil {
 		t.Fatal(err)
 	}
@@ -332,7 +332,7 @@ func TestSaveOfferings(t *testing.T) {
 	sessionId := "session123"
 	ctx, store := InitializeTestStore(t)
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
-	
+
 	fm, _ := NewFlagManager(flagsPath)
 
 	flag_allow_update, _ := fm.GetFlag("flag_allow_update")
@@ -371,7 +371,7 @@ func TestSaveGender(t *testing.T) {
 	sessionId := "session123"
 	ctx, store := InitializeTestStore(t)
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
-	
+
 	fm, _ := NewFlagManager(flagsPath)
 
 	flag_allow_update, _ := fm.GetFlag("flag_allow_update")
@@ -1746,9 +1746,9 @@ func TestFetchCustodialBalances(t *testing.T) {
 	}
 
 	tests := []struct {
-		name           string
+		name            string
 		balanceResponse *models.BalanceResult
-		expectedResult resource.Result
+		expectedResult  resource.Result
 	}{
 		{
 			name: "Test when fetch custodial balances is not a success",
@@ -1807,16 +1807,15 @@ func TestSetDefaultVoucher(t *testing.T) {
 		expectedResult resource.Result
 	}{
 		{
-			name: "Test no vouchers available",
-			vouchersResp: []dataserviceapi.TokenHoldings {
-			},
+			name:         "Test no vouchers available",
+			vouchersResp: []dataserviceapi.TokenHoldings{},
 			expectedResult: resource.Result{
 				FlagSet: []uint32{flag_no_active_voucher},
 			},
 		},
 		{
 			name: "Test set default voucher when no active voucher is set",
-			vouchersResp: []dataserviceapi.TokenHoldings {
+			vouchersResp: []dataserviceapi.TokenHoldings{
 				dataserviceapi.TokenHoldings{
 					ContractAddress: "0x123",
 					TokenSymbol:     "TOKEN1",

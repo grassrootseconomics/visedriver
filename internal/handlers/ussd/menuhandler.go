@@ -20,8 +20,8 @@ import (
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/state"
 	"git.grassecon.net/urdt/ussd/common"
-	"git.grassecon.net/urdt/ussd/remote"
 	"git.grassecon.net/urdt/ussd/internal/utils"
+	"git.grassecon.net/urdt/ussd/remote"
 	"gopkg.in/leonelquinteros/gotext.v1"
 
 	"git.grassecon.net/urdt/ussd/internal/storage"
@@ -1389,7 +1389,6 @@ func (h *Handlers) SetVoucher(ctx context.Context, sym string, input []byte) (re
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-
 
 	// Get temporary data
 	tempData, err := common.GetTemporaryVoucherData(ctx, h.userdataStore, sessionId)

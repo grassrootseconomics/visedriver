@@ -1,4 +1,4 @@
-package utils
+package common
 
 import (
 	"context"
@@ -36,6 +36,15 @@ func ProcessVouchers(holdings []dataserviceapi.TokenHoldings) VoucherMetadata {
 
 	return data
 }
+
+//func StoreVouchers(db storage.PrefixDb, data VoucherMetadata) {
+//		value, err := db.Put(ctx, []byte(key))
+//		if err != nil {
+//			return nil, fmt.Errorf("failed to get %s: %v", key, err)
+//		}
+//		data[key] = string(value)
+//	}
+//}
 
 // GetVoucherData retrieves and matches voucher data
 func GetVoucherData(ctx context.Context, db storage.PrefixDb, input string) (*dataserviceapi.TokenHoldings, error) {
@@ -75,6 +84,7 @@ func MatchVoucher(input, symbols, balances, decimals, addresses string) (symbol,
 	decList := strings.Split(decimals, "\n")
 	addrList := strings.Split(addresses, "\n")
 
+	logg.Tracef("found" , "symlist", symList, "syms", symbols, "input", input)
 	for i, sym := range symList {
 		parts := strings.SplitN(sym, ":", 2)
 
@@ -125,8 +135,9 @@ func GetTemporaryVoucherData(ctx context.Context, store DataStore, sessionId str
 	return data, nil
 }
 
-// UpdateVoucherData sets the active voucher data in the DataStore.
+// UpdateVoucherData sets the active voucher data and clears the temporary voucher data in the DataStore.
 func UpdateVoucherData(ctx context.Context, store DataStore, sessionId string, data *dataserviceapi.TokenHoldings) error {
+	logg.TraceCtxf(ctx, "dtal", "data", data)
 	// Active voucher data entries
 	activeEntries := map[DataTyp][]byte{
 		DATA_ACTIVE_SYM:     []byte(data.TokenSymbol),

@@ -12,14 +12,14 @@ import (
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/state"
-	"git.grassecon.net/urdt/ussd/internal/models"
 	"git.grassecon.net/urdt/ussd/internal/storage"
 	"git.grassecon.net/urdt/ussd/internal/testutil/mocks"
 	"git.grassecon.net/urdt/ussd/internal/testutil/testservice"
+	"git.grassecon.net/urdt/ussd/models"
 
-	"git.grassecon.net/urdt/ussd/internal/utils"
+	"git.grassecon.net/urdt/ussd/common"
 	"github.com/alecthomas/assert/v2"
-	"github.com/grassrootseconomics/eth-custodial/pkg/api"
+
 	testdataloader "github.com/peteole/testdata-loader"
 	"github.com/stretchr/testify/require"
 
@@ -33,7 +33,7 @@ var (
 )
 
 // InitializeTestStore sets up and returns an in-memory database and store.
-func InitializeTestStore(t *testing.T) (context.Context, *utils.UserDataStore) {
+func InitializeTestStore(t *testing.T) (context.Context, *common.UserDataStore) {
 	ctx := context.Background()
 
 	// Initialize memDb
@@ -42,7 +42,7 @@ func InitializeTestStore(t *testing.T) (context.Context, *utils.UserDataStore) {
 	require.NoError(t, err, "Failed to connect to memDb")
 
 	// Create UserDataStore with memDb
-	store := &utils.UserDataStore{Db: db}
+	store := &common.UserDataStore{Db: db}
 
 	t.Cleanup(func() {
 		db.Close() // Ensure the DB is closed after each test
@@ -71,7 +71,7 @@ func TestNewHandlers(t *testing.T) {
 		t.Logf(err.Error())
 	}
 	t.Run("Valid UserDataStore", func(t *testing.T) {
-		handlers, err := NewHandlers(fm.parser, store, &accountService)
+		handlers, err := NewHandlers(fm.parser, store, nil, &accountService)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -85,7 +85,7 @@ func TestNewHandlers(t *testing.T) {
 
 	// Test case for nil userdataStore
 	t.Run("Nil UserDataStore", func(t *testing.T) {
-		handlers, err := NewHandlers(fm.parser, nil, &accountService)
+		handlers, err := NewHandlers(fm.parser, nil, nil, &accountService)
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}
@@ -115,18 +115,14 @@ func TestCreateAccount(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		serverResponse *api.OKResponse
+		serverResponse *models.AccountResult
 		expectedResult resource.Result
 	}{
 		{
 			name: "Test account creation success",
-			serverResponse: &api.OKResponse{
-				Ok:          true,
-				Description: "Account creation successed",
-				Result: map[string]any{
-					"trackingId": "1234567890",
-					"publicKey":  "0xD3adB33f",
-				},
+			serverResponse: &models.AccountResult{
+				TrackingId: "1234567890",
+				PublicKey:  "0xD3adB33f",
 			},
 			expectedResult: resource.Result{
 				FlagSet: []uint32{flag_account_created},
@@ -180,7 +176,7 @@ func TestSaveFirstname(t *testing.T) {
 	sessionId := "session123"
 	ctx, store := InitializeTestStore(t)
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
-	
+
 	fm, _ := NewFlagManager(flagsPath)
 
 	flag_allow_update, _ := fm.GetFlag("flag_allow_update")
@@ -192,7 +188,7 @@ func TestSaveFirstname(t *testing.T) {
 	// Define test data
 	firstName := "John"
 
-	if err := store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(firstName)); err != nil {
+	if err := store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(firstName)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -211,7 +207,7 @@ func TestSaveFirstname(t *testing.T) {
 	assert.Equal(t, resource.Result{}, res)
 
 	// Verify that the DATA_FIRST_NAME entry has been updated with the temporary value
-	storedFirstName, _ := store.ReadEntry(ctx, sessionId, utils.DATA_FIRST_NAME)
+	storedFirstName, _ := store.ReadEntry(ctx, sessionId, common.DATA_FIRST_NAME)
 	assert.Equal(t, firstName, string(storedFirstName))
 }
 
@@ -219,7 +215,7 @@ func TestSaveFamilyname(t *testing.T) {
 	sessionId := "session123"
 	ctx, store := InitializeTestStore(t)
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
-	
+
 	fm, _ := NewFlagManager(flagsPath)
 
 	flag_allow_update, _ := fm.GetFlag("flag_allow_update")
@@ -231,7 +227,7 @@ func TestSaveFamilyname(t *testing.T) {
 	// Define test data
 	familyName := "Doeee"
 
-	if err := store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(familyName)); err != nil {
+	if err := store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(familyName)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -250,7 +246,7 @@ func TestSaveFamilyname(t *testing.T) {
 	assert.Equal(t, resource.Result{}, res)
 
 	// Verify that the DATA_FAMILY_NAME entry has been updated with the temporary value
-	storedFamilyName, _ := store.ReadEntry(ctx, sessionId, utils.DATA_FAMILY_NAME)
+	storedFamilyName, _ := store.ReadEntry(ctx, sessionId, common.DATA_FAMILY_NAME)
 	assert.Equal(t, familyName, string(storedFamilyName))
 }
 
@@ -258,7 +254,7 @@ func TestSaveYoB(t *testing.T) {
 	sessionId := "session123"
 	ctx, store := InitializeTestStore(t)
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
-	
+
 	fm, _ := NewFlagManager(flagsPath)
 
 	flag_allow_update, _ := fm.GetFlag("flag_allow_update")
@@ -269,8 +265,8 @@ func TestSaveYoB(t *testing.T) {
 
 	// Define test data
 	yob := "1980"
-	
-	if err := store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(yob)); err != nil {
+
+	if err := store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(yob)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -289,7 +285,7 @@ func TestSaveYoB(t *testing.T) {
 	assert.Equal(t, resource.Result{}, res)
 
 	// Verify that the DATA_YOB entry has been updated with the temporary value
-	storedYob, _ := store.ReadEntry(ctx, sessionId, utils.DATA_YOB)
+	storedYob, _ := store.ReadEntry(ctx, sessionId, common.DATA_YOB)
 	assert.Equal(t, yob, string(storedYob))
 }
 
@@ -297,7 +293,7 @@ func TestSaveLocation(t *testing.T) {
 	sessionId := "session123"
 	ctx, store := InitializeTestStore(t)
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
-	
+
 	fm, _ := NewFlagManager(flagsPath)
 
 	flag_allow_update, _ := fm.GetFlag("flag_allow_update")
@@ -308,8 +304,8 @@ func TestSaveLocation(t *testing.T) {
 
 	// Define test data
 	location := "Kilifi"
-	
-	if err := store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(location)); err != nil {
+
+	if err := store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(location)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -328,7 +324,7 @@ func TestSaveLocation(t *testing.T) {
 	assert.Equal(t, resource.Result{}, res)
 
 	// Verify that the DATA_LOCATION entry has been updated with the temporary value
-	storedLocation, _ := store.ReadEntry(ctx, sessionId, utils.DATA_LOCATION)
+	storedLocation, _ := store.ReadEntry(ctx, sessionId, common.DATA_LOCATION)
 	assert.Equal(t, location, string(storedLocation))
 }
 
@@ -336,7 +332,7 @@ func TestSaveOfferings(t *testing.T) {
 	sessionId := "session123"
 	ctx, store := InitializeTestStore(t)
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
-	
+
 	fm, _ := NewFlagManager(flagsPath)
 
 	flag_allow_update, _ := fm.GetFlag("flag_allow_update")
@@ -348,7 +344,7 @@ func TestSaveOfferings(t *testing.T) {
 	// Define test data
 	offerings := "Bananas"
 
-	if err := store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(offerings)); err != nil {
+	if err := store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(offerings)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -367,7 +363,7 @@ func TestSaveOfferings(t *testing.T) {
 	assert.Equal(t, resource.Result{}, res)
 
 	// Verify that the DATA_OFFERINGS entry has been updated with the temporary value
-	storedOfferings, _ := store.ReadEntry(ctx, sessionId, utils.DATA_OFFERINGS)
+	storedOfferings, _ := store.ReadEntry(ctx, sessionId, common.DATA_OFFERINGS)
 	assert.Equal(t, offerings, string(storedOfferings))
 }
 
@@ -375,7 +371,7 @@ func TestSaveGender(t *testing.T) {
 	sessionId := "session123"
 	ctx, store := InitializeTestStore(t)
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
-	
+
 	fm, _ := NewFlagManager(flagsPath)
 
 	flag_allow_update, _ := fm.GetFlag("flag_allow_update")
@@ -413,7 +409,7 @@ func TestSaveGender(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(tt.expectedGender)); err != nil {
+			if err := store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(tt.expectedGender)); err != nil {
 				t.Fatal(err)
 			}
 
@@ -433,7 +429,7 @@ func TestSaveGender(t *testing.T) {
 			assert.Equal(t, resource.Result{}, res)
 
 			// Verify that the DATA_GENDER entry has been updated with the temporary value
-			storedGender, _ := store.ReadEntry(ctx, sessionId, utils.DATA_GENDER)
+			storedGender, _ := store.ReadEntry(ctx, sessionId, common.DATA_GENDER)
 			assert.Equal(t, tt.expectedGender, string(storedGender))
 		})
 	}
@@ -487,7 +483,6 @@ func TestSaveTemporaryPin(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-
 			// Assert that the Result FlagSet has the required flags after language switch
 			assert.Equal(t, res, tt.expectedResult, "Result should match expected result")
 		})
@@ -518,7 +513,7 @@ func TestCheckIdentifier(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := store.WriteEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY, []byte(tt.publicKey))
+			err := store.WriteEntry(ctx, sessionId, common.DATA_PUBLIC_KEY, []byte(tt.publicKey))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -562,12 +557,12 @@ func TestGetAmount(t *testing.T) {
 	amount := "0.03"
 	activeSym := "SRF"
 
-	err := store.WriteEntry(ctx, sessionId, utils.DATA_AMOUNT, []byte(amount))
+	err := store.WriteEntry(ctx, sessionId, common.DATA_AMOUNT, []byte(amount))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = store.WriteEntry(ctx, sessionId, utils.DATA_ACTIVE_SYM, []byte(activeSym))
+	err = store.WriteEntry(ctx, sessionId, common.DATA_ACTIVE_SYM, []byte(activeSym))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -593,7 +588,7 @@ func TestGetRecipient(t *testing.T) {
 
 	recepient := "0xcasgatweksalw1018221"
 
-	err := store.WriteEntry(ctx, sessionId, utils.DATA_RECIPIENT, []byte(recepient))
+	err := store.WriteEntry(ctx, sessionId, common.DATA_RECIPIENT, []byte(recepient))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -722,12 +717,12 @@ func TestResetAllowUpdate(t *testing.T) {
 
 func TestResetAccountAuthorized(t *testing.T) {
 	fm, err := NewFlagManager(flagsPath)
-
-	flag_account_authorized, _ := fm.parser.GetFlag("flag_account_authorized")
-
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	flag_account_authorized, _ := fm.parser.GetFlag("flag_account_authorized")
+
 	// Define test cases
 	tests := []struct {
 		name           string
@@ -745,7 +740,6 @@ func TestResetAccountAuthorized(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			// Create the Handlers instance with the mock flag manager
 			h := &Handlers{
 				flagManager: fm.parser,
@@ -904,10 +898,7 @@ func TestAuthorize(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create context with session ID
-			ctx := context.WithValue(context.Background(), "SessionId", sessionId)
-
-			err = store.WriteEntry(ctx, sessionId, utils.DATA_ACCOUNT_PIN, []byte(accountPIN))
+			err = store.WriteEntry(ctx, sessionId, common.DATA_ACCOUNT_PIN, []byte(accountPIN))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1034,7 +1025,7 @@ func TestVerifyCreatePin(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err = store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte("1234"))
+			err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte("1234"))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1067,18 +1058,14 @@ func TestCheckAccountStatus(t *testing.T) {
 	tests := []struct {
 		name           string
 		publicKey      []byte
-		serverResponse *api.OKResponse
+		response       *models.TrackStatusResult
 		expectedResult resource.Result
 	}{
 		{
 			name:      "Test when account is on the Sarafu network",
 			publicKey: []byte("TrackingId1234"),
-			serverResponse: &api.OKResponse{
-				Ok:          true,
-				Description: "Account creation succeeded",
-				Result: map[string]any{
-					"active": true,
-				},
+			response: &models.TrackStatusResult{
+				Active: true,
 			},
 			expectedResult: resource.Result{
 				FlagSet:   []uint32{flag_account_success},
@@ -1088,12 +1075,8 @@ func TestCheckAccountStatus(t *testing.T) {
 		{
 			name:      "Test when the account is not yet on the sarafu network",
 			publicKey: []byte("TrackingId1234"),
-			serverResponse: &api.OKResponse{
-				Ok:          true,
-				Description: "Account creation succeeded",
-				Result: map[string]any{
-					"active": false,
-				},
+			response: &models.TrackStatusResult{
+				Active: false,
 			},
 			expectedResult: resource.Result{
 				FlagSet:   []uint32{flag_account_pending},
@@ -1111,12 +1094,12 @@ func TestCheckAccountStatus(t *testing.T) {
 				flagManager:    fm.parser,
 			}
 
-			err = store.WriteEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY, []byte(tt.publicKey))
+			err = store.WriteEntry(ctx, sessionId, common.DATA_PUBLIC_KEY, []byte(tt.publicKey))
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			mockAccountService.On("TrackAccountStatus", string(tt.publicKey)).Return(tt.serverResponse, nil)
+			mockAccountService.On("TrackAccountStatus", string(tt.publicKey)).Return(tt.response, nil)
 
 			// Call the method under test
 			res, _ := h.CheckAccountStatus(ctx, "check_account_status", []byte(""))
@@ -1264,15 +1247,15 @@ func TestInitiateTransaction(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := store.WriteEntry(ctx, sessionId, utils.DATA_AMOUNT, []byte(tt.Amount))
+			err := store.WriteEntry(ctx, sessionId, common.DATA_AMOUNT, []byte(tt.Amount))
 			if err != nil {
 				t.Fatal(err)
 			}
-			err = store.WriteEntry(ctx, sessionId, utils.DATA_RECIPIENT, []byte(tt.Recipient))
+			err = store.WriteEntry(ctx, sessionId, common.DATA_RECIPIENT, []byte(tt.Recipient))
 			if err != nil {
 				t.Fatal(err)
 			}
-			err = store.WriteEntry(ctx, sessionId, utils.DATA_ACTIVE_SYM, []byte(tt.ActiveSym))
+			err = store.WriteEntry(ctx, sessionId, common.DATA_ACTIVE_SYM, []byte(tt.ActiveSym))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1446,7 +1429,7 @@ func TestValidateAmount(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := store.WriteEntry(ctx, sessionId, utils.DATA_ACTIVE_BAL, []byte(tt.activeBal))
+			err := store.WriteEntry(ctx, sessionId, common.DATA_ACTIVE_BAL, []byte(tt.activeBal))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1550,11 +1533,11 @@ func TestCheckBalance(t *testing.T) {
 				accountService: mockAccountService,
 			}
 
-			err := store.WriteEntry(ctx, tt.sessionId, utils.DATA_ACTIVE_SYM, []byte(tt.activeSym))
+			err := store.WriteEntry(ctx, tt.sessionId, common.DATA_ACTIVE_SYM, []byte(tt.activeSym))
 			if err != nil {
 				t.Fatal(err)
 			}
-			err = store.WriteEntry(ctx, tt.sessionId, utils.DATA_ACTIVE_BAL, []byte(tt.activeBal))
+			err = store.WriteEntry(ctx, tt.sessionId, common.DATA_ACTIVE_BAL, []byte(tt.activeBal))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1589,13 +1572,13 @@ func TestGetProfile(t *testing.T) {
 	tests := []struct {
 		name         string
 		languageCode string
-		keys         []utils.DataTyp
+		keys         []common.DataTyp
 		profileInfo  []string
 		result       resource.Result
 	}{
 		{
 			name:         "Test with full profile information in eng",
-			keys:         []utils.DataTyp{utils.DATA_FAMILY_NAME, utils.DATA_FIRST_NAME, utils.DATA_GENDER, utils.DATA_OFFERINGS, utils.DATA_LOCATION, utils.DATA_YOB},
+			keys:         []common.DataTyp{common.DATA_FAMILY_NAME, common.DATA_FIRST_NAME, common.DATA_GENDER, common.DATA_OFFERINGS, common.DATA_LOCATION, common.DATA_YOB},
 			profileInfo:  []string{"Doee", "John", "Male", "Bananas", "Kilifi", "1976"},
 			languageCode: "eng",
 			result: resource.Result{
@@ -1607,7 +1590,7 @@ func TestGetProfile(t *testing.T) {
 		},
 		{
 			name:         "Test with with profile information in swa",
-			keys:         []utils.DataTyp{utils.DATA_FAMILY_NAME, utils.DATA_FIRST_NAME, utils.DATA_GENDER, utils.DATA_OFFERINGS, utils.DATA_LOCATION, utils.DATA_YOB},
+			keys:         []common.DataTyp{common.DATA_FAMILY_NAME, common.DATA_FIRST_NAME, common.DATA_GENDER, common.DATA_OFFERINGS, common.DATA_LOCATION, common.DATA_YOB},
 			profileInfo:  []string{"Doee", "John", "Male", "Bananas", "Kilifi", "1976"},
 			languageCode: "swa",
 			result: resource.Result{
@@ -1619,7 +1602,7 @@ func TestGetProfile(t *testing.T) {
 		},
 		{
 			name:         "Test with with profile information with language that is not yet supported",
-			keys:         []utils.DataTyp{utils.DATA_FAMILY_NAME, utils.DATA_FIRST_NAME, utils.DATA_GENDER, utils.DATA_OFFERINGS, utils.DATA_LOCATION, utils.DATA_YOB},
+			keys:         []common.DataTyp{common.DATA_FAMILY_NAME, common.DATA_FIRST_NAME, common.DATA_GENDER, common.DATA_OFFERINGS, common.DATA_LOCATION, common.DATA_YOB},
 			profileInfo:  []string{"Doee", "John", "Male", "Bananas", "Kilifi", "1976"},
 			languageCode: "nor",
 			result: resource.Result{
@@ -1728,7 +1711,7 @@ func TestConfirmPin(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Set up the expected behavior of the mock
-			err := store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(tt.temporarypin))
+			err := store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(tt.temporarypin))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1757,43 +1740,21 @@ func TestFetchCustodialBalances(t *testing.T) {
 	ctx, store := InitializeTestStore(t)
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
 
-	err = store.WriteEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY, []byte(publicKey))
+	err = store.WriteEntry(ctx, sessionId, common.DATA_PUBLIC_KEY, []byte(publicKey))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	tests := []struct {
-		name           string
-		balanceResonse *models.BalanceResponse
-		expectedResult resource.Result
+		name            string
+		balanceResponse *models.BalanceResult
+		expectedResult  resource.Result
 	}{
 		{
 			name: "Test when fetch custodial balances is not a success",
-			balanceResonse: &models.BalanceResponse{
-				Ok: false,
-				Result: struct {
-					Balance string      `json:"balance"`
-					Nonce   json.Number `json:"nonce"`
-				}{
-					Balance: "0.003 CELO",
-					Nonce:   json.Number("0"),
-				},
-			},
-			expectedResult: resource.Result{
-				FlagSet: []uint32{flag_api_error},
-			},
-		},
-		{
-			name: "Test when fetch custodial balances is a success",
-			balanceResonse: &models.BalanceResponse{
-				Ok: true,
-				Result: struct {
-					Balance string      `json:"balance"`
-					Nonce   json.Number `json:"nonce"`
-				}{
-					Balance: "0.003 CELO",
-					Nonce:   json.Number("0"),
-				},
+			balanceResponse: &models.BalanceResult{
+				Balance: "0.003 CELO",
+				Nonce:   json.Number("0"),
 			},
 			expectedResult: resource.Result{
 				FlagReset: []uint32{flag_api_error},
@@ -1813,7 +1774,7 @@ func TestFetchCustodialBalances(t *testing.T) {
 			}
 
 			// Set up the expected behavior of the mock
-			mockAccountService.On("CheckBalance", string(publicKey)).Return(tt.balanceResonse, nil)
+			mockAccountService.On("CheckBalance", string(publicKey)).Return(tt.balanceResponse, nil)
 
 			// Call the method
 			res, _ := h.FetchCustodialBalances(ctx, "fetch_custodial_balances", []byte(""))
@@ -1833,28 +1794,33 @@ func TestSetDefaultVoucher(t *testing.T) {
 	if err != nil {
 		t.Logf(err.Error())
 	}
+	flag_no_active_voucher, err := fm.GetFlag("flag_no_active_voucher")
+	if err != nil {
+		t.Logf(err.Error())
+	}
 
 	publicKey := "0X13242618721"
 
 	tests := []struct {
 		name           string
-		vouchersResp   *models.VoucherHoldingResponse
+		vouchersResp   []dataserviceapi.TokenHoldings
 		expectedResult resource.Result
 	}{
 		{
+			name:         "Test no vouchers available",
+			vouchersResp: []dataserviceapi.TokenHoldings{},
+			expectedResult: resource.Result{
+				FlagSet: []uint32{flag_no_active_voucher},
+			},
+		},
+		{
 			name: "Test set default voucher when no active voucher is set",
-			vouchersResp: &models.VoucherHoldingResponse{
-				Ok:          true,
-				Description: "Vouchers fetched successfully",
-				Result: models.VoucherResult{
-					Holdings: []dataserviceapi.TokenHoldings{
-						{
-							ContractAddress: "0x123",
-							TokenSymbol:     "TOKEN1",
-							TokenDecimals:   "18",
-							Balance:         "100",
-						},
-					},
+			vouchersResp: []dataserviceapi.TokenHoldings{
+				dataserviceapi.TokenHoldings{
+					ContractAddress: "0x123",
+					TokenSymbol:     "TOKEN1",
+					TokenDecimals:   "18",
+					Balance:         "100",
 				},
 			},
 			expectedResult: resource.Result{},
@@ -1871,14 +1837,14 @@ func TestSetDefaultVoucher(t *testing.T) {
 				flagManager:    fm.parser,
 			}
 
-			err := store.WriteEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY, []byte(publicKey))
+			err := store.WriteEntry(ctx, sessionId, common.DATA_PUBLIC_KEY, []byte(publicKey))
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			mockAccountService.On("FetchVouchers", string(publicKey)).Return(tt.vouchersResp, nil)
 
-			res, err := h.SetDefaultVoucher(ctx, "set_default_voucher", []byte(""))
+			res, err := h.SetDefaultVoucher(ctx, "set_default_voucher", []byte("some-input"))
 
 			assert.NoError(t, err)
 
@@ -1904,13 +1870,12 @@ func TestCheckVouchers(t *testing.T) {
 		prefixDb:       spdb,
 	}
 
-	err := store.WriteEntry(ctx, sessionId, utils.DATA_PUBLIC_KEY, []byte(publicKey))
+	err := store.WriteEntry(ctx, sessionId, common.DATA_PUBLIC_KEY, []byte(publicKey))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	mockVouchersResponse := &models.VoucherHoldingResponse{}
-	mockVouchersResponse.Result.Holdings = []dataserviceapi.TokenHoldings{
+	mockVouchersResponse := []dataserviceapi.TokenHoldings{
 		{ContractAddress: "0xd4c288865Ce", TokenSymbol: "SRF", TokenDecimals: "6", Balance: "100"},
 		{ContractAddress: "0x41c188d63Qa", TokenSymbol: "MILO", TokenDecimals: "4", Balance: "200"},
 	}
@@ -2018,7 +1983,7 @@ func TestSetVoucher(t *testing.T) {
 	expectedData := fmt.Sprintf("%s,%s,%s,%s", tempData.TokenSymbol, tempData.Balance, tempData.TokenDecimals, tempData.ContractAddress)
 
 	// store the expectedData
-	if err := store.WriteEntry(ctx, sessionId, utils.DATA_TEMPORARY_VALUE, []byte(expectedData)); err != nil {
+	if err := store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(expectedData)); err != nil {
 		t.Fatal(err)
 	}
 

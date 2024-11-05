@@ -8,9 +8,10 @@ import (
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
-	"git.grassecon.net/urdt/ussd/internal/handlers/server"
+
 	"git.grassecon.net/urdt/ussd/internal/handlers/ussd"
 	"git.grassecon.net/urdt/ussd/internal/utils"
+	"git.grassecon.net/urdt/ussd/remote"
 )
 
 type HandlerService interface {
@@ -62,7 +63,7 @@ func (ls *LocalHandlerService) SetDataStore(db *db.Db) {
 	ls.UserdataStore = db
 }
 
-func (ls *LocalHandlerService) GetHandler(accountService server.AccountServiceInterface) (*ussd.Handlers, error) {
+func (ls *LocalHandlerService) GetHandler(accountService remote.AccountServiceInterface) (*ussd.Handlers, error) {
 	ussdHandlers, err := ussd.NewHandlers(ls.Parser, *ls.UserdataStore, ls.AdminStore, accountService)
 	if err != nil {
 		return nil, err

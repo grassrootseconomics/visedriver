@@ -1,14 +1,14 @@
-package utils
+package common
 
 import (
 	"context"
 	"fmt"
 	"testing"
 
-	"git.grassecon.net/urdt/ussd/internal/storage"
 	"github.com/alecthomas/assert/v2"
 	"github.com/stretchr/testify/require"
 
+	"git.grassecon.net/urdt/ussd/internal/storage"
 	memdb "git.defalsify.org/vise.git/db/mem"
 	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 )
@@ -132,7 +132,6 @@ func TestStoreTemporaryVoucher(t *testing.T) {
 	storedValue, err := store.ReadEntry(ctx, sessionId, DATA_TEMPORARY_VALUE)
 	require.NoError(t, err)
 	require.Equal(t, expectedData, string(storedValue), "Mismatch for key %v", DATA_TEMPORARY_VALUE)
-
 }
 
 func TestGetTemporaryVoucherData(t *testing.T) {

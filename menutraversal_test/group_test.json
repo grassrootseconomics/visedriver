@@ -54,7 +54,7 @@
                 },
                 {
                     "input": "1235",
-                    "expectedContent": "Incorrect pin\n1:retry\n9:Quit"
+                    "expectedContent": "Incorrect pin\n1:Retry\n9:Quit"
                 },
                 {
                     "input": "1",
@@ -95,7 +95,7 @@
                 },
                 {
                     "input": "1235",
-                    "expectedContent": "Incorrect pin\n1:retry\n9:Quit"
+                    "expectedContent": "Incorrect pin\n1:Retry\n9:Quit"
                 },
                 {
                     "input": "1",
@@ -141,7 +141,7 @@
                 },
                 {
                     "input": "1235",
-                    "expectedContent": "Incorrect pin\n1:retry\n9:Quit"
+                    "expectedContent": "Incorrect pin\n1:Retry\n9:Quit"
                 },
                 {
                     "input": "1",

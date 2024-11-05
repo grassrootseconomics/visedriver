@@ -23,7 +23,7 @@
                     },
                     {
                         "input": "1111",
-                        "expectedContent": "The PIN is not a match. Try again\n1:retry\n9:Quit"
+                        "expectedContent": "The PIN is not a match. Try again\n1:Retry\n9:Quit"
                     },
                     {
                         "input": "1",
@@ -65,7 +65,7 @@
                     },
                     {
                         "input": "000",
-                        "expectedContent": "000 is not registered or invalid, please try again:\n1:retry\n9:Quit"
+                        "expectedContent": "000 is not registered or invalid, please try again:\n1:Retry\n9:Quit"
                     },
                     {
                         "input": "1",
@@ -77,7 +77,7 @@
                     },
                     {
                         "input": "10000000",
-                        "expectedContent": "Amount 10000000 is invalid, please try again:\n1:retry\n9:Quit"
+                        "expectedContent": "Amount 10000000 is invalid, please try again:\n1:Retry\n9:Quit"
                     },
                     {
                         "input": "1",
@@ -89,7 +89,7 @@
                     },
                     {
                         "input": "1222",
-                        "expectedContent": "Incorrect pin\n1:retry\n9:Quit"
+                        "expectedContent": "Incorrect pin\n1:Retry\n9:Quit"
                     },
                     {
                         "input": "1",
@@ -140,7 +140,7 @@
                     },
                     {
                         "input": "6",
-                        "expectedContent": "Address: {public_key}\n9:Quit"
+                        "expectedContent": "Address: {public_key}\n0:Back\n9:Quit"
                     },
                     {
                         "input": "9",

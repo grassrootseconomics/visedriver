@@ -1,6 +1,7 @@
 package remote
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -8,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 
 	"git.grassecon.net/urdt/ussd/config"
 	"git.grassecon.net/urdt/ussd/models"
@@ -186,6 +188,7 @@ func doRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKRespons
 	}
 	defer resp.Body.Close()
 
+	InfoLogger.Printf("Received response for %s: Status Code: %d | Content-Type: %s", req.URL, resp.StatusCode, resp.Header.Get("Content-Type"))
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -216,10 +219,30 @@ func doRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKRespons
 
 func doCustodialRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKResponse, error) {
 	req.Header.Set("X-GE-KEY", config.CustodialAPIKey)
+	logRequestDetails(req, config.CustodialAPIKey)
 	return doRequest(ctx, req, rcpt)
 }
 
 func doDataRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKResponse, error) {
 	req.Header.Set("X-GE-KEY", config.DataAPIKey)
+	logRequestDetails(req, config.CustodialAPIKey)
 	return doRequest(ctx, req, rcpt)
+}
+
+func logRequestDetails(req *http.Request, apiKey string) {
+	var bodyBytes []byte
+	contentType := req.Header.Get("Content-Type")
+	if req.Body != nil {
+		bodyBytes, err := io.ReadAll(req.Body)
+		if err != nil {
+			ErrorLogger.Printf("Error reading request body: %s", err)
+			return
+		}
+		req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+	} else {
+		bodyBytes = []byte("-")
+	}
+
+	InfoLogger.Printf("URL: %s  | Content-Type: %s | Method: %s| Request Body: %s", req.URL, contentType, req.Method, string(bodyBytes))
+
 }

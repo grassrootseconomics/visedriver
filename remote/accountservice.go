@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 
 	"git.grassecon.net/urdt/ussd/config"
 	"git.grassecon.net/urdt/ussd/models"
@@ -178,8 +177,6 @@ func doRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKRespons
 	var okResponse api.OKResponse
 	var errResponse api.ErrResponse
 
-	InfoLogger.Printf("Outgoing request:", req.URL, req.Body)
-
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -219,17 +216,17 @@ func doRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKRespons
 
 func doCustodialRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKResponse, error) {
 	req.Header.Set("X-GE-KEY", config.CustodialAPIKey)
-	logRequestDetails(req, config.CustodialAPIKey)
+	logRequestDetails(req)
 	return doRequest(ctx, req, rcpt)
 }
 
 func doDataRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKResponse, error) {
 	req.Header.Set("X-GE-KEY", config.DataAPIKey)
-	logRequestDetails(req, config.CustodialAPIKey)
+	logRequestDetails(req)
 	return doRequest(ctx, req, rcpt)
 }
 
-func logRequestDetails(req *http.Request, apiKey string) {
+func logRequestDetails(req *http.Request) {
 	var bodyBytes []byte
 	contentType := req.Header.Get("Content-Type")
 	if req.Body != nil {
@@ -244,5 +241,4 @@ func logRequestDetails(req *http.Request, apiKey string) {
 	}
 
 	InfoLogger.Printf("URL: %s  | Content-Type: %s | Method: %s| Request Body: %s", req.URL, contentType, req.Method, string(bodyBytes))
-
 }

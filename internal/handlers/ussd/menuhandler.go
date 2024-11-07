@@ -1153,6 +1153,95 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 	return res, nil
 }
 
+func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	var profileInfo []byte
+	var err error
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+	sm, _ := h.st.Where()
+	parts := strings.SplitN(sm, "_", 2)
+	filename := parts[1]
+	dbKeyStr := "DATA_" + strings.ToUpper(filename)
+	dbKey, err := common.StringToDataTyp(dbKeyStr)
+
+	if err != nil {
+		return res, err
+	}
+	store := h.userdataStore
+
+	switch dbKey {
+	case common.DATA_FIRST_NAME:
+		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_FIRST_NAME)
+		if err != nil {
+			if db.IsNotFound(err) {
+				res.Content = "-"
+				break
+			}
+			return res, err
+		}
+		res.Content = string(profileInfo)
+	case common.DATA_FAMILY_NAME:
+		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_FAMILY_NAME)
+		if err != nil {
+			if db.IsNotFound(err) {
+				res.Content = "-"
+				break
+			}
+			return res, err
+		}
+		res.Content = string(profileInfo)
+
+	case common.DATA_GENDER:
+		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_GENDER)
+		if err != nil {
+			if db.IsNotFound(err) {
+				res.Content = "-"
+				break
+			}
+			return res, err
+		}
+		res.Content = string(profileInfo)
+	case common.DATA_YOB:
+		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_YOB)
+		if err != nil {
+			if db.IsNotFound(err) {
+				res.Content = "-"
+				break
+			}
+			return res, err
+		}
+		res.Content = string(profileInfo)
+
+	case common.DATA_LOCATION:
+		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_LOCATION)
+		if err != nil {
+			if db.IsNotFound(err) {
+				res.Content = "-"
+				break
+			}
+			return res, err
+		}
+		res.Content = string(profileInfo)
+	case common.DATA_OFFERINGS:
+		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_OFFERINGS)
+		if err != nil {
+			if db.IsNotFound(err) {
+				res.Content = "-"
+				break
+			}
+			return res, err
+		}
+		res.Content = string(profileInfo)
+	default:
+		break
+	}
+
+	return res, nil
+}
+
 func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	var defaultValue string

@@ -2,6 +2,7 @@ CATCH incorrect_pin flag_incorrect_pin 1
 CATCH update_yob flag_allow_update 1
 LOAD get_current_profile_info 0
 RELOAD get_current_profile_info
+MAP get_current_profile_info
 MOUT back 0
 HALT
 LOAD verify_yob 0

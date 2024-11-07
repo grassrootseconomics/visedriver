@@ -1,20 +1,26 @@
 package remote
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
+	"os"
 
-	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
-	"github.com/grassrootseconomics/eth-custodial/pkg/api"
 	"git.grassecon.net/urdt/ussd/config"
 	"git.grassecon.net/urdt/ussd/models"
+	"github.com/grassrootseconomics/eth-custodial/pkg/api"
+	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 )
 
 var (
+	DebugLogger = log.New(os.Stdout, "DEBUG: ", log.Ldate|log.Ltime|log.Lshortfile)
+	InfoLogger  = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime)
+	ErrorLogger = log.New(os.Stderr, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
 )
 
 type AccountServiceInterface interface {
@@ -51,7 +57,7 @@ func (as *AccountService) TrackAccountStatus(ctx context.Context, publicKey stri
 		return nil, err
 	}
 
-	_, err =  doCustodialRequest(ctx, req, &r)
+	_, err = doCustodialRequest(ctx, req, &r)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +85,6 @@ func (as *AccountService) CheckBalance(ctx context.Context, publicKey string) (*
 	return &balanceResult, err
 }
 
-
 // CreateAccount creates a new account in the custodial system.
 // Returns:
 //   - *models.AccountResponse: A pointer to an AccountResponse struct containing the details of the created account.
@@ -94,7 +99,7 @@ func (as *AccountService) CreateAccount(ctx context.Context) (*models.AccountRes
 		return nil, err
 	}
 
-	_, err =  doCustodialRequest(ctx, req, &r)
+	_, err = doCustodialRequest(ctx, req, &r)
 	if err != nil {
 		return nil, err
 	}
@@ -118,14 +123,13 @@ func (as *AccountService) FetchVouchers(ctx context.Context, publicKey string) (
 		return nil, err
 	}
 
-	_, err =  doDataRequest(ctx, req, r)
+	_, err = doDataRequest(ctx, req, r)
 	if err != nil {
 		return nil, err
 	}
 
 	return r, nil
 }
-
 
 // FetchTransactions retrieves the last 10 transactions for a given public key from the data indexer API endpoint
 // Parameters:
@@ -143,14 +147,13 @@ func (as *AccountService) FetchTransactions(ctx context.Context, publicKey strin
 		return nil, err
 	}
 
-	_, err =  doDataRequest(ctx, req, r)
+	_, err = doDataRequest(ctx, req, r)
 	if err != nil {
 		return nil, err
 	}
 
 	return r, nil
 }
-
 
 // VoucherData retrieves voucher metadata from the data indexer API endpoint.
 // Parameters:
@@ -173,7 +176,7 @@ func (as *AccountService) VoucherData(ctx context.Context, address string) (*mod
 }
 
 func doRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKResponse, error) {
-	var okResponse  api.OKResponse
+	var okResponse api.OKResponse
 	var errResponse api.ErrResponse
 
 	req.Header.Set("Content-Type", "application/json")
@@ -184,6 +187,7 @@ func doRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKRespons
 	}
 	defer resp.Body.Close()
 
+	InfoLogger.Printf("Received response for %s: Status Code: %d | Content-Type: %s", req.URL, resp.StatusCode, resp.Header.Get("Content-Type"))
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -214,10 +218,30 @@ func doRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKRespons
 
 func doCustodialRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKResponse, error) {
 	req.Header.Set("X-GE-KEY", config.CustodialAPIKey)
+	logRequestDetails(req, config.CustodialAPIKey)
 	return doRequest(ctx, req, rcpt)
 }
 
 func doDataRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKResponse, error) {
 	req.Header.Set("X-GE-KEY", config.DataAPIKey)
+	logRequestDetails(req, config.CustodialAPIKey)
 	return doRequest(ctx, req, rcpt)
+}
+
+func logRequestDetails(req *http.Request, apiKey string) {
+	var bodyBytes []byte
+	contentType := req.Header.Get("Content-Type")
+	if req.Body != nil {
+		bodyBytes, err := io.ReadAll(req.Body)
+		if err != nil {
+			ErrorLogger.Printf("Error reading request body: %s", err)
+			return
+		}
+		req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+	} else {
+		bodyBytes = []byte("-")
+	}
+
+	InfoLogger.Printf("URL: %s  | Content-Type: %s | Method: %s| Request Body: %s", req.URL, contentType, req.Method, string(bodyBytes))
+
 }

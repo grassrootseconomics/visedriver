@@ -115,6 +115,7 @@ func (ls *LocalHandlerService) GetHandler(accountService remote.AccountServiceIn
 	ls.DbRs.AddLocalFunc("reset_unregistered_number", ussdHandlers.ResetUnregisteredNumber)
 	ls.DbRs.AddLocalFunc("reset_others_pin", ussdHandlers.ResetOthersPin)
 	ls.DbRs.AddLocalFunc("save_others_temporary_pin", ussdHandlers.SaveOthersTemporaryPin)
+	ls.DbRs.AddLocalFunc("get_current_profile_info", ussdHandlers.GetCurrentProfileInfo)
 
 	return ussdHandlers, nil
 }

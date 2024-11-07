@@ -31,7 +31,6 @@ import (
 var (
 	logg      = logging.NewVanilla()
 	scriptDir = path.Join("services", "registration")
-	WarningLogger *log.Logger
 	InfoLogger    *log.Logger
 	ErrorLogger   *log.Logger
 )

@@ -5,16 +5,19 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 
-	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
-	"github.com/grassrootseconomics/eth-custodial/pkg/api"
 	"git.grassecon.net/urdt/ussd/config"
 	"git.grassecon.net/urdt/ussd/models"
+	"github.com/grassrootseconomics/eth-custodial/pkg/api"
+	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 )
 
 var (
+	InfoLogger  *log.Logger
+	ErrorLogger *log.Logger
 )
 
 type AccountServiceInterface interface {
@@ -51,7 +54,7 @@ func (as *AccountService) TrackAccountStatus(ctx context.Context, publicKey stri
 		return nil, err
 	}
 
-	_, err =  doCustodialRequest(ctx, req, &r)
+	_, err = doCustodialRequest(ctx, req, &r)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +82,6 @@ func (as *AccountService) CheckBalance(ctx context.Context, publicKey string) (*
 	return &balanceResult, err
 }
 
-
 // CreateAccount creates a new account in the custodial system.
 // Returns:
 //   - *models.AccountResponse: A pointer to an AccountResponse struct containing the details of the created account.
@@ -94,7 +96,7 @@ func (as *AccountService) CreateAccount(ctx context.Context) (*models.AccountRes
 		return nil, err
 	}
 
-	_, err =  doCustodialRequest(ctx, req, &r)
+	_, err = doCustodialRequest(ctx, req, &r)
 	if err != nil {
 		return nil, err
 	}
@@ -118,14 +120,13 @@ func (as *AccountService) FetchVouchers(ctx context.Context, publicKey string) (
 		return nil, err
 	}
 
-	_, err =  doDataRequest(ctx, req, r)
+	_, err = doDataRequest(ctx, req, r)
 	if err != nil {
 		return nil, err
 	}
 
 	return r, nil
 }
-
 
 // FetchTransactions retrieves the last 10 transactions for a given public key from the data indexer API endpoint
 // Parameters:
@@ -143,14 +144,13 @@ func (as *AccountService) FetchTransactions(ctx context.Context, publicKey strin
 		return nil, err
 	}
 
-	_, err =  doDataRequest(ctx, req, r)
+	_, err = doDataRequest(ctx, req, r)
 	if err != nil {
 		return nil, err
 	}
 
 	return r, nil
 }
-
 
 // VoucherData retrieves voucher metadata from the data indexer API endpoint.
 // Parameters:
@@ -173,8 +173,10 @@ func (as *AccountService) VoucherData(ctx context.Context, address string) (*mod
 }
 
 func doRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKResponse, error) {
-	var okResponse  api.OKResponse
+	var okResponse api.OKResponse
 	var errResponse api.ErrResponse
+
+	InfoLogger.Printf("Outgoing request:", req.URL, req.Body)
 
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)

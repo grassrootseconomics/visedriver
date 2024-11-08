@@ -1177,7 +1177,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_FIRST_NAME)
 		if err != nil {
 			if db.IsNotFound(err) {
-				res.Content = "-"
+				res.Content = "Not provided"
 				break
 			}
 			return res, err
@@ -1187,7 +1187,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_FAMILY_NAME)
 		if err != nil {
 			if db.IsNotFound(err) {
-				res.Content = "-"
+				res.Content = "Not provided"
 				break
 			}
 			return res, err
@@ -1198,7 +1198,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_GENDER)
 		if err != nil {
 			if db.IsNotFound(err) {
-				res.Content = "-"
+				res.Content = "Not provided"
 				break
 			}
 			return res, err
@@ -1208,7 +1208,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_YOB)
 		if err != nil {
 			if db.IsNotFound(err) {
-				res.Content = "-"
+				res.Content = "Not provided"
 				break
 			}
 			return res, err
@@ -1219,7 +1219,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_LOCATION)
 		if err != nil {
 			if db.IsNotFound(err) {
-				res.Content = "-"
+				res.Content = "Not provided"
 				break
 			}
 			return res, err
@@ -1229,7 +1229,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_OFFERINGS)
 		if err != nil {
 			if db.IsNotFound(err) {
-				res.Content = "-"
+				res.Content = "Not provided"
 				break
 			}
 			return res, err

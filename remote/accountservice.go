@@ -18,9 +18,8 @@ import (
 )
 
 var (
-	DebugLogger = log.New(os.Stdout, "DEBUG: ", log.Ldate|log.Ltime|log.Lshortfile)
-	InfoLogger  = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime)
-	ErrorLogger = log.New(os.Stderr, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
+	InfoLogger  *log.Logger
+	ErrorLogger *log.Logger
 )
 
 type AccountServiceInterface interface {
@@ -98,9 +97,9 @@ func (as *AccountService) CreateAccount(ctx context.Context) (*models.AccountRes
 	if err != nil {
 		return nil, err
 	}
-
 	_, err = doCustodialRequest(ctx, req, &r)
 	if err != nil {
+		log.Printf("Failed to make custodial %s request to endpoint: %s with reason: %s", req.Method, req.URL, err.Error())
 		return nil, err
 	}
 
@@ -178,7 +177,6 @@ func (as *AccountService) VoucherData(ctx context.Context, address string) (*mod
 func doRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKResponse, error) {
 	var okResponse api.OKResponse
 	var errResponse api.ErrResponse
-
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -218,17 +216,17 @@ func doRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKRespons
 
 func doCustodialRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKResponse, error) {
 	req.Header.Set("X-GE-KEY", config.CustodialAPIKey)
-	logRequestDetails(req, config.CustodialAPIKey)
+	logRequestDetails(req)
 	return doRequest(ctx, req, rcpt)
 }
 
 func doDataRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKResponse, error) {
 	req.Header.Set("X-GE-KEY", config.DataAPIKey)
-	logRequestDetails(req, config.CustodialAPIKey)
+	logRequestDetails(req)
 	return doRequest(ctx, req, rcpt)
 }
 
-func logRequestDetails(req *http.Request, apiKey string) {
+func logRequestDetails(req *http.Request) {
 	var bodyBytes []byte
 	contentType := req.Header.Get("Content-Type")
 	if req.Body != nil {
@@ -243,5 +241,4 @@ func logRequestDetails(req *http.Request, apiKey string) {
 	}
 
 	InfoLogger.Printf("URL: %s  | Content-Type: %s | Method: %s| Request Body: %s", req.URL, contentType, req.Method, string(bodyBytes))
-
 }

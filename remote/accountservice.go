@@ -96,9 +96,9 @@ func (as *AccountService) CreateAccount(ctx context.Context) (*models.AccountRes
 	if err != nil {
 		return nil, err
 	}
-
 	_, err = doCustodialRequest(ctx, req, &r)
 	if err != nil {
+		log.Printf("Failed to make custodial %s request to endpoint: %s with reason: %s", req.Method, req.URL, err.Error())
 		return nil, err
 	}
 
@@ -176,7 +176,6 @@ func (as *AccountService) VoucherData(ctx context.Context, address string) (*mod
 func doRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKResponse, error) {
 	var okResponse api.OKResponse
 	var errResponse api.ErrResponse
-
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

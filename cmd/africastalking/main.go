@@ -31,26 +31,10 @@ import (
 var (
 	logg        = logging.NewVanilla()
 	scriptDir   = path.Join("services", "registration")
-	InfoLogger  *log.Logger
-	ErrorLogger *log.Logger
 )
 
 func init() {
 	initializers.LoadEnvVariables()
-
-	logFile := "urdt-ussd-africastalking.log"
-
-	file, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	InfoLogger = log.New(file, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
-	ErrorLogger = log.New(file, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
-
-	// Inject into remote package
-	remote.InfoLogger = InfoLogger
-	remote.ErrorLogger = ErrorLogger
 }
 
 type atRequestParser struct{}
@@ -58,14 +42,14 @@ type atRequestParser struct{}
 func (arp *atRequestParser) GetSessionId(rq any) (string, error) {
 	rqv, ok := rq.(*http.Request)
 	if !ok {
-		ErrorLogger.Println("got an invalid request:", rq)
+		log.Println("got an invalid request:", rq)
 		return "", handlers.ErrInvalidRequest
 	}
 
 	// Capture body (if any) for logging
 	body, err := io.ReadAll(rqv.Body)
 	if err != nil {
-		ErrorLogger.Println("failed to read request body:", err)
+		log.Println("failed to read request body:", err)
 		return "", fmt.Errorf("failed to read request body: %v", err)
 	}
 	// Reset the body for further reading
@@ -75,13 +59,13 @@ func (arp *atRequestParser) GetSessionId(rq any) (string, error) {
 	bodyLog := map[string]string{"body": string(body)}
 	logBytes, err := json.Marshal(bodyLog)
 	if err != nil {
-		ErrorLogger.Println("failed to marshal request body:", err)
+		log.Println("failed to marshal request body:", err)
 	} else {
-		InfoLogger.Println("Received request:", string(logBytes))
+		log.Println("Received request:", string(logBytes))
 	}
 
 	if err := rqv.ParseForm(); err != nil {
-		ErrorLogger.Println("failed to parse form data: %v", err)
+		log.Println("failed to parse form data: %v", err)
 		return "", fmt.Errorf("failed to parse form data: %v", err)
 	}
 

@@ -29,10 +29,10 @@ import (
 )
 
 var (
-	logg      = logging.NewVanilla()
-	scriptDir = path.Join("services", "registration")
-	InfoLogger    *log.Logger
-	ErrorLogger   *log.Logger
+	logg        = logging.NewVanilla()
+	scriptDir   = path.Join("services", "registration")
+	InfoLogger  *log.Logger
+	ErrorLogger *log.Logger
 )
 
 func init() {
@@ -197,9 +197,13 @@ func main() {
 	rp := &atRequestParser{}
 	bsh := handlers.NewBaseSessionHandler(cfg, rs, stateStore, userdataStore, rp, hl)
 	sh := httpserver.NewATSessionHandler(bsh)
+
+	mux := http.NewServeMux()
+	mux.Handle(initializers.GetEnv("AT_ENDPOINT", "/"), sh)
+
 	s := &http.Server{
 		Addr:    fmt.Sprintf("%s:%s", host, strconv.Itoa(int(port))),
-		Handler: sh,
+		Handler: mux,
 	}
 	s.RegisterOnShutdown(sh.Shutdown)
 

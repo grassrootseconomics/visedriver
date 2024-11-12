@@ -239,6 +239,7 @@ func (h *Handlers) CheckPinMisMatch(ctx context.Context, sym string, input []byt
 	}
 	temporaryPin, err := store.ReadEntry(ctx, string(blockedNumber), common.DATA_TEMPORARY_VALUE)
 	if err != nil {
+
 		return res, err
 	}
 	if bytes.Equal(temporaryPin, input) {
@@ -291,6 +292,7 @@ func (h *Handlers) SaveTemporaryPin(ctx context.Context, sym string, input []byt
 	store := h.userdataStore
 	err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(accountPIN))
 	if err != nil {
+		logg.ErrorCtxf(ctx, "failed to write entry with", "key", common.DATA_TEMPORARY_VALUE, "value", accountPIN, "error", err)
 		return res, err
 	}
 
@@ -310,10 +312,12 @@ func (h *Handlers) SaveOthersTemporaryPin(ctx context.Context, sym string, input
 	blockedNumber, err := store.ReadEntry(ctx, sessionId, common.DATA_BLOCKED_NUMBER)
 
 	if err != nil {
+		logg.ErrorCtxf(ctx, "failed to read entry with", "key", common.DATA_BLOCKED_NUMBER, "error", err)
 		return res, err
 	}
 	err = store.WriteEntry(ctx, string(blockedNumber), common.DATA_TEMPORARY_VALUE, []byte(temporaryPin))
 	if err != nil {
+		logg.ErrorCtxf(ctx, "failed to write entry with", "key", common.DATA_TEMPORARY_VALUE, "value", temporaryPin, "error", err)
 		return res, err
 	}
 
@@ -331,6 +335,7 @@ func (h *Handlers) ConfirmPinChange(ctx context.Context, sym string, input []byt
 	store := h.userdataStore
 	temporaryPin, err := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE)
 	if err != nil {
+		logg.ErrorCtxf(ctx, "failed to read entry with", "key", common.DATA_TEMPORARY_VALUE, "error", err)
 		return res, err
 	}
 	if bytes.Equal(temporaryPin, input) {
@@ -340,6 +345,7 @@ func (h *Handlers) ConfirmPinChange(ctx context.Context, sym string, input []byt
 	}
 	err = store.WriteEntry(ctx, sessionId, common.DATA_ACCOUNT_PIN, []byte(temporaryPin))
 	if err != nil {
+		logg.ErrorCtxf(ctx, "failed to write entry with", "key", common.DATA_ACCOUNT_PIN, "value", temporaryPin, "error", err)
 		return res, err
 	}
 	return res, nil
@@ -374,6 +380,7 @@ func (h *Handlers) VerifyCreatePin(ctx context.Context, sym string, input []byte
 
 	err = store.WriteEntry(ctx, sessionId, common.DATA_ACCOUNT_PIN, []byte(temporaryPin))
 	if err != nil {
+		logg.ErrorCtxf(ctx, "failed to write entry with", "key", common.DATA_ACCOUNT_PIN, "value", temporaryPin, "error", err)
 		return res, err
 	}
 
@@ -406,11 +413,13 @@ func (h *Handlers) SaveFirstname(ctx context.Context, sym string, input []byte) 
 		temporaryFirstName, _ := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE)
 		err = store.WriteEntry(ctx, sessionId, common.DATA_FIRST_NAME, []byte(temporaryFirstName))
 		if err != nil {
+			logg.ErrorCtxf(ctx, "failed to write entry with", "key", common.DATA_FIRST_NAME, "value", temporaryFirstName, "error", err)
 			return res, err
 		}
 	} else {
 		err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(firstName))
 		if err != nil {
+			logg.ErrorCtxf(ctx, "failed to write entry with", "key", common.DATA_TEMPORARY_VALUE, "value", firstName, "error", err)
 			return res, err
 		}
 	}
@@ -465,11 +474,13 @@ func (h *Handlers) SaveYob(ctx context.Context, sym string, input []byte) (resou
 		temporaryYob, _ := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE)
 		err = store.WriteEntry(ctx, sessionId, common.DATA_YOB, []byte(temporaryYob))
 		if err != nil {
+			logg.ErrorCtxf(ctx, "failed to write entry with", "key", common.DATA_TEMPORARY_VALUE, "value", temporaryYob, "error", err)
 			return res, err
 		}
 	} else {
 		err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(yob))
 		if err != nil {
+			logg.ErrorCtxf(ctx, "failed to write entry with", "key", common.DATA_TEMPORARY_VALUE, "value", yob, "error", err)
 			return res, err
 		}
 	}
@@ -495,11 +506,13 @@ func (h *Handlers) SaveLocation(ctx context.Context, sym string, input []byte) (
 		temporaryLocation, _ := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE)
 		err = store.WriteEntry(ctx, sessionId, common.DATA_LOCATION, []byte(temporaryLocation))
 		if err != nil {
+			logg.ErrorCtxf(ctx, "failed to write entry with", "key", common.DATA_LOCATION, "value", temporaryLocation, "error", err)
 			return res, err
 		}
 	} else {
 		err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(location))
 		if err != nil {
+			logg.ErrorCtxf(ctx, "failed to write entry with", "key", common.DATA_TEMPORARY_VALUE, "value", location, "error", err)
 			return res, err
 		}
 	}
@@ -525,11 +538,13 @@ func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (re
 		temporaryGender, _ := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE)
 		err = store.WriteEntry(ctx, sessionId, common.DATA_GENDER, []byte(temporaryGender))
 		if err != nil {
+			logg.ErrorCtxf(ctx, "failed to write entry with", "key", common.DATA_GENDER, "value", gender, "error", err)
 			return res, err
 		}
 	} else {
 		err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(gender))
 		if err != nil {
+			logg.ErrorCtxf(ctx, "failed to write entry with", "key", common.DATA_TEMPORARY_VALUE, "value", gender, "error", err)
 			return res, err
 		}
 	}
@@ -556,11 +571,13 @@ func (h *Handlers) SaveOfferings(ctx context.Context, sym string, input []byte) 
 		temporaryOfferings, _ := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE)
 		err = store.WriteEntry(ctx, sessionId, common.DATA_OFFERINGS, []byte(temporaryOfferings))
 		if err != nil {
+			logg.ErrorCtxf(ctx, "failed to write entry with", "key", common.DATA_TEMPORARY_VALUE, "value", offerings, "error", err)
 			return res, err
 		}
 	} else {
 		err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(offerings))
 		if err != nil {
+			logg.ErrorCtxf(ctx, "failed to write entry with", "key", common.DATA_TEMPORARY_VALUE, "value", offerings, "error", err)
 			return res, err
 		}
 	}

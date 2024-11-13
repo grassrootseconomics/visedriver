@@ -135,7 +135,7 @@ func GetTemporaryVoucherData(ctx context.Context, store DataStore, sessionId str
 	return data, nil
 }
 
-// UpdateVoucherData sets the active voucher data and clears the temporary voucher data in the DataStore.
+// UpdateVoucherData sets the active voucher data in the DataStore.
 func UpdateVoucherData(ctx context.Context, store DataStore, sessionId string, data *dataserviceapi.TokenHoldings) error {
 	logg.TraceCtxf(ctx, "dtal", "data", data)
 	// Active voucher data entries

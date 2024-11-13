@@ -209,13 +209,13 @@ func doRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKRespons
 }
 
 func doCustodialRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKResponse, error) {
-	req.Header.Set("X-GE-KEY", config.CustodialAPIKey)
+	req.Header.Set("Authorization", "Bearer "+config.CustodialBearerToken)
 	logRequestDetails(req)
 	return doRequest(ctx, req, rcpt)
 }
 
 func doDataRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKResponse, error) {
-	req.Header.Set("X-GE-KEY", config.DataAPIKey)
+	req.Header.Set("Authorization", "Bearer "+config.DataBearerToken)
 	logRequestDetails(req)
 	return doRequest(ctx, req, rcpt)
 }

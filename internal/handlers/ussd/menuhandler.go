@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log"
 	"path"
 	"regexp"
 	"strconv"
@@ -161,6 +162,7 @@ func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (r
 
 	languageSetFlag, err := h.flagManager.GetFlag("flag_language_set")
 	if err != nil {
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 	res.FlagSet = append(res.FlagSet, languageSetFlag)
@@ -198,7 +200,6 @@ func (h *Handlers) createAccountNoExist(ctx context.Context, sessionId string, r
 	}
 	res.FlagSet = append(res.FlagSet, flag_account_created)
 	return nil
-
 }
 
 // CreateAccount checks if any account exists on the JSON data file, and if not
@@ -218,10 +219,12 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 			logg.Printf(logging.LVL_INFO, "Creating an account because it doesn't exist")
 			err = h.createAccountNoExist(ctx, sessionId, &res)
 			if err != nil {
+				log.Printf("Error: %s", err)
 				return res, err
 			}
 		}
 	}
+
 	return res, nil
 }
 
@@ -235,11 +238,13 @@ func (h *Handlers) CheckPinMisMatch(ctx context.Context, sym string, input []byt
 	store := h.userdataStore
 	blockedNumber, err := store.ReadEntry(ctx, sessionId, common.DATA_BLOCKED_NUMBER)
 	if err != nil {
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 	temporaryPin, err := store.ReadEntry(ctx, string(blockedNumber), common.DATA_TEMPORARY_VALUE)
 	if err != nil {
 
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 	if bytes.Equal(temporaryPin, input) {
@@ -293,6 +298,7 @@ func (h *Handlers) SaveTemporaryPin(ctx context.Context, sym string, input []byt
 	err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(accountPIN))
 	if err != nil {
 		logg.ErrorCtxf(ctx, "failed to write entry with", "key", common.DATA_TEMPORARY_VALUE, "value", accountPIN, "error", err)
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 
@@ -313,11 +319,13 @@ func (h *Handlers) SaveOthersTemporaryPin(ctx context.Context, sym string, input
 
 	if err != nil {
 		logg.ErrorCtxf(ctx, "failed to read entry with", "key", common.DATA_BLOCKED_NUMBER, "error", err)
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 	err = store.WriteEntry(ctx, string(blockedNumber), common.DATA_TEMPORARY_VALUE, []byte(temporaryPin))
 	if err != nil {
 		logg.ErrorCtxf(ctx, "failed to write entry with", "key", common.DATA_TEMPORARY_VALUE, "value", temporaryPin, "error", err)
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 
@@ -336,6 +344,7 @@ func (h *Handlers) ConfirmPinChange(ctx context.Context, sym string, input []byt
 	temporaryPin, err := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE)
 	if err != nil {
 		logg.ErrorCtxf(ctx, "failed to read entry with", "key", common.DATA_TEMPORARY_VALUE, "error", err)
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 	if bytes.Equal(temporaryPin, input) {
@@ -346,6 +355,7 @@ func (h *Handlers) ConfirmPinChange(ctx context.Context, sym string, input []byt
 	err = store.WriteEntry(ctx, sessionId, common.DATA_ACCOUNT_PIN, []byte(temporaryPin))
 	if err != nil {
 		logg.ErrorCtxf(ctx, "failed to write entry with", "key", common.DATA_ACCOUNT_PIN, "value", temporaryPin, "error", err)
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 	return res, nil
@@ -368,6 +378,7 @@ func (h *Handlers) VerifyCreatePin(ctx context.Context, sym string, input []byte
 	store := h.userdataStore
 	temporaryPin, err := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE)
 	if err != nil {
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 	if bytes.Equal(input, temporaryPin) {
@@ -381,6 +392,7 @@ func (h *Handlers) VerifyCreatePin(ctx context.Context, sym string, input []byte
 	err = store.WriteEntry(ctx, sessionId, common.DATA_ACCOUNT_PIN, []byte(temporaryPin))
 	if err != nil {
 		logg.ErrorCtxf(ctx, "failed to write entry with", "key", common.DATA_ACCOUNT_PIN, "value", temporaryPin, "error", err)
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 
@@ -414,12 +426,14 @@ func (h *Handlers) SaveFirstname(ctx context.Context, sym string, input []byte) 
 		err = store.WriteEntry(ctx, sessionId, common.DATA_FIRST_NAME, []byte(temporaryFirstName))
 		if err != nil {
 			logg.ErrorCtxf(ctx, "failed to write entry with", "key", common.DATA_FIRST_NAME, "value", temporaryFirstName, "error", err)
+			log.Printf("Error: %s", err)
 			return res, err
 		}
 	} else {
 		err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(firstName))
 		if err != nil {
 			logg.ErrorCtxf(ctx, "failed to write entry with", "key", common.DATA_TEMPORARY_VALUE, "value", firstName, "error", err)
+			log.Printf("Error: %s", err)
 			return res, err
 		}
 	}
@@ -446,11 +460,13 @@ func (h *Handlers) SaveFamilyname(ctx context.Context, sym string, input []byte)
 		temporaryFamilyName, _ := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE)
 		err = store.WriteEntry(ctx, sessionId, common.DATA_FAMILY_NAME, []byte(temporaryFamilyName))
 		if err != nil {
+			log.Printf("Error: %s", err)
 			return res, err
 		}
 	} else {
 		err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(familyName))
 		if err != nil {
+			log.Printf("Error: %s", err)
 			return res, err
 		}
 	}
@@ -475,12 +491,14 @@ func (h *Handlers) SaveYob(ctx context.Context, sym string, input []byte) (resou
 		err = store.WriteEntry(ctx, sessionId, common.DATA_YOB, []byte(temporaryYob))
 		if err != nil {
 			logg.ErrorCtxf(ctx, "failed to write entry with", "key", common.DATA_TEMPORARY_VALUE, "value", temporaryYob, "error", err)
+			log.Printf("Error: %s", err)
 			return res, err
 		}
 	} else {
 		err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(yob))
 		if err != nil {
 			logg.ErrorCtxf(ctx, "failed to write entry with", "key", common.DATA_TEMPORARY_VALUE, "value", yob, "error", err)
+			log.Printf("Error: %s", err)
 			return res, err
 		}
 	}
@@ -507,12 +525,14 @@ func (h *Handlers) SaveLocation(ctx context.Context, sym string, input []byte) (
 		err = store.WriteEntry(ctx, sessionId, common.DATA_LOCATION, []byte(temporaryLocation))
 		if err != nil {
 			logg.ErrorCtxf(ctx, "failed to write entry with", "key", common.DATA_LOCATION, "value", temporaryLocation, "error", err)
+			log.Printf("Error: %s", err)
 			return res, err
 		}
 	} else {
 		err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(location))
 		if err != nil {
 			logg.ErrorCtxf(ctx, "failed to write entry with", "key", common.DATA_TEMPORARY_VALUE, "value", location, "error", err)
+			log.Printf("Error: %s", err)
 			return res, err
 		}
 	}
@@ -539,12 +559,14 @@ func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (re
 		err = store.WriteEntry(ctx, sessionId, common.DATA_GENDER, []byte(temporaryGender))
 		if err != nil {
 			logg.ErrorCtxf(ctx, "failed to write entry with", "key", common.DATA_GENDER, "value", gender, "error", err)
+			log.Printf("Error: %s", err)
 			return res, err
 		}
 	} else {
 		err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(gender))
 		if err != nil {
 			logg.ErrorCtxf(ctx, "failed to write entry with", "key", common.DATA_TEMPORARY_VALUE, "value", gender, "error", err)
+			log.Printf("Error: %s", err)
 			return res, err
 		}
 	}
@@ -572,12 +594,14 @@ func (h *Handlers) SaveOfferings(ctx context.Context, sym string, input []byte) 
 		err = store.WriteEntry(ctx, sessionId, common.DATA_OFFERINGS, []byte(temporaryOfferings))
 		if err != nil {
 			logg.ErrorCtxf(ctx, "failed to write entry with", "key", common.DATA_TEMPORARY_VALUE, "value", offerings, "error", err)
+			log.Printf("Error: %s", err)
 			return res, err
 		}
 	} else {
 		err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(offerings))
 		if err != nil {
 			logg.ErrorCtxf(ctx, "failed to write entry with", "key", common.DATA_TEMPORARY_VALUE, "value", offerings, "error", err)
+			log.Printf("Error: %s", err)
 			return res, err
 		}
 	}
@@ -643,6 +667,7 @@ func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (res
 	store := h.userdataStore
 	AccountPin, err := store.ReadEntry(ctx, sessionId, common.DATA_ACCOUNT_PIN)
 	if err != nil {
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 	if len(input) == 4 {
@@ -690,16 +715,19 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 	store := h.userdataStore
 	publicKey, err := store.ReadEntry(ctx, sessionId, common.DATA_PUBLIC_KEY)
 	if err != nil {
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 	r, err := h.accountService.TrackAccountStatus(ctx, string(publicKey))
 
 	if err != nil {
 		res.FlagSet = append(res.FlagSet, flag_api_error)
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 	res.FlagReset = append(res.FlagReset, flag_api_error)
 	if !ok {
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 	if r.Active {
@@ -800,11 +828,13 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 			return res, nil
 		}
 
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 
 	activeBal, err := store.ReadEntry(ctx, sessionId, common.DATA_ACTIVE_BAL)
 	if err != nil {
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 
@@ -828,6 +858,7 @@ func (h *Handlers) FetchCustodialBalances(ctx context.Context, sym string, input
 	store := h.userdataStore
 	publicKey, err := store.ReadEntry(ctx, sessionId, common.DATA_PUBLIC_KEY)
 	if err != nil {
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 
@@ -860,10 +891,12 @@ func (h *Handlers) ResetOthersPin(ctx context.Context, sym string, input []byte)
 	}
 	blockedPhonenumber, err := store.ReadEntry(ctx, sessionId, common.DATA_BLOCKED_NUMBER)
 	if err != nil {
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 	temporaryPin, err := store.ReadEntry(ctx, string(blockedPhonenumber), common.DATA_TEMPORARY_VALUE)
 	if err != nil {
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 	err = store.WriteEntry(ctx, string(blockedPhonenumber), common.DATA_ACCOUNT_PIN, []byte(temporaryPin))
@@ -902,6 +935,7 @@ func (h *Handlers) ValidateBlockedNumber(ctx context.Context, sym string, input 
 			res.FlagSet = append(res.FlagSet, flag_unregistered_number)
 			return res, nil
 		} else {
+			log.Printf("Error: %s", err)
 			return res, err
 		}
 	}
@@ -1009,6 +1043,7 @@ func (h *Handlers) MaxAmount(ctx context.Context, sym string, input []byte) (res
 
 	activeBal, err := store.ReadEntry(ctx, sessionId, common.DATA_ACTIVE_BAL)
 	if err != nil {
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 
@@ -1034,10 +1069,12 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 	// retrieve the active balance
 	activeBal, err := store.ReadEntry(ctx, sessionId, common.DATA_ACTIVE_BAL)
 	if err != nil {
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 	balanceValue, err = strconv.ParseFloat(string(activeBal), 64)
 	if err != nil {
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 
@@ -1060,6 +1097,7 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 	formattedAmount := fmt.Sprintf("%.2f", inputAmount)
 	err = store.WriteEntry(ctx, sessionId, common.DATA_AMOUNT, []byte(formattedAmount))
 	if err != nil {
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 
@@ -1126,6 +1164,7 @@ func (h *Handlers) GetAmount(ctx context.Context, sym string, input []byte) (res
 	// retrieve the active symbol
 	activeSym, err := store.ReadEntry(ctx, sessionId, common.DATA_ACTIVE_SYM)
 	if err != nil {
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 
@@ -1163,6 +1202,7 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 
 	account_authorized_flag, err := h.flagManager.GetFlag("flag_account_authorized")
 	if err != nil {
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 
@@ -1265,6 +1305,7 @@ func (h *Handlers) SetDefaultVoucher(ctx context.Context, sym string, input []by
 		if db.IsNotFound(err) {
 			publicKey, err := store.ReadEntry(ctx, sessionId, common.DATA_PUBLIC_KEY)
 			if err != nil {
+				log.Printf("Error: %s", err)
 				return res, err
 			}
 
@@ -1289,17 +1330,20 @@ func (h *Handlers) SetDefaultVoucher(ctx context.Context, sym string, input []by
 			// set the active symbol
 			err = store.WriteEntry(ctx, sessionId, common.DATA_ACTIVE_SYM, []byte(defaultSym))
 			if err != nil {
+				log.Printf("Error: %s", err)
 				return res, err
 			}
 			// set the active balance
 			err = store.WriteEntry(ctx, sessionId, common.DATA_ACTIVE_BAL, []byte(defaultBal))
 			if err != nil {
+				log.Printf("Error: %s", err)
 				return res, err
 			}
 
 			return res, nil
 		}
 
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 
@@ -1355,6 +1399,7 @@ func (h *Handlers) GetVoucherList(ctx context.Context, sym string, input []byte)
 	// Read vouchers from the store
 	voucherData, err := h.prefixDb.Get(ctx, []byte("sym"))
 	if err != nil {
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 
@@ -1390,6 +1435,7 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 	}
 
 	if err := common.StoreTemporaryVoucher(ctx, h.userdataStore, sessionId, metadata); err != nil {
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 
@@ -1411,11 +1457,13 @@ func (h *Handlers) SetVoucher(ctx context.Context, sym string, input []byte) (re
 	// Get temporary data
 	tempData, err := common.GetTemporaryVoucherData(ctx, h.userdataStore, sessionId)
 	if err != nil {
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 
 	// Set as active and clear temporary data
 	if err := common.UpdateVoucherData(ctx, h.userdataStore, sessionId, tempData); err != nil {
+		log.Printf("Error: %s", err)
 		return res, err
 	}
 

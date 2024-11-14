@@ -1190,6 +1190,101 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 	return res, nil
 }
 
+func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	var profileInfo []byte
+	var err error
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+	sm, _ := h.st.Where()
+	parts := strings.SplitN(sm, "_", 2)
+	filename := parts[1]
+	dbKeyStr := "DATA_" + strings.ToUpper(filename)
+	dbKey, err := common.StringToDataTyp(dbKeyStr)
+
+	if err != nil {
+		return res, err
+	}
+	store := h.userdataStore
+
+	switch dbKey {
+	case common.DATA_FIRST_NAME:
+		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_FIRST_NAME)
+		if err != nil {
+			if db.IsNotFound(err) {
+				res.Content = "Not provided"
+				break
+			}
+			logg.ErrorCtxf(ctx, "Failed to read first name entry with", "key", "error", common.DATA_FIRST_NAME, err)
+			return res, err
+		}
+		res.Content = string(profileInfo)
+	case common.DATA_FAMILY_NAME:
+		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_FAMILY_NAME)
+		if err != nil {
+			if db.IsNotFound(err) {
+				res.Content = "Not provided"
+				break
+			}
+			logg.ErrorCtxf(ctx, "Failed to read family name entry with", "key", "error", common.DATA_FAMILY_NAME, err)
+			return res, err
+		}
+		res.Content = string(profileInfo)
+
+	case common.DATA_GENDER:
+		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_GENDER)
+		if err != nil {
+			if db.IsNotFound(err) {
+				res.Content = "Not provided"
+				break
+			}
+			logg.ErrorCtxf(ctx, "Failed to read gender entry with", "key", "error", common.DATA_GENDER, err)
+			return res, err
+		}
+		res.Content = string(profileInfo)
+	case common.DATA_YOB:
+		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_YOB)
+		if err != nil {
+			if db.IsNotFound(err) {
+				res.Content = "Not provided"
+				break
+			}
+			logg.ErrorCtxf(ctx, "Failed to read year of birth(yob) entry with", "key", "error", common.DATA_YOB, err)
+			return res, err
+		}
+		res.Content = string(profileInfo)
+
+	case common.DATA_LOCATION:
+		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_LOCATION)
+		if err != nil {
+			if db.IsNotFound(err) {
+				res.Content = "Not provided"
+				break
+			}
+			logg.ErrorCtxf(ctx, "Failed to read location entry with", "key", "error", common.DATA_LOCATION, err)
+			return res, err
+		}
+		res.Content = string(profileInfo)
+	case common.DATA_OFFERINGS:
+		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_OFFERINGS)
+		if err != nil {
+			if db.IsNotFound(err) {
+				res.Content = "Not provided"
+				break
+			}
+			logg.ErrorCtxf(ctx, "Failed to read offerings entry with", "key", "error", common.DATA_OFFERINGS, err)
+			return res, err
+		}
+		res.Content = string(profileInfo)
+	default:
+		break
+	}
+
+	return res, nil
+}
+
 func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	var defaultValue string

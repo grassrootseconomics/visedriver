@@ -11,6 +11,7 @@ const (
 	trackStatusPath            = "/api/track"
 	balancePathPrefix          = "/api/account"
 	trackPath                  = "/api/v2/account/status"
+	tokenTransferPrefix        = "/api/v2/token/transfer"
 	voucherHoldingsPathPrefix  = "/api/v1/holdings"
 	voucherTransfersPathPrefix = "/api/v1/transfers/last10"
 	voucherDataPathPrefix      = "/api/v1/token"
@@ -28,6 +29,7 @@ var (
 	TrackStatusURL      string
 	BalanceURL          string
 	TrackURL            string
+	TokenTransferURL    string
 	VoucherHoldingsURL  string
 	VoucherTransfersURL string
 	VoucherDataURL      string
@@ -62,6 +64,7 @@ func LoadConfig() error {
 	TrackStatusURL, _ = url.JoinPath(custodialURLBase, trackStatusPath)
 	BalanceURL, _ = url.JoinPath(custodialURLBase, balancePathPrefix)
 	TrackURL, _ = url.JoinPath(custodialURLBase, trackPath)
+	TokenTransferURL, _ = url.JoinPath(custodialURLBase, tokenTransferPrefix)
 	VoucherHoldingsURL, _ = url.JoinPath(dataURLBase, voucherHoldingsPathPrefix)
 	VoucherTransfersURL, _ = url.JoinPath(dataURLBase, voucherTransfersPathPrefix)
 	VoucherDataURL, _ = url.JoinPath(dataURLBase, voucherDataPathPrefix)

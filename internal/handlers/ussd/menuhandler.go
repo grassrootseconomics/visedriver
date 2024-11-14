@@ -1217,6 +1217,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 				res.Content = "Not provided"
 				break
 			}
+			logg.ErrorCtxf(ctx, "Failed to read first name entry with", "key", "error", common.DATA_FIRST_NAME, err)
 			return res, err
 		}
 		res.Content = string(profileInfo)
@@ -1227,6 +1228,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 				res.Content = "Not provided"
 				break
 			}
+			logg.ErrorCtxf(ctx, "Failed to read family name entry with", "key", "error", common.DATA_FAMILY_NAME, err)
 			return res, err
 		}
 		res.Content = string(profileInfo)
@@ -1238,6 +1240,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 				res.Content = "Not provided"
 				break
 			}
+			logg.ErrorCtxf(ctx, "Failed to read gender entry with", "key", "error", common.DATA_GENDER, err)
 			return res, err
 		}
 		res.Content = string(profileInfo)
@@ -1248,6 +1251,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 				res.Content = "Not provided"
 				break
 			}
+			logg.ErrorCtxf(ctx, "Failed to read year of birth(yob) entry with", "key", "error", common.DATA_YOB, err)
 			return res, err
 		}
 		res.Content = string(profileInfo)
@@ -1259,6 +1263,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 				res.Content = "Not provided"
 				break
 			}
+			logg.ErrorCtxf(ctx, "Failed to read location entry with", "key", "error", common.DATA_LOCATION, err)
 			return res, err
 		}
 		res.Content = string(profileInfo)
@@ -1269,6 +1274,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 				res.Content = "Not provided"
 				break
 			}
+			logg.ErrorCtxf(ctx, "Failed to read offerings entry with", "key", "error", common.DATA_OFFERINGS, err)
 			return res, err
 		}
 		res.Content = string(profileInfo)

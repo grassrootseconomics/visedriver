@@ -18,3 +18,6 @@ msgstr "Ombi lako la kumwalika %s kwa matandao wa Sarafu halikufaulu. Tafadhali 
 
 msgid "Your invitation to %s to join Sarafu Network has been sent."
 msgstr "Ombi lako la kumwalika %s kwa matandao wa Sarafu limetumwa."
+
+msgid "Your request failed. Please try again later."
+msgstr "Ombi lako halikufaulu. Tafadhali jaribu tena baadaye."

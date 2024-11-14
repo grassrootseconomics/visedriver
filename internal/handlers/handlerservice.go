@@ -80,6 +80,7 @@ func (ls *LocalHandlerService) GetHandler(accountService remote.AccountServiceIn
 	ls.DbRs.AddLocalFunc("check_balance", ussdHandlers.CheckBalance)
 	ls.DbRs.AddLocalFunc("validate_recipient", ussdHandlers.ValidateRecipient)
 	ls.DbRs.AddLocalFunc("transaction_reset", ussdHandlers.TransactionReset)
+	ls.DbRs.AddLocalFunc("invite_valid_recipient", ussdHandlers.InviteValidRecipient)
 	ls.DbRs.AddLocalFunc("max_amount", ussdHandlers.MaxAmount)
 	ls.DbRs.AddLocalFunc("validate_amount", ussdHandlers.ValidateAmount)
 	ls.DbRs.AddLocalFunc("reset_transaction_amount", ussdHandlers.ResetTransactionAmount)

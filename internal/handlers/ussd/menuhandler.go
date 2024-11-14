@@ -929,7 +929,7 @@ func (h *Handlers) ValidateBlockedNumber(ctx context.Context, sym string, input 
 // ValidateRecipient validates that the given input is a valid phone number.
 func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
-	var err error
+	store := h.userdataStore
 
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
@@ -939,18 +939,41 @@ func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []by
 	recipient := string(input)
 
 	flag_invalid_recipient, _ := h.flagManager.GetFlag("flag_invalid_recipient")
+	flag_invalid_recipient_with_invite, _ := h.flagManager.GetFlag("flag_invalid_recipient_with_invite")
 
 	if recipient != "0" {
-		// mimic invalid number check
-		if recipient == "000" {
+		if !isValidPhoneNumber(recipient) {
 			res.FlagSet = append(res.FlagSet, flag_invalid_recipient)
 			res.Content = recipient
 
 			return res, nil
 		}
-		store := h.userdataStore
-		err = store.WriteEntry(ctx, sessionId, common.DATA_RECIPIENT, []byte(recipient))
+
+		publicKey, err := store.ReadEntry(ctx, recipient, common.DATA_PUBLIC_KEY)
 		if err != nil {
+			if db.IsNotFound(err) {
+				logg.InfoCtxf(ctx, "Unregistered number")
+
+				// save the recipient as the temporaryInvitedNumber
+				err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(recipient))
+				if err != nil {
+					logg.ErrorCtxf(ctx, "failed to write temporaryInvitedNumber entry with", "key", common.DATA_TEMPORARY_VALUE, "value", recipient, "error", err)
+					return res, err
+				}
+
+				res.FlagSet = append(res.FlagSet, flag_invalid_recipient_with_invite)
+				res.Content = recipient
+
+				return res, nil
+			}
+
+			logg.ErrorCtxf(ctx, "failed to read publicKey entry with", "key", common.DATA_PUBLIC_KEY, "error", err)
+			return res, err
+		}
+
+		err = store.WriteEntry(ctx, sessionId, common.DATA_RECIPIENT, publicKey)
+		if err != nil {
+			logg.ErrorCtxf(ctx, "failed to write recipient entry with", "key", common.DATA_RECIPIENT, "value", string(publicKey), "error", err)
 			return res, nil
 		}
 	}
@@ -984,6 +1007,31 @@ func (h *Handlers) TransactionReset(ctx context.Context, sym string, input []byt
 
 	res.FlagReset = append(res.FlagReset, flag_invalid_recipient, flag_invalid_recipient_with_invite)
 
+	return res, nil
+}
+
+// InviteValidRecipient sends an invitation to the valid phone number.
+func (h *Handlers) InviteValidRecipient(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	store := h.userdataStore
+
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+
+	code := codeFromCtx(ctx)
+	l := gotext.NewLocale(translationDir, code)
+	l.AddDomain("default")
+
+	recipient, _ := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE)
+
+	// TODO
+	// send an invitation SMS
+	// if successful
+	// res.Content = l.Get("Your invitation to %s to join Sarafu Network has been sent.",  string(recipient))
+
+	res.Content = l.Get("Your invite request for %s to Sarafu Network failed. Please try again later.", string(recipient))
 	return res, nil
 }
 

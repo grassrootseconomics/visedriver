@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"math/big"
 	"path"
 	"regexp"
 	"strconv"
@@ -702,7 +703,7 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 	r, err := h.accountService.TrackAccountStatus(ctx, string(publicKey))
 	if err != nil {
 		res.FlagSet = append(res.FlagSet, flag_api_error)
-		logg.ErrorCtxf(ctx, "failed on TrackAccountStatus", err)
+		logg.ErrorCtxf(ctx, "failed on TrackAccountStatus", "error", err)
 		return res, err
 	}
 
@@ -1214,23 +1215,55 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 		return res, fmt.Errorf("missing session")
 	}
 
+	flag_api_error, _ := h.flagManager.GetFlag("flag_api_call_error")
+	account_authorized_flag, _ := h.flagManager.GetFlag("flag_account_authorized")
+
 	code := codeFromCtx(ctx)
 	l := gotext.NewLocale(translationDir, code)
 	l.AddDomain("default")
-	// TODO
-	// Use the amount, recipient and sender to call the API and initialize the transaction
+
 	store := h.userdataStore
-	amount, _ := store.ReadEntry(ctx, sessionId, common.DATA_AMOUNT)
-	recipient, _ := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE)
+	recipientNumber, _ := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE)
 	activeSym, _ := store.ReadEntry(ctx, sessionId, common.DATA_ACTIVE_SYM)
 
-	res.Content = l.Get("Your request has been sent. %s will receive %s %s from %s.", string(recipient), string(amount), string(activeSym), string(sessionId))
+	storedAmount, _ := store.ReadEntry(ctx, sessionId, common.DATA_AMOUNT)
+	fromAddress, _ := store.ReadEntry(ctx, sessionId, common.DATA_PUBLIC_KEY)
+	toAddress, _ := store.ReadEntry(ctx, sessionId, common.DATA_RECIPIENT)
+	activeDecimal, _ := store.ReadEntry(ctx, sessionId, common.DATA_ACTIVE_DECIMAL)
+	tokenAddress, _ := store.ReadEntry(ctx, sessionId, common.DATA_ACTIVE_ADDRESS)
 
-	account_authorized_flag, err := h.flagManager.GetFlag("flag_account_authorized")
+	// Parse tokendecimal
+	tokenDecimal, err := strconv.Atoi(string(activeDecimal))
 	if err != nil {
-		logg.ErrorCtxf(ctx, "Failed to set the flag_account_authorized", "error", err)
 		return res, err
 	}
+
+	// Parse amount and scale it
+	amount, _, err := big.ParseFloat(string(storedAmount), 10, 0, big.ToZero)
+	if err != nil {
+		return res, err
+	}
+
+	multiplier := new(big.Float).SetInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(tokenDecimal)), nil))
+	finalAmount := new(big.Float).Mul(amount, multiplier)
+
+	// Convert finalAmount to a string
+	finalAmountStr := new(big.Int)
+	finalAmount.Int(finalAmountStr)
+
+	// Call TokenTransfer
+	r, err := h.accountService.TokenTransfer(ctx, finalAmountStr.String(), string(fromAddress), string(toAddress), string(tokenAddress))
+	if err != nil {
+		res.Content = l.Get("Your request failed. Please try again later.")
+		res.FlagSet = append(res.FlagSet, flag_api_error)
+		logg.ErrorCtxf(ctx, "failed on TokenTransfer", "error", err)
+		return res, err
+	}
+
+	trackingId := r.TrackingId
+	logg.InfoCtxf(ctx, "TokenTransfer", "trackingId", trackingId)
+
+	res.Content = l.Get("Your request has been sent. %s will receive %s %s from %s.", string(recipientNumber), string(storedAmount), string(activeSym), string(sessionId))
 
 	res.FlagReset = append(res.FlagReset, account_authorized_flag)
 	return res, nil

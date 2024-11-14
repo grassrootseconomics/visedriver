@@ -929,6 +929,7 @@ func (h *Handlers) ValidateBlockedNumber(ctx context.Context, sym string, input 
 // ValidateRecipient validates that the given input is a valid phone number.
 func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
+	var err error
 	store := h.userdataStore
 
 	sessionId, ok := ctx.Value("SessionId").(string)
@@ -949,17 +950,17 @@ func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []by
 			return res, nil
 		}
 
+		// save the recipient as the temporaryRecipient
+		err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(recipient))
+		if err != nil {
+			logg.ErrorCtxf(ctx, "failed to write temporaryRecipient entry with", "key", common.DATA_TEMPORARY_VALUE, "value", recipient, "error", err)
+			return res, err
+		}
+
 		publicKey, err := store.ReadEntry(ctx, recipient, common.DATA_PUBLIC_KEY)
 		if err != nil {
 			if db.IsNotFound(err) {
 				logg.InfoCtxf(ctx, "Unregistered number")
-
-				// save the recipient as the temporaryInvitedNumber
-				err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(recipient))
-				if err != nil {
-					logg.ErrorCtxf(ctx, "failed to write temporaryInvitedNumber entry with", "key", common.DATA_TEMPORARY_VALUE, "value", recipient, "error", err)
-					return res, err
-				}
 
 				res.FlagSet = append(res.FlagSet, flag_invalid_recipient_with_invite)
 				res.Content = recipient
@@ -1133,7 +1134,7 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 	return res, nil
 }
 
-// GetRecipient returns the transaction recipient from the gdbm.
+// GetRecipient returns the transaction recipient phone number from the gdbm.
 func (h *Handlers) GetRecipient(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 
@@ -1142,7 +1143,7 @@ func (h *Handlers) GetRecipient(ctx context.Context, sym string, input []byte) (
 		return res, fmt.Errorf("missing session")
 	}
 	store := h.userdataStore
-	recipient, _ := store.ReadEntry(ctx, sessionId, common.DATA_RECIPIENT)
+	recipient, _ := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE)
 
 	res.Content = string(recipient)
 
@@ -1219,11 +1220,8 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 	// TODO
 	// Use the amount, recipient and sender to call the API and initialize the transaction
 	store := h.userdataStore
-
 	amount, _ := store.ReadEntry(ctx, sessionId, common.DATA_AMOUNT)
-
-	recipient, _ := store.ReadEntry(ctx, sessionId, common.DATA_RECIPIENT)
-
+	recipient, _ := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE)
 	activeSym, _ := store.ReadEntry(ctx, sessionId, common.DATA_ACTIVE_SYM)
 
 	res.Content = l.Get("Your request has been sent. %s will receive %s %s from %s.", string(recipient), string(amount), string(activeSym), string(sessionId))

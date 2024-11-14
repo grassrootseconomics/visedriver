@@ -5,7 +5,8 @@ RELOAD get_current_profile_info
 MAP get_current_profile_info
 MOUT back 0
 HALT
-LOAD verify_yob 0
+LOAD verify_yob 6
+RELOAD verify_yob
 CATCH incorrect_date_format flag_incorrect_date_format 1
 LOAD save_yob 0
 RELOAD save_yob

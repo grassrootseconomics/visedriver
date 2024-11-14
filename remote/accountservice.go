@@ -16,11 +16,6 @@ import (
 	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 )
 
-var (
-	InfoLogger  *log.Logger
-	ErrorLogger *log.Logger
-)
-
 type AccountServiceInterface interface {
 	CheckBalance(ctx context.Context, publicKey string) (*models.BalanceResult, error)
 	CreateAccount(ctx context.Context) (*models.AccountResult, error)
@@ -98,7 +93,6 @@ func (as *AccountService) CreateAccount(ctx context.Context) (*models.AccountRes
 	}
 	_, err = doCustodialRequest(ctx, req, &r)
 	if err != nil {
-		log.Printf("Failed to make custodial %s request to endpoint: %s with reason: %s", req.Method, req.URL, err.Error())
 		return nil, err
 	}
 
@@ -179,12 +173,13 @@ func doRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKRespons
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
+		log.Printf("Failed to make %s request to endpoint: %s with reason: %s", req.Method, req.URL, err.Error())
 		errResponse.Description = err.Error()
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	InfoLogger.Printf("Received response for %s: Status Code: %d | Content-Type: %s", req.URL, resp.StatusCode, resp.Header.Get("Content-Type"))
+	log.Printf("Received response for %s: Status Code: %d | Content-Type: %s", req.URL, resp.StatusCode, resp.Header.Get("Content-Type"))
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -214,13 +209,13 @@ func doRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKRespons
 }
 
 func doCustodialRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKResponse, error) {
-	req.Header.Set("X-GE-KEY", config.CustodialAPIKey)
+	req.Header.Set("Authorization", "Bearer "+config.CustodialBearerToken)
 	logRequestDetails(req)
 	return doRequest(ctx, req, rcpt)
 }
 
 func doDataRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKResponse, error) {
-	req.Header.Set("X-GE-KEY", config.DataAPIKey)
+	req.Header.Set("Authorization", "Bearer "+config.DataBearerToken)
 	logRequestDetails(req)
 	return doRequest(ctx, req, rcpt)
 }
@@ -231,7 +226,7 @@ func logRequestDetails(req *http.Request) {
 	if req.Body != nil {
 		bodyBytes, err := io.ReadAll(req.Body)
 		if err != nil {
-			ErrorLogger.Printf("Error reading request body: %s", err)
+			log.Printf("Error reading request body: %s", err)
 			return
 		}
 		req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
@@ -239,5 +234,5 @@ func logRequestDetails(req *http.Request) {
 		bodyBytes = []byte("-")
 	}
 
-	InfoLogger.Printf("URL: %s  | Content-Type: %s | Method: %s| Request Body: %s", req.URL, contentType, req.Method, string(bodyBytes))
+	log.Printf("URL: %s | Content-Type: %s | Method: %s| Request Body: %s", req.URL, contentType, req.Method, string(bodyBytes))
 }

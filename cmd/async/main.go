@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"path"
@@ -24,27 +23,12 @@ import (
 var (
 	logg      = logging.NewVanilla()
 	scriptDir = path.Join("services", "registration")
-	InfoLogger    *log.Logger
-	ErrorLogger   *log.Logger
 )
 
 func init() {
 	initializers.LoadEnvVariables()
-
-	logFile := "urdt-ussd-async.log"
-
-	file, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	InfoLogger = log.New(file, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
-	ErrorLogger = log.New(file, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
-
-	// Inject into remote package
-	remote.InfoLogger = InfoLogger
-	remote.ErrorLogger = ErrorLogger
 }
+
 type asyncRequestParser struct {
 	sessionId string
 	input     []byte

@@ -7,30 +7,30 @@ import (
 )
 
 const (
-	createAccountPath = "/api/v2/account/create"
-	trackStatusPath = "/api/track"
-	balancePathPrefix = "/api/account"
-	trackPath = "/api/v2/account/status"
-	voucherHoldingsPathPrefix = "/api/v1/holdings"
+	createAccountPath          = "/api/v2/account/create"
+	trackStatusPath            = "/api/track"
+	balancePathPrefix          = "/api/account"
+	trackPath                  = "/api/v2/account/status"
+	voucherHoldingsPathPrefix  = "/api/v1/holdings"
 	voucherTransfersPathPrefix = "/api/v1/transfers/last10"
-	voucherDataPathPrefix = "/api/v1/token"
+	voucherDataPathPrefix      = "/api/v1/token"
 )
 
 var (
-	custodialURLBase string
-	dataURLBase string
-	CustodialAPIKey string
-	DataAPIKey string
+	custodialURLBase     string
+	dataURLBase          string
+	CustodialBearerToken string
+	DataBearerToken      string
 )
 
 var (
-	CreateAccountURL string
-	TrackStatusURL   string
-	BalanceURL	string
-	TrackURL         string
-	VoucherHoldingsURL	string
-	VoucherTransfersURL	string
-	VoucherDataURL	string
+	CreateAccountURL    string
+	TrackStatusURL      string
+	BalanceURL          string
+	TrackURL            string
+	VoucherHoldingsURL  string
+	VoucherTransfersURL string
+	VoucherDataURL      string
 )
 
 func setBase() error {
@@ -38,8 +38,8 @@ func setBase() error {
 
 	custodialURLBase = initializers.GetEnv("CUSTODIAL_URL_BASE", "http://localhost:5003")
 	dataURLBase = initializers.GetEnv("DATA_URL_BASE", "http://localhost:5006")
-	CustodialAPIKey = initializers.GetEnv("CUSTODIAL_API_KEY", "xd")
-	DataAPIKey = initializers.GetEnv("DATA_API_KEY", "xd")
+	CustodialBearerToken = initializers.GetEnv("CUSTODIAL_BEARER_TOKEN", "")
+	DataBearerToken = initializers.GetEnv("DATA_BEARER_TOKEN", "")
 
 	_, err = url.JoinPath(custodialURLBase, "/foo")
 	if err != nil {
@@ -58,7 +58,7 @@ func LoadConfig() error {
 	if err != nil {
 		return err
 	}
-	CreateAccountURL, _  = url.JoinPath(custodialURLBase, createAccountPath)
+	CreateAccountURL, _ = url.JoinPath(custodialURLBase, createAccountPath)
 	TrackStatusURL, _ = url.JoinPath(custodialURLBase, trackStatusPath)
 	BalanceURL, _ = url.JoinPath(custodialURLBase, balancePathPrefix)
 	TrackURL, _ = url.JoinPath(custodialURLBase, trackPath)

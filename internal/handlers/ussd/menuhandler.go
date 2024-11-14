@@ -1447,6 +1447,8 @@ func (h *Handlers) SetDefaultVoucher(ctx context.Context, sym string, input []by
 			firstVoucher := vouchersResp[0]
 			defaultSym := firstVoucher.TokenSymbol
 			defaultBal := firstVoucher.Balance
+			defaultDec := firstVoucher.TokenDecimals
+			defaultAddr := firstVoucher.ContractAddress
 
 			// set the active symbol
 			err = store.WriteEntry(ctx, sessionId, common.DATA_ACTIVE_SYM, []byte(defaultSym))
@@ -1458,6 +1460,18 @@ func (h *Handlers) SetDefaultVoucher(ctx context.Context, sym string, input []by
 			err = store.WriteEntry(ctx, sessionId, common.DATA_ACTIVE_BAL, []byte(defaultBal))
 			if err != nil {
 				logg.ErrorCtxf(ctx, "failed to write defaultBal entry with", "key", common.DATA_ACTIVE_BAL, "value", defaultBal, "error", err)
+				return res, err
+			}
+			// set the active decimals
+			err = store.WriteEntry(ctx, sessionId, common.DATA_ACTIVE_DECIMAL, []byte(defaultDec))
+			if err != nil {
+				logg.ErrorCtxf(ctx, "failed to write defaultDec entry with", "key", common.DATA_ACTIVE_DECIMAL, "value", defaultDec, "error", err)
+				return res, err
+			}
+			// set the active contract address
+			err = store.WriteEntry(ctx, sessionId, common.DATA_ACTIVE_ADDRESS, []byte(defaultAddr))
+			if err != nil {
+				logg.ErrorCtxf(ctx, "failed to write defaultAddr entry with", "key", common.DATA_ACTIVE_ADDRESS, "value", defaultAddr, "error", err)
 				return res, err
 			}
 

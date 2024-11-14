@@ -23,6 +23,7 @@ type AccountServiceInterface interface {
 	FetchVouchers(ctx context.Context, publicKey string) ([]dataserviceapi.TokenHoldings, error)
 	FetchTransactions(ctx context.Context, publicKey string) ([]dataserviceapi.Last10TxResponse, error)
 	VoucherData(ctx context.Context, address string) (*models.VoucherDataResult, error)
+	TokenTransfer(ctx context.Context, amount, from, to, tokenAddress string) (*models.TokenTransferResponse, error)
 }
 
 type AccountService struct {
@@ -165,6 +166,41 @@ func (as *AccountService) VoucherData(ctx context.Context, address string) (*mod
 
 	_, err = doCustodialRequest(ctx, req, &voucherDataResult)
 	return &voucherDataResult, err
+}
+
+// TokenTransfer creates a new token transfer in the custodial system.
+// Returns:
+//   - *models.TokenTransferResponse: A pointer to an TokenTransferResponse struct containing the trackingId.
+//     If there is an error during the request or processing, this will be nil.
+//   - error: An error if any occurred during the HTTP request, reading the response, or unmarshalling the JSON data.
+//     If no error occurs, this will be nil.
+func (as *AccountService) TokenTransfer(ctx context.Context, amount, from, to, tokenAddress string) (*models.TokenTransferResponse, error) {
+	var r models.TokenTransferResponse
+
+	// Create request payload
+	payload := map[string]string{
+		"amount":       amount,
+		"from":         from,
+		"to":           to,
+		"tokenAddress": tokenAddress,
+	}
+
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a new request
+	req, err := http.NewRequest("POST", config.TokenTransferURL, bytes.NewBuffer(payloadBytes))
+	if err != nil {
+		return nil, err
+	}
+	_, err = doCustodialRequest(ctx, req, &r)
+	if err != nil {
+		return nil, err
+	}
+
+	return &r, nil
 }
 
 func doRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKResponse, error) {

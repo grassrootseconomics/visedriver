@@ -2,6 +2,8 @@ package common
 
 import (
 	"testing"
+
+	"github.com/alecthomas/assert/v2"
 )
 
 func TestParseAndScaleAmount(t *testing.T) {
@@ -85,4 +87,43 @@ func TestParseAndScaleAmount(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestReadTransactionData(t *testing.T) {
+	sessionId := "session123"
+	publicKey := "0X13242618721"
+	ctx, store := InitializeTestDb(t)
+
+	// Test transaction data
+	transactionData := map[DataTyp]string{
+		DATA_TEMPORARY_VALUE: "0712345678",
+		DATA_ACTIVE_SYM:      "SRF",
+		DATA_AMOUNT:          "1000000",
+		DATA_PUBLIC_KEY:      publicKey,
+		DATA_RECIPIENT:       "0x41c188d63Qa",
+		DATA_ACTIVE_DECIMAL:  "6",
+		DATA_ACTIVE_ADDRESS:  "0xd4c288865Ce",
+	}
+
+	// Store the data
+	for key, value := range transactionData {
+		if err := store.WriteEntry(ctx, sessionId, key, []byte(value)); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	expectedResult := TransactionData{
+		TemporaryValue: "0712345678",
+		ActiveSym:      "SRF",
+		Amount:         "1000000",
+		PublicKey:      publicKey,
+		Recipient:      "0x41c188d63Qa",
+		ActiveDecimal:  "6",
+		ActiveAddress:  "0xd4c288865Ce",
+	}
+
+	data, err := ReadTransactionData(ctx, store, sessionId)
+
+	assert.NoError(t, err)
+	assert.Equal(t, expectedResult, data)
 }

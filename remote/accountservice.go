@@ -156,7 +156,9 @@ func (as *AccountService) FetchTransactions(ctx context.Context, publicKey strin
 // Parameters:
 //   - address: The voucher address.
 func (as *AccountService) VoucherData(ctx context.Context, address string) (*models.VoucherDataResult, error) {
-	var voucherDataResult models.VoucherDataResult
+	var r struct {
+		TokenDetails models.VoucherDataResult `json:"tokenDetails"`
+	}
 
 	ep, err := url.JoinPath(config.VoucherDataURL, address)
 	if err != nil {
@@ -168,8 +170,8 @@ func (as *AccountService) VoucherData(ctx context.Context, address string) (*mod
 		return nil, err
 	}
 
-	_, err = doRequest(ctx, req, &voucherDataResult)
-	return &voucherDataResult, err
+	_, err = doRequest(ctx, req, &r)
+	return &r.TokenDetails, err
 }
 
 // TokenTransfer creates a new token transfer in the custodial system.

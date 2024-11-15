@@ -2,20 +2,32 @@ package common
 
 import (
 	"context"
+	"errors"
 	"math/big"
+	"reflect"
 	"strconv"
 )
 
-func ParseAndScaleAmount(storedAmount, activeDecimal []byte) (string, error) {
+type TransactionData struct {
+	TemporaryValue string
+	ActiveSym      string
+	Amount         string
+	PublicKey      string
+	Recipient      string
+	ActiveDecimal  string
+	ActiveAddress  string
+}
+
+func ParseAndScaleAmount(storedAmount, activeDecimal string) (string, error) {
 	// Parse token decimal
-	tokenDecimal, err := strconv.Atoi(string(activeDecimal))
+	tokenDecimal, err := strconv.Atoi(activeDecimal)
 	if err != nil {
 
 		return "", err
 	}
 
 	// Parse amount
-	amount, _, err := big.ParseFloat(string(storedAmount), 10, 0, big.ToZero)
+	amount, _, err := big.ParseFloat(storedAmount, 10, 0, big.ToZero)
 	if err != nil {
 		return "", err
 	}
@@ -31,24 +43,39 @@ func ParseAndScaleAmount(storedAmount, activeDecimal []byte) (string, error) {
 	return finalAmountStr.String(), nil
 }
 
-func ReadTransactionData(ctx context.Context, store DataStore, sessionId string) (map[DataTyp][]byte, error) {
-	dataKeys := []DataTyp{
-		DATA_TEMPORARY_VALUE,
-		DATA_ACTIVE_SYM,
-		DATA_AMOUNT,
-		DATA_PUBLIC_KEY,
-		DATA_RECIPIENT,
-		DATA_ACTIVE_DECIMAL,
-		DATA_ACTIVE_ADDRESS,
+func ReadTransactionData(ctx context.Context, store DataStore, sessionId string) (TransactionData, error) {
+	data := TransactionData{}
+	fieldToKey := map[string]DataTyp{
+		"TemporaryValue": DATA_TEMPORARY_VALUE,
+		"ActiveSym":      DATA_ACTIVE_SYM,
+		"Amount":         DATA_AMOUNT,
+		"PublicKey":      DATA_PUBLIC_KEY,
+		"Recipient":      DATA_RECIPIENT,
+		"ActiveDecimal":  DATA_ACTIVE_DECIMAL,
+		"ActiveAddress":  DATA_ACTIVE_ADDRESS,
 	}
 
-	data := make(map[DataTyp][]byte)
-	for _, key := range dataKeys {
-		value, err := store.ReadEntry(ctx, sessionId, key)
-		if err != nil {
-			return nil, err
+	v := reflect.ValueOf(&data).Elem()
+	for fieldName, key := range fieldToKey {
+		field := v.FieldByName(fieldName)
+		if !field.IsValid() || !field.CanSet() {
+			return data, errors.New("invalid struct field: " + fieldName)
 		}
-		data[key] = value
+
+		value, err := readStringEntry(ctx, store, sessionId, key)
+		if err != nil {
+			return data, err
+		}
+		field.SetString(value)
 	}
+
 	return data, nil
+}
+
+func readStringEntry(ctx context.Context, store DataStore, sessionId string, key DataTyp) (string, error) {
+	entry, err := store.ReadEntry(ctx, sessionId, key)
+	if err != nil {
+		return "", err
+	}
+	return string(entry), nil
 }

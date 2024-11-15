@@ -1224,13 +1224,13 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 		return res, err
 	}
 
-	finalAmountStr, err := common.ParseAndScaleAmount(data[common.DATA_AMOUNT], data[common.DATA_ACTIVE_DECIMAL])
+	finalAmountStr, err := common.ParseAndScaleAmount(data.Amount, data.ActiveDecimal)
 	if err != nil {
 		return res, err
 	}
 
 	// Call TokenTransfer
-	r, err := h.accountService.TokenTransfer(ctx, finalAmountStr, string(data[common.DATA_PUBLIC_KEY]), string(data[common.DATA_RECIPIENT]), string(data[common.DATA_ACTIVE_ADDRESS]))
+	r, err := h.accountService.TokenTransfer(ctx, finalAmountStr, data.PublicKey, data.Recipient, data.ActiveAddress)
 	if err != nil {
 		flag_api_error, _ := h.flagManager.GetFlag("flag_api_call_error")
 		res.FlagSet = append(res.FlagSet, flag_api_error)
@@ -1244,9 +1244,9 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 
 	res.Content = l.Get(
 		"Your request has been sent. %s will receive %s %s from %s.",
-		string(data[common.DATA_TEMPORARY_VALUE]),
-		string(data[common.DATA_AMOUNT]),
-		string(data[common.DATA_ACTIVE_SYM]),
+		data.TemporaryValue,
+		data.Amount,
+		data.ActiveSym,
 		sessionId,
 	)
 

@@ -1624,3 +1624,36 @@ func (h *Handlers) SetVoucher(ctx context.Context, sym string, input []byte) (re
 	res.Content = tempData.TokenSymbol
 	return res, nil
 }
+
+// GetVoucherDetails retrieves the voucher details
+func (h *Handlers) GetVoucherDetails(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	store := h.userdataStore
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+
+	flag_api_error, _ := h.flagManager.GetFlag("flag_api_call_error")
+
+	// get the active address
+	activeAddress, err := store.ReadEntry(ctx, sessionId, common.DATA_ACTIVE_ADDRESS)
+	if err != nil {
+		logg.ErrorCtxf(ctx, "failed to read activeAddress entry with", "key", common.DATA_ACTIVE_ADDRESS, "error", err)
+		return res, err
+	}
+
+	// use the voucher contract address to get the data from the API
+	voucherData, err := h.accountService.VoucherData(ctx, string(activeAddress))
+	if err != nil {
+		res.FlagSet = append(res.FlagSet, flag_api_error)
+		return res, nil
+	}
+
+	tokenSymbol := voucherData.TokenSymbol
+	tokenName := voucherData.TokenName
+
+	res.Content = fmt.Sprintf("%s %s", tokenSymbol, tokenName)
+
+	return res, nil
+}

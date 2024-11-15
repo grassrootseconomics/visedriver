@@ -18,10 +18,9 @@ const (
 )
 
 var (
-	custodialURLBase     string
-	dataURLBase          string
-	CustodialBearerToken string
-	DataBearerToken      string
+	custodialURLBase string
+	dataURLBase      string
+	BearerToken      string
 )
 
 var (
@@ -40,8 +39,7 @@ func setBase() error {
 
 	custodialURLBase = initializers.GetEnv("CUSTODIAL_URL_BASE", "http://localhost:5003")
 	dataURLBase = initializers.GetEnv("DATA_URL_BASE", "http://localhost:5006")
-	CustodialBearerToken = initializers.GetEnv("CUSTODIAL_BEARER_TOKEN", "")
-	DataBearerToken = initializers.GetEnv("DATA_BEARER_TOKEN", "")
+	BearerToken = initializers.GetEnv("BEARER_TOKEN", "")
 
 	_, err = url.JoinPath(custodialURLBase, "/foo")
 	if err != nil {

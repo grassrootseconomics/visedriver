@@ -51,7 +51,7 @@ func (as *AccountService) TrackAccountStatus(ctx context.Context, publicKey stri
 		return nil, err
 	}
 
-	_, err = doCustodialRequest(ctx, req, &r)
+	_, err = doRequest(ctx, req, &r)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func (as *AccountService) CheckBalance(ctx context.Context, publicKey string) (*
 		return nil, err
 	}
 
-	_, err = doCustodialRequest(ctx, req, &balanceResult)
+	_, err = doRequest(ctx, req, &balanceResult)
 	return &balanceResult, err
 }
 
@@ -92,7 +92,7 @@ func (as *AccountService) CreateAccount(ctx context.Context) (*models.AccountRes
 	if err != nil {
 		return nil, err
 	}
-	_, err = doCustodialRequest(ctx, req, &r)
+	_, err = doRequest(ctx, req, &r)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,9 @@ func (as *AccountService) CreateAccount(ctx context.Context) (*models.AccountRes
 // Parameters:
 //   - publicKey: The public key associated with the account.
 func (as *AccountService) FetchVouchers(ctx context.Context, publicKey string) ([]dataserviceapi.TokenHoldings, error) {
-	var r []dataserviceapi.TokenHoldings
+	var r struct {
+		Holdings []dataserviceapi.TokenHoldings `json:"holdings"`
+	}
 
 	ep, err := url.JoinPath(config.VoucherHoldingsURL, publicKey)
 	if err != nil {
@@ -116,19 +118,21 @@ func (as *AccountService) FetchVouchers(ctx context.Context, publicKey string) (
 		return nil, err
 	}
 
-	_, err = doDataRequest(ctx, req, r)
+	_, err = doRequest(ctx, req, &r)
 	if err != nil {
 		return nil, err
 	}
 
-	return r, nil
+	return r.Holdings, nil
 }
 
 // FetchTransactions retrieves the last 10 transactions for a given public key from the data indexer API endpoint
 // Parameters:
 //   - publicKey: The public key associated with the account.
 func (as *AccountService) FetchTransactions(ctx context.Context, publicKey string) ([]dataserviceapi.Last10TxResponse, error) {
-	var r []dataserviceapi.Last10TxResponse
+	var r struct {
+		Transfers []dataserviceapi.Last10TxResponse `json:"transfers"`
+	}
 
 	ep, err := url.JoinPath(config.VoucherTransfersURL, publicKey)
 	if err != nil {
@@ -140,12 +144,12 @@ func (as *AccountService) FetchTransactions(ctx context.Context, publicKey strin
 		return nil, err
 	}
 
-	_, err = doDataRequest(ctx, req, r)
+	_, err = doRequest(ctx, req, &r)
 	if err != nil {
 		return nil, err
 	}
 
-	return r, nil
+	return r.Transfers, nil
 }
 
 // VoucherData retrieves voucher metadata from the data indexer API endpoint.
@@ -164,7 +168,7 @@ func (as *AccountService) VoucherData(ctx context.Context, address string) (*mod
 		return nil, err
 	}
 
-	_, err = doCustodialRequest(ctx, req, &voucherDataResult)
+	_, err = doRequest(ctx, req, &voucherDataResult)
 	return &voucherDataResult, err
 }
 
@@ -195,7 +199,7 @@ func (as *AccountService) TokenTransfer(ctx context.Context, amount, from, to, t
 	if err != nil {
 		return nil, err
 	}
-	_, err = doCustodialRequest(ctx, req, &r)
+	_, err = doRequest(ctx, req, &r)
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +210,12 @@ func (as *AccountService) TokenTransfer(ctx context.Context, amount, from, to, t
 func doRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKResponse, error) {
 	var okResponse api.OKResponse
 	var errResponse api.ErrResponse
+
+	req.Header.Set("Authorization", "Bearer "+config.BearerToken)
 	req.Header.Set("Content-Type", "application/json")
+
+	logRequestDetails(req)
+
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Printf("Failed to make %s request to endpoint: %s with reason: %s", req.Method, req.URL, err.Error())
@@ -242,18 +251,6 @@ func doRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKRespons
 
 	err = json.Unmarshal(v, &rcpt)
 	return &okResponse, err
-}
-
-func doCustodialRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKResponse, error) {
-	req.Header.Set("Authorization", "Bearer "+config.CustodialBearerToken)
-	logRequestDetails(req)
-	return doRequest(ctx, req, rcpt)
-}
-
-func doDataRequest(ctx context.Context, req *http.Request, rcpt any) (*api.OKResponse, error) {
-	req.Header.Set("Authorization", "Bearer "+config.DataBearerToken)
-	logRequestDetails(req)
-	return doRequest(ctx, req, rcpt)
 }
 
 func logRequestDetails(req *http.Request) {

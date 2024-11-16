@@ -3,6 +3,7 @@ package common
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"strings"
 
 	"git.grassecon.net/urdt/ussd/internal/storage"
@@ -24,7 +25,11 @@ func ProcessVouchers(holdings []dataserviceapi.TokenHoldings) VoucherMetadata {
 
 	for i, h := range holdings {
 		symbols = append(symbols, fmt.Sprintf("%d:%s", i+1, h.TokenSymbol))
-		balances = append(balances, fmt.Sprintf("%d:%s", i+1, h.Balance))
+
+		// Scale down the balance
+		scaledBalance := ScaleDownBalance(h.Balance, h.TokenDecimals)
+
+		balances = append(balances, fmt.Sprintf("%d:%s", i+1, scaledBalance))
 		decimals = append(decimals, fmt.Sprintf("%d:%s", i+1, h.TokenDecimals))
 		addresses = append(addresses, fmt.Sprintf("%d:%s", i+1, h.ContractAddress))
 	}
@@ -35,6 +40,26 @@ func ProcessVouchers(holdings []dataserviceapi.TokenHoldings) VoucherMetadata {
 	data.Addresses = strings.Join(addresses, "\n")
 
 	return data
+}
+
+func ScaleDownBalance(balance, decimals string) string {
+	// Convert balance and decimals to big.Float
+	bal := new(big.Float)
+	bal.SetString(balance)
+
+	dec, ok := new(big.Int).SetString(decimals, 10)
+	if !ok {
+		dec = big.NewInt(0) // Default to 0 decimals in case of conversion failure
+	}
+
+	divisor := new(big.Float).SetInt(new(big.Int).Exp(big.NewInt(10), dec, nil))
+	scaledBalance := new(big.Float).Quo(bal, divisor)
+
+	// Return the scaled balance without trailing decimals if it's an integer
+	if scaledBalance.IsInt() {
+		return scaledBalance.Text('f', 0)
+	}
+	return scaledBalance.Text('f', -1)
 }
 
 // GetVoucherData retrieves and matches voucher data
@@ -75,7 +100,7 @@ func MatchVoucher(input, symbols, balances, decimals, addresses string) (symbol,
 	decList := strings.Split(decimals, "\n")
 	addrList := strings.Split(addresses, "\n")
 
-	logg.Tracef("found" , "symlist", symList, "syms", symbols, "input", input)
+	logg.Tracef("found", "symlist", symList, "syms", symbols, "input", input)
 	for i, sym := range symList {
 		parts := strings.SplitN(sym, ":", 2)
 

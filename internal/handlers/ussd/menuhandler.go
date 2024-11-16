@@ -1468,6 +1468,9 @@ func (h *Handlers) SetDefaultVoucher(ctx context.Context, sym string, input []by
 			defaultDec := firstVoucher.TokenDecimals
 			defaultAddr := firstVoucher.ContractAddress
 
+			// Scale down the balance
+			scaledBalance := common.ScaleDownBalance(defaultBal, defaultDec)
+
 			// set the active symbol
 			err = store.WriteEntry(ctx, sessionId, common.DATA_ACTIVE_SYM, []byte(defaultSym))
 			if err != nil {
@@ -1475,9 +1478,9 @@ func (h *Handlers) SetDefaultVoucher(ctx context.Context, sym string, input []by
 				return res, err
 			}
 			// set the active balance
-			err = store.WriteEntry(ctx, sessionId, common.DATA_ACTIVE_BAL, []byte(defaultBal))
+			err = store.WriteEntry(ctx, sessionId, common.DATA_ACTIVE_BAL, []byte(scaledBalance))
 			if err != nil {
-				logg.ErrorCtxf(ctx, "failed to write defaultBal entry with", "key", common.DATA_ACTIVE_BAL, "value", defaultBal, "error", err)
+				logg.ErrorCtxf(ctx, "failed to write defaultBal entry with", "key", common.DATA_ACTIVE_BAL, "value", scaledBalance, "error", err)
 				return res, err
 			}
 			// set the active decimals
@@ -1563,6 +1566,7 @@ func (h *Handlers) GetVoucherList(ctx context.Context, sym string, input []byte)
 }
 
 // ViewVoucher retrieves the token holding and balance from the subprefixDB
+// and displays it to the user for them to select it
 func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	sessionId, ok := ctx.Value("SessionId").(string)

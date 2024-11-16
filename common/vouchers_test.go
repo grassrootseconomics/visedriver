@@ -59,13 +59,13 @@ func TestMatchVoucher(t *testing.T) {
 
 func TestProcessVouchers(t *testing.T) {
 	holdings := []dataserviceapi.TokenHoldings{
-		{ContractAddress: "0xd4c288865Ce", TokenSymbol: "SRF", TokenDecimals: "6", Balance: "100"},
-		{ContractAddress: "0x41c188d63Qa", TokenSymbol: "MILO", TokenDecimals: "4", Balance: "200"},
+		{ContractAddress: "0xd4c288865Ce", TokenSymbol: "SRF", TokenDecimals: "6", Balance: "100000000"},
+		{ContractAddress: "0x41c188d63Qa", TokenSymbol: "MILO", TokenDecimals: "4", Balance: "200000000"},
 	}
 
 	expectedResult := VoucherMetadata{
 		Symbols:   "1:SRF\n2:MILO",
-		Balances:  "1:100\n2:200",
+		Balances:  "1:100\n2:20000",
 		Decimals:  "1:6\n2:4",
 		Addresses: "1:0xd4c288865Ce\n2:0x41c188d63Qa",
 	}

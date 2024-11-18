@@ -586,9 +586,9 @@ func TestGetRecipient(t *testing.T) {
 	ctx, store := InitializeTestStore(t)
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
 
-	recepient := "0xcasgatweksalw1018221"
+	recepient := "0712345678"
 
-	err := store.WriteEntry(ctx, sessionId, common.DATA_RECIPIENT, []byte(recepient))
+	err := store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(recepient))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1226,32 +1226,41 @@ func TestInitiateTransaction(t *testing.T) {
 	}
 
 	tests := []struct {
-		name           string
-		input          []byte
-		Recipient      []byte
-		Amount         []byte
-		ActiveSym      []byte
-		status         string
-		expectedResult resource.Result
+		name             string
+		TemporaryValue   []byte
+		ActiveSym        []byte
+		StoredAmount     []byte
+		TransferAmount   string
+		PublicKey        []byte
+		Recipient        []byte
+		ActiveDecimal    []byte
+		ActiveAddress    []byte
+		TransferResponse *models.TokenTransferResponse
+		expectedResult   resource.Result
 	}{
 		{
-			name:      "Test initiate transaction",
-			Amount:    []byte("0.002"),
-			ActiveSym: []byte("SRF"),
-			Recipient: []byte("0x12415ass27192"),
+			name:           "Test initiate transaction",
+			TemporaryValue: []byte("0711223344"),
+			ActiveSym:      []byte("SRF"),
+			StoredAmount:   []byte("1.00"),
+			TransferAmount: "1000000",
+			PublicKey:      []byte("0X13242618721"),
+			Recipient:      []byte("0x12415ass27192"),
+			ActiveDecimal:  []byte("6"),
+			ActiveAddress:  []byte("0xd4c288865Ce"),
+			TransferResponse: &models.TokenTransferResponse{
+				TrackingId: "1234567890",
+			},
 			expectedResult: resource.Result{
 				FlagReset: []uint32{account_authorized_flag},
-				Content:   "Your request has been sent. 0x12415ass27192 will receive 0.002 SRF from 254712345678.",
+				Content:   "Your request has been sent. 0711223344 will receive 1.00 SRF from 254712345678.",
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := store.WriteEntry(ctx, sessionId, common.DATA_AMOUNT, []byte(tt.Amount))
-			if err != nil {
-				t.Fatal(err)
-			}
-			err = store.WriteEntry(ctx, sessionId, common.DATA_RECIPIENT, []byte(tt.Recipient))
+			err := store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(tt.TemporaryValue))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1259,9 +1268,31 @@ func TestInitiateTransaction(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			err = store.WriteEntry(ctx, sessionId, common.DATA_AMOUNT, []byte(tt.StoredAmount))
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = store.WriteEntry(ctx, sessionId, common.DATA_PUBLIC_KEY, []byte(tt.PublicKey))
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = store.WriteEntry(ctx, sessionId, common.DATA_RECIPIENT, []byte(tt.Recipient))
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = store.WriteEntry(ctx, sessionId, common.DATA_ACTIVE_DECIMAL, []byte(tt.ActiveDecimal))
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = store.WriteEntry(ctx, sessionId, common.DATA_ACTIVE_ADDRESS, []byte(tt.ActiveAddress))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			mockAccountService.On("TokenTransfer").Return(tt.TransferResponse, nil)
 
 			// Call the method under test
-			res, _ := h.InitiateTransaction(ctx, "transaction_reset_amount", tt.input)
+			res, _ := h.InitiateTransaction(ctx, "transaction_reset_amount", []byte(""))
 
 			// Assert that no errors occurred
 			assert.NoError(t, err)
@@ -1453,10 +1484,12 @@ func TestValidateRecipient(t *testing.T) {
 	}
 
 	sessionId := "session123"
+	publicKey := "0X13242618721"
 	ctx, store := InitializeTestStore(t)
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
 
 	flag_invalid_recipient, _ := fm.parser.GetFlag("flag_invalid_recipient")
+	flag_invalid_recipient_with_invite, _ := fm.parser.GetFlag("flag_invalid_recipient_with_invite")
 
 	// Define test cases
 	tests := []struct {
@@ -1466,17 +1499,31 @@ func TestValidateRecipient(t *testing.T) {
 	}{
 		{
 			name:  "Test with invalid recepient",
-			input: []byte("000"),
+			input: []byte("9234adf5"),
 			expectedResult: resource.Result{
 				FlagSet: []uint32{flag_invalid_recipient},
-				Content: "000",
+				Content: "9234adf5",
 			},
 		},
 		{
-			name:           "Test with valid recepient",
-			input:          []byte("0705X2"),
+			name:  "Test with valid unregistered recepient",
+			input: []byte("0712345678"),
+			expectedResult: resource.Result{
+				FlagSet: []uint32{flag_invalid_recipient_with_invite},
+				Content: "0712345678",
+			},
+		},
+		{
+			name:           "Test with valid registered recepient",
+			input:          []byte("0711223344"),
 			expectedResult: resource.Result{},
 		},
+	}
+
+	// store a public key for the valid recipient
+	err = store.WriteEntry(ctx, "0711223344", common.DATA_PUBLIC_KEY, []byte(publicKey))
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	for _, tt := range tests {
@@ -1987,7 +2034,7 @@ func TestSetVoucher(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	res, err := h.SetVoucher(ctx, "set_voucher", []byte{})
+	res, err := h.SetVoucher(ctx, "set_voucher", []byte(""))
 
 	assert.NoError(t, err)
 

@@ -702,7 +702,7 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 	r, err := h.accountService.TrackAccountStatus(ctx, string(publicKey))
 	if err != nil {
 		res.FlagSet = append(res.FlagSet, flag_api_error)
-		logg.ErrorCtxf(ctx, "failed on TrackAccountStatus", err)
+		logg.ErrorCtxf(ctx, "failed on TrackAccountStatus", "error", err)
 		return res, err
 	}
 
@@ -930,6 +930,7 @@ func (h *Handlers) ValidateBlockedNumber(ctx context.Context, sym string, input 
 func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	var err error
+	store := h.userdataStore
 
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
@@ -939,18 +940,41 @@ func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []by
 	recipient := string(input)
 
 	flag_invalid_recipient, _ := h.flagManager.GetFlag("flag_invalid_recipient")
+	flag_invalid_recipient_with_invite, _ := h.flagManager.GetFlag("flag_invalid_recipient_with_invite")
 
 	if recipient != "0" {
-		// mimic invalid number check
-		if recipient == "000" {
+		if !isValidPhoneNumber(recipient) {
 			res.FlagSet = append(res.FlagSet, flag_invalid_recipient)
 			res.Content = recipient
 
 			return res, nil
 		}
-		store := h.userdataStore
-		err = store.WriteEntry(ctx, sessionId, common.DATA_RECIPIENT, []byte(recipient))
+
+		// save the recipient as the temporaryRecipient
+		err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(recipient))
 		if err != nil {
+			logg.ErrorCtxf(ctx, "failed to write temporaryRecipient entry with", "key", common.DATA_TEMPORARY_VALUE, "value", recipient, "error", err)
+			return res, err
+		}
+
+		publicKey, err := store.ReadEntry(ctx, recipient, common.DATA_PUBLIC_KEY)
+		if err != nil {
+			if db.IsNotFound(err) {
+				logg.InfoCtxf(ctx, "Unregistered number")
+
+				res.FlagSet = append(res.FlagSet, flag_invalid_recipient_with_invite)
+				res.Content = recipient
+
+				return res, nil
+			}
+
+			logg.ErrorCtxf(ctx, "failed to read publicKey entry with", "key", common.DATA_PUBLIC_KEY, "error", err)
+			return res, err
+		}
+
+		err = store.WriteEntry(ctx, sessionId, common.DATA_RECIPIENT, publicKey)
+		if err != nil {
+			logg.ErrorCtxf(ctx, "failed to write recipient entry with", "key", common.DATA_RECIPIENT, "value", string(publicKey), "error", err)
 			return res, nil
 		}
 	}
@@ -984,6 +1008,31 @@ func (h *Handlers) TransactionReset(ctx context.Context, sym string, input []byt
 
 	res.FlagReset = append(res.FlagReset, flag_invalid_recipient, flag_invalid_recipient_with_invite)
 
+	return res, nil
+}
+
+// InviteValidRecipient sends an invitation to the valid phone number.
+func (h *Handlers) InviteValidRecipient(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	store := h.userdataStore
+
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+
+	code := codeFromCtx(ctx)
+	l := gotext.NewLocale(translationDir, code)
+	l.AddDomain("default")
+
+	recipient, _ := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE)
+
+	// TODO
+	// send an invitation SMS
+	// if successful
+	// res.Content = l.Get("Your invitation to %s to join Sarafu Network has been sent.",  string(recipient))
+
+	res.Content = l.Get("Your invite request for %s to Sarafu Network failed. Please try again later.", string(recipient))
 	return res, nil
 }
 
@@ -1085,7 +1134,7 @@ func (h *Handlers) ValidateAmount(ctx context.Context, sym string, input []byte)
 	return res, nil
 }
 
-// GetRecipient returns the transaction recipient from the gdbm.
+// GetRecipient returns the transaction recipient phone number from the gdbm.
 func (h *Handlers) GetRecipient(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 
@@ -1094,7 +1143,7 @@ func (h *Handlers) GetRecipient(ctx context.Context, sym string, input []byte) (
 		return res, fmt.Errorf("missing session")
 	}
 	store := h.userdataStore
-	recipient, _ := store.ReadEntry(ctx, sessionId, common.DATA_RECIPIENT)
+	recipient, _ := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE)
 
 	res.Content = string(recipient)
 
@@ -1126,7 +1175,7 @@ func (h *Handlers) GetSender(ctx context.Context, sym string, input []byte) (res
 		return res, fmt.Errorf("missing session")
 	}
 
-	res.Content = string(sessionId)
+	res.Content = sessionId
 
 	return res, nil
 }
@@ -1155,8 +1204,7 @@ func (h *Handlers) GetAmount(ctx context.Context, sym string, input []byte) (res
 	return res, nil
 }
 
-// InitiateTransaction returns a confirmation and resets the transaction data
-// on the gdbm store.
+// InitiateTransaction calls the TokenTransfer and returns a confirmation based on the result
 func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	var err error
@@ -1165,28 +1213,44 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 		return res, fmt.Errorf("missing session")
 	}
 
+	flag_account_authorized, _ := h.flagManager.GetFlag("flag_account_authorized")
+
 	code := codeFromCtx(ctx)
 	l := gotext.NewLocale(translationDir, code)
 	l.AddDomain("default")
-	// TODO
-	// Use the amount, recipient and sender to call the API and initialize the transaction
-	store := h.userdataStore
 
-	amount, _ := store.ReadEntry(ctx, sessionId, common.DATA_AMOUNT)
-
-	recipient, _ := store.ReadEntry(ctx, sessionId, common.DATA_RECIPIENT)
-
-	activeSym, _ := store.ReadEntry(ctx, sessionId, common.DATA_ACTIVE_SYM)
-
-	res.Content = l.Get("Your request has been sent. %s will receive %s %s from %s.", string(recipient), string(amount), string(activeSym), string(sessionId))
-
-	account_authorized_flag, err := h.flagManager.GetFlag("flag_account_authorized")
+	data, err := common.ReadTransactionData(ctx, h.userdataStore, sessionId)
 	if err != nil {
-		logg.ErrorCtxf(ctx, "Failed to set the flag_account_authorized", "error", err)
 		return res, err
 	}
 
-	res.FlagReset = append(res.FlagReset, account_authorized_flag)
+	finalAmountStr, err := common.ParseAndScaleAmount(data.Amount, data.ActiveDecimal)
+	if err != nil {
+		return res, err
+	}
+
+	// Call TokenTransfer
+	r, err := h.accountService.TokenTransfer(ctx, finalAmountStr, data.PublicKey, data.Recipient, data.ActiveAddress)
+	if err != nil {
+		flag_api_error, _ := h.flagManager.GetFlag("flag_api_call_error")
+		res.FlagSet = append(res.FlagSet, flag_api_error)
+		res.Content = l.Get("Your request failed. Please try again later.")
+		logg.ErrorCtxf(ctx, "failed on TokenTransfer", "error", err)
+		return res, nil
+	}
+
+	trackingId := r.TrackingId
+	logg.InfoCtxf(ctx, "TokenTransfer", "trackingId", trackingId)
+
+	res.Content = l.Get(
+		"Your request has been sent. %s will receive %s %s from %s.",
+		data.TemporaryValue,
+		data.Amount,
+		data.ActiveSym,
+		sessionId,
+	)
+
+	res.FlagReset = append(res.FlagReset, flag_account_authorized)
 	return res, nil
 }
 
@@ -1401,6 +1465,11 @@ func (h *Handlers) SetDefaultVoucher(ctx context.Context, sym string, input []by
 			firstVoucher := vouchersResp[0]
 			defaultSym := firstVoucher.TokenSymbol
 			defaultBal := firstVoucher.Balance
+			defaultDec := firstVoucher.TokenDecimals
+			defaultAddr := firstVoucher.ContractAddress
+
+			// Scale down the balance
+			scaledBalance := common.ScaleDownBalance(defaultBal, defaultDec)
 
 			// set the active symbol
 			err = store.WriteEntry(ctx, sessionId, common.DATA_ACTIVE_SYM, []byte(defaultSym))
@@ -1409,9 +1478,21 @@ func (h *Handlers) SetDefaultVoucher(ctx context.Context, sym string, input []by
 				return res, err
 			}
 			// set the active balance
-			err = store.WriteEntry(ctx, sessionId, common.DATA_ACTIVE_BAL, []byte(defaultBal))
+			err = store.WriteEntry(ctx, sessionId, common.DATA_ACTIVE_BAL, []byte(scaledBalance))
 			if err != nil {
-				logg.ErrorCtxf(ctx, "failed to write defaultBal entry with", "key", common.DATA_ACTIVE_BAL, "value", defaultBal, "error", err)
+				logg.ErrorCtxf(ctx, "failed to write defaultBal entry with", "key", common.DATA_ACTIVE_BAL, "value", scaledBalance, "error", err)
+				return res, err
+			}
+			// set the active decimals
+			err = store.WriteEntry(ctx, sessionId, common.DATA_ACTIVE_DECIMAL, []byte(defaultDec))
+			if err != nil {
+				logg.ErrorCtxf(ctx, "failed to write defaultDec entry with", "key", common.DATA_ACTIVE_DECIMAL, "value", defaultDec, "error", err)
+				return res, err
+			}
+			// set the active contract address
+			err = store.WriteEntry(ctx, sessionId, common.DATA_ACTIVE_ADDRESS, []byte(defaultAddr))
+			if err != nil {
+				logg.ErrorCtxf(ctx, "failed to write defaultAddr entry with", "key", common.DATA_ACTIVE_ADDRESS, "value", defaultAddr, "error", err)
 				return res, err
 			}
 
@@ -1485,6 +1566,7 @@ func (h *Handlers) GetVoucherList(ctx context.Context, sym string, input []byte)
 }
 
 // ViewVoucher retrieves the token holding and balance from the subprefixDB
+// and displays it to the user for them to select it
 func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	sessionId, ok := ctx.Value("SessionId").(string)
@@ -1544,5 +1626,38 @@ func (h *Handlers) SetVoucher(ctx context.Context, sym string, input []byte) (re
 	}
 
 	res.Content = tempData.TokenSymbol
+	return res, nil
+}
+
+// GetVoucherDetails retrieves the voucher details
+func (h *Handlers) GetVoucherDetails(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	store := h.userdataStore
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+
+	flag_api_error, _ := h.flagManager.GetFlag("flag_api_call_error")
+
+	// get the active address
+	activeAddress, err := store.ReadEntry(ctx, sessionId, common.DATA_ACTIVE_ADDRESS)
+	if err != nil {
+		logg.ErrorCtxf(ctx, "failed to read activeAddress entry with", "key", common.DATA_ACTIVE_ADDRESS, "error", err)
+		return res, err
+	}
+
+	// use the voucher contract address to get the data from the API
+	voucherData, err := h.accountService.VoucherData(ctx, string(activeAddress))
+	if err != nil {
+		res.FlagSet = append(res.FlagSet, flag_api_error)
+		return res, nil
+	}
+
+	tokenSymbol := voucherData.TokenSymbol
+	tokenName := voucherData.TokenName
+
+	res.Content = fmt.Sprintf("%s %s", tokenSymbol, tokenName)
+
 	return res, nil
 }

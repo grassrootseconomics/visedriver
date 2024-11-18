@@ -2,7 +2,6 @@ package ussd
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"path"
@@ -1773,58 +1772,43 @@ func TestConfirmPin(t *testing.T) {
 	}
 }
 
-func TestFetchCustodialBalances(t *testing.T) {
-	fm, err := NewFlagManager(flagsPath)
-	if err != nil {
-		t.Logf(err.Error())
-	}
-	flag_api_error, _ := fm.GetFlag("flag_api_call_error")
+func TestFetchCommunityBalance(t *testing.T) {
 
 	// Define test data
 	sessionId := "session123"
-	publicKey := "0X13242618721"
-
 	ctx, store := InitializeTestStore(t)
-	ctx = context.WithValue(ctx, "SessionId", sessionId)
-
-	err = store.WriteEntry(ctx, sessionId, common.DATA_PUBLIC_KEY, []byte(publicKey))
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	tests := []struct {
-		name            string
-		balanceResponse *models.BalanceResult
-		expectedResult  resource.Result
+		name           string
+		languageCode   string
+		expectedResult resource.Result
 	}{
 		{
-			name: "Test when fetch custodial balances is not a success",
-			balanceResponse: &models.BalanceResult{
-				Balance: "0.003 CELO",
-				Nonce:   json.Number("0"),
-			},
+			name: "Test community balance content when language is english",
 			expectedResult: resource.Result{
-				FlagReset: []uint32{flag_api_error},
+				Content: "Community Balance: 0.00",
 			},
+			languageCode: "eng",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			mockAccountService := new(mocks.MockAccountService)
 			mockState := state.NewState(16)
 
 			h := &Handlers{
 				userdataStore:  store,
-				flagManager:    fm.parser,
 				st:             mockState,
 				accountService: mockAccountService,
 			}
-
-			// Set up the expected behavior of the mock
-			mockAccountService.On("CheckBalance", string(publicKey)).Return(tt.balanceResponse, nil)
+			ctx = context.WithValue(ctx, "SessionId", sessionId)
+			ctx = context.WithValue(ctx, "Language", lang.Language{
+				Code: tt.languageCode,
+			})
 
 			// Call the method
-			res, _ := h.FetchCustodialBalances(ctx, "fetch_custodial_balances", []byte(""))
+			res, _ := h.FetchCommunityBalance(ctx, "fetch_community_balance", []byte(""))
 
 			//Assert that the result set to content is what was expected
 			assert.Equal(t, res, tt.expectedResult, "Result should match expected result")

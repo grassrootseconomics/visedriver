@@ -21,3 +21,6 @@ msgstr "Ombi lako la kumwalika %s kwa matandao wa Sarafu limetumwa."
 
 msgid "Your request failed. Please try again later."
 msgstr "Ombi lako halikufaulu. Tafadhali jaribu tena baadaye."
+
+msgid "Community Balance: 0.00"
+msgid "Salio la Kikundi: 0.00"

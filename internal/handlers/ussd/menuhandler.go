@@ -822,42 +822,14 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 	return res, nil
 }
 
-func (h *Handlers) FetchCustodialBalances(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+func (h *Handlers) FetchCommunityBalance(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
-
-	flag_api_error, _ := h.flagManager.GetFlag("flag_api_call_error")
-
-	sessionId, ok := ctx.Value("SessionId").(string)
-	if !ok {
-		return res, fmt.Errorf("missing session")
-	}
-	symbol, _ := h.st.Where()
-	balanceType := strings.Split(symbol, "_")[0]
-
-	store := h.userdataStore
-	publicKey, err := store.ReadEntry(ctx, sessionId, common.DATA_PUBLIC_KEY)
-	if err != nil {
-		logg.ErrorCtxf(ctx, "failed to read publicKey entry with", "key", common.DATA_PUBLIC_KEY, "error", err)
-		return res, err
-	}
-
-	balanceResponse, err := h.accountService.CheckBalance(ctx, string(publicKey))
-	if err != nil {
-		res.FlagSet = append(res.FlagSet, flag_api_error)
-		return res, nil
-	}
-	res.FlagReset = append(res.FlagReset, flag_api_error)
-
-	balance := balanceResponse.Balance
-
-	switch balanceType {
-	case "my":
-		res.Content = fmt.Sprintf("Your balance is %s", balance)
-	case "community":
-		res.Content = fmt.Sprintf("Your community balance is %s", balance)
-	default:
-		break
-	}
+	code := codeFromCtx(ctx)
+	l := gotext.NewLocale(translationDir, code)
+	l.AddDomain("default")
+	//TODO:
+	//Check if the address is a community account,if then,get the actual balance
+	res.Content = l.Get("Community Balance: 0.00")
 	return res, nil
 }
 

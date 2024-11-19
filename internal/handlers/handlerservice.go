@@ -103,7 +103,7 @@ func (ls *LocalHandlerService) GetHandler(accountService remote.AccountServiceIn
 	ls.DbRs.AddLocalFunc("verify_new_pin", ussdHandlers.VerifyNewPin)
 	ls.DbRs.AddLocalFunc("confirm_pin_change", ussdHandlers.ConfirmPinChange)
 	ls.DbRs.AddLocalFunc("quit_with_help", ussdHandlers.QuitWithHelp)
-	ls.DbRs.AddLocalFunc("fetch_custodial_balances", ussdHandlers.FetchCustodialBalances)
+	ls.DbRs.AddLocalFunc("fetch_community_balance", ussdHandlers.FetchCommunityBalance)
 	ls.DbRs.AddLocalFunc("set_default_voucher", ussdHandlers.SetDefaultVoucher)
 	ls.DbRs.AddLocalFunc("check_vouchers", ussdHandlers.CheckVouchers)
 	ls.DbRs.AddLocalFunc("get_vouchers", ussdHandlers.GetVoucherList)

@@ -1,3 +1,6 @@
+LOAD check_transactions 0
+RELOAD check_transactions
+CATCH no_transfers flag_no_transfers 1
 LOAD authorize_account 6
 MOUT back 0
 MOUT quit 9

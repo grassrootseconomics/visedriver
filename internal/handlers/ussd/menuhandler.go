@@ -1754,8 +1754,8 @@ func (h *Handlers) GetTransactionsList(ctx context.Context, sym string, input []
 	return res, nil
 }
 
-// ViewTransactionStatement retrieves the token holding and balance from the subprefixDB
-// and displays it to the user for them to select it
+// ViewTransactionStatement retrieves the transaction statement
+// and displays it to the user
 func (h *Handlers) ViewTransactionStatement(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	sessionId, ok := ctx.Value("SessionId").(string)

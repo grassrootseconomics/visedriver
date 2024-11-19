@@ -77,6 +77,11 @@ func GetTransferData(ctx context.Context, db storage.PrefixDb, publicKey string,
 	dates := strings.Split(string(data["txdate"]), "\n")
 	syms := strings.Split(string(data["txsym"]), "\n")
 
+	// Check if index is within range
+	if index < 1 || index > len(senders) {
+		return "", fmt.Errorf("transaction not found: index %d out of range", index)
+	}
+
 	// Adjust for 0-based indexing
 	i := index - 1
 	transactionType := "received"

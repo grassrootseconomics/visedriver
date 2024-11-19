@@ -11,9 +11,11 @@ import (
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/resource"
 	"git.grassecon.net/urdt/ussd/internal/handlers"
-	"git.grassecon.net/urdt/ussd/internal/handlers/server"
 	"git.grassecon.net/urdt/ussd/internal/storage"
+	"git.grassecon.net/urdt/ussd/internal/testutil/testservice"
+	"git.grassecon.net/urdt/ussd/internal/testutil/testtag"
 	testdataloader "github.com/peteole/testdata-loader"
+	"git.grassecon.net/urdt/ussd/remote"
 )
 
 var (
@@ -71,7 +73,7 @@ func TestEngine(sessionId string) (engine.Engine, func(), chan bool) {
 		os.Exit(1)
 	}
 
-	lhs, err := handlers.NewLocalHandlerService(pfp, true, dbResource, cfg, rs)
+	lhs, err := handlers.NewLocalHandlerService(ctx, pfp, true, dbResource, cfg, rs)
 	lhs.SetDataStore(&userDataStore)
 	lhs.SetPersister(pe)
 
@@ -80,16 +82,16 @@ func TestEngine(sessionId string) (engine.Engine, func(), chan bool) {
 		os.Exit(1)
 	}
 
-	if AccountService == nil {
-		AccountService = &server.AccountService{}
+	if testtag.AccountService == nil {
+		testtag.AccountService = &remote.AccountService{}
 	}
 
-	switch AccountService.(type) {
-	case *server.TestAccountService:
+	switch testtag.AccountService.(type) {
+	case *testservice.TestAccountService:
 		go func() {
 			eventChannel <- false
 		}()
-	case *server.AccountService:
+	case *remote.AccountService:
 		go func() {
 			time.Sleep(5 * time.Second) // Wait for 5 seconds
 			eventChannel <- true
@@ -98,7 +100,7 @@ func TestEngine(sessionId string) (engine.Engine, func(), chan bool) {
 		panic("Unknown account service type")
 	}
 
-	hl, err := lhs.GetHandler(AccountService)
+	hl, err := lhs.GetHandler(testtag.AccountService)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)

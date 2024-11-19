@@ -1,9 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -19,14 +23,14 @@ import (
 	"git.grassecon.net/urdt/ussd/config"
 	"git.grassecon.net/urdt/ussd/initializers"
 	"git.grassecon.net/urdt/ussd/internal/handlers"
-	"git.grassecon.net/urdt/ussd/internal/handlers/server"
 	httpserver "git.grassecon.net/urdt/ussd/internal/http"
 	"git.grassecon.net/urdt/ussd/internal/storage"
+	"git.grassecon.net/urdt/ussd/remote"
 )
 
 var (
-	logg      = logging.NewVanilla()
-	scriptDir = path.Join("services", "registration")
+	logg        = logging.NewVanilla()
+	scriptDir   = path.Join("services", "registration")
 )
 
 func init() {
@@ -38,9 +42,30 @@ type atRequestParser struct{}
 func (arp *atRequestParser) GetSessionId(rq any) (string, error) {
 	rqv, ok := rq.(*http.Request)
 	if !ok {
+		log.Println("got an invalid request:", rq)
 		return "", handlers.ErrInvalidRequest
 	}
+
+	// Capture body (if any) for logging
+	body, err := io.ReadAll(rqv.Body)
+	if err != nil {
+		log.Println("failed to read request body:", err)
+		return "", fmt.Errorf("failed to read request body: %v", err)
+	}
+	// Reset the body for further reading
+	rqv.Body = io.NopCloser(bytes.NewReader(body))
+
+	// Log the body as JSON
+	bodyLog := map[string]string{"body": string(body)}
+	logBytes, err := json.Marshal(bodyLog)
+	if err != nil {
+		log.Println("failed to marshal request body:", err)
+	} else {
+		log.Println("Received request:", string(logBytes))
+	}
+
 	if err := rqv.ParseForm(); err != nil {
+		log.Println("failed to parse form data: %v", err)
 		return "", fmt.Errorf("failed to parse form data: %v", err)
 	}
 
@@ -131,7 +156,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	lhs, err := handlers.NewLocalHandlerService(pfp, true, dbResource, cfg, rs)
+	lhs, err := handlers.NewLocalHandlerService(ctx, pfp, true, dbResource, cfg, rs)
 	lhs.SetDataStore(&userdataStore)
 
 	if err != nil {
@@ -139,7 +164,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	accountService := server.AccountService{}
+	accountService := remote.AccountService{}
 	hl, err := lhs.GetHandler(&accountService)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
@@ -156,9 +181,13 @@ func main() {
 	rp := &atRequestParser{}
 	bsh := handlers.NewBaseSessionHandler(cfg, rs, stateStore, userdataStore, rp, hl)
 	sh := httpserver.NewATSessionHandler(bsh)
+
+	mux := http.NewServeMux()
+	mux.Handle(initializers.GetEnv("AT_ENDPOINT", "/"), sh)
+
 	s := &http.Server{
 		Addr:    fmt.Sprintf("%s:%s", host, strconv.Itoa(int(port))),
-		Handler: sh,
+		Handler: mux,
 	}
 	s.RegisterOnShutdown(sh.Shutdown)
 

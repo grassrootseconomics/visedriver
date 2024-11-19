@@ -23,7 +23,7 @@
                     },
                     {
                         "input": "1111",
-                        "expectedContent": "The PIN is not a match. Try again\n1:retry\n9:Quit"
+                        "expectedContent": "The PIN is not a match. Try again\n1:Retry\n9:Quit"
                     },
                     {
                         "input": "1",
@@ -53,11 +53,11 @@
                 ]
             },
             {
-                "name": "send_with_invalid_inputs",
+                "name": "send_with_invite",
                 "steps": [
                     {
                         "input": "",
-                        "expectedContent": "Balance: 0.003 CELO\n\n1:Send\n2:My Vouchers\n3:My Account\n4:Help\n9:Quit"
+                        "expectedContent": "{balance}\n\n1:Send\n2:My Vouchers\n3:My Account\n4:Help\n9:Quit"
                     },
                     {
                         "input": "1",
@@ -65,39 +65,19 @@
                     },
                     {
                         "input": "000",
-                        "expectedContent": "000 is not registered or invalid, please try again:\n1:retry\n9:Quit"
+                        "expectedContent": "000 is invalid, please try again:\n1:Retry\n9:Quit"
                     },
                     {
                         "input": "1",
                         "expectedContent": "Enter recipient's phone number:\n0:Back"
                     },
                     {
-                        "input": "065656",
-                        "expectedContent": "Maximum amount: 0.003 CELO\nEnter amount:\n0:Back"
+                        "input": "0712345678",
+                        "expectedContent": "0712345678 is not registered, please try again:\n1:Retry\n2:Invite to Sarafu Network\n9:Quit"
                     },
                     {
-                        "input": "0.1",
-                        "expectedContent": "Amount 0.1 is invalid, please try again:\n1:retry\n9:Quit"
-                    },
-                    {
-                        "input": "1",
-                        "expectedContent": "Maximum amount: 0.003 CELO\nEnter amount:\n0:Back"
-                    },
-                    {
-                        "input": "0.001",
-                        "expectedContent": "065656 will receive 0.001 from {public_key}\nPlease enter your PIN to confirm:\n0:Back\n9:Quit"
-                    },
-                    {
-                        "input": "1222",
-                        "expectedContent": "Incorrect pin\n1:retry\n9:Quit"
-                    },
-                    {
-                        "input": "1",
-                        "expectedContent": "065656 will receive 0.001 from {public_key}\nPlease enter your PIN to confirm:\n0:Back\n9:Quit"
-                    },
-                    {
-                        "input": "1234",
-                        "expectedContent": "Your request has been sent. 065656 will receive 0.001 from {public_key}."
+                        "input": "2",
+                        "expectedContent": "Your invite request for 0712345678 to Sarafu Network failed. Please try again later."
                     }
                 ]
             },
@@ -106,7 +86,7 @@
                 "steps": [
                     {
                         "input": "",
-                        "expectedContent": "Balance: 0.003 CELO\n\n1:Send\n2:My Vouchers\n3:My Account\n4:Help\n9:Quit"
+                        "expectedContent": "{balance}\n\n1:Send\n2:My Vouchers\n3:My Account\n4:Help\n9:Quit"
                     },
                     {
                         "input": "4",
@@ -119,7 +99,7 @@
                 "steps": [
                     {
                         "input": "",
-                        "expectedContent": "Balance: 0.003 CELO\n\n1:Send\n2:My Vouchers\n3:My Account\n4:Help\n9:Quit"
+                        "expectedContent": "{balance}\n\n1:Send\n2:My Vouchers\n3:My Account\n4:Help\n9:Quit"
                     },
                     {
                         "input": "9",
@@ -132,7 +112,7 @@
                 "steps": [
                     {
                         "input": "",
-                        "expectedContent": "Balance: 0.003 CELO\n\n1:Send\n2:My Vouchers\n3:My Account\n4:Help\n9:Quit"
+                        "expectedContent": "{balance}\n\n1:Send\n2:My Vouchers\n3:My Account\n4:Help\n9:Quit"
                     },
                     {
                         "input": "3",
@@ -140,7 +120,7 @@
                     },
                     {
                         "input": "6",
-                        "expectedContent": "Address: {public_key}\n9:Quit"
+                        "expectedContent": "Address: {public_key}\n0:Back\n9:Quit"
                     },
                     {
                         "input": "9",

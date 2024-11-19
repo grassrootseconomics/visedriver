@@ -33,7 +33,8 @@ COPY --from=build /build/ussd-africastalking .
 COPY --from=build /build/LICENSE .
 COPY --from=build /build/README.md .
 COPY --from=build /build/services ./services
-COPY --from=build /build/.env .
+COPY --from=build /build/.env.example .
+RUN mv .env.example .env
 
 EXPOSE 7123
 

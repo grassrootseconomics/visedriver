@@ -10,4 +10,4 @@
 !/LICENSE
 !/README.md
 !/go.*
-!/.env
+!/.env.example

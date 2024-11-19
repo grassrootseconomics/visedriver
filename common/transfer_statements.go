@@ -110,7 +110,6 @@ func GetTransferData(ctx context.Context, db storage.PrefixDb, publicKey string,
 
 // Helper function to format date in desired output
 func formatDate(dateStr string) string {
-	fmt.Println(dateStr)
 	parsedDate, err := time.Parse("2006-01-02 15:04:05 -0700 MST", dateStr)
 	if err != nil {
 		fmt.Println("Error parsing date:", err)

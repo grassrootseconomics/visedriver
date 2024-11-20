@@ -154,7 +154,8 @@ func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (r
 	code := strings.Split(symbol, "_")[1]
 
 	if !utils.IsValidISO639(code) {
-		return res, nil
+		//Fallback to english instead? 
+		code = "eng"
 	}
 	res.FlagSet = append(res.FlagSet, state.FLAG_LANG)
 	res.Content = code

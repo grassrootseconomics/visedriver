@@ -1,6 +1,6 @@
 LOAD set_default_voucher 8
 RELOAD set_default_voucher
-LOAD check_balance 64
+LOAD check_balance 128
 RELOAD check_balance
 LOAD check_vouchers 10
 RELOAD check_vouchers

@@ -817,7 +817,8 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 		return res, err
 	}
 
-	res.Content = l.Get("Balance: %s\n", fmt.Sprintf("%s %s", activeBal, activeSym))
+	balStr := fmt.Sprintf("%s %s", activeBal, activeSym)
+	res.Content = l.Get("Balance: %s\n", balStr)
 
 	return res, nil
 }
@@ -1546,6 +1547,10 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 		return res, fmt.Errorf("missing session")
 	}
 
+	code := codeFromCtx(ctx)
+	l := gotext.NewLocale(translationDir, code)
+	l.AddDomain("default")
+
 	flag_incorrect_voucher, _ := h.flagManager.GetFlag("flag_incorrect_voucher")
 
 	inputStr := string(input)
@@ -1570,7 +1575,7 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 	}
 
 	res.FlagReset = append(res.FlagReset, flag_incorrect_voucher)
-	res.Content = fmt.Sprintf("Symbol: %s\nBalance: %s", metadata.TokenSymbol, metadata.Balance)
+	res.Content = l.Get("Symbol: %s\nBalance: %s", metadata.TokenSymbol, metadata.Balance)
 
 	return res, nil
 }

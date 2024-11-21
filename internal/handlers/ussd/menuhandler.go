@@ -1570,7 +1570,7 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 	}
 
 	res.FlagReset = append(res.FlagReset, flag_incorrect_voucher)
-	res.Content = fmt.Sprintf("%s\n%s", metadata.TokenSymbol, metadata.Balance)
+	res.Content = fmt.Sprintf("Symbol: %s\nBalance: %s", metadata.TokenSymbol, metadata.Balance)
 
 	return res, nil
 }

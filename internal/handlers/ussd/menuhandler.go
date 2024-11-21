@@ -154,7 +154,7 @@ func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (r
 	code := strings.Split(symbol, "_")[1]
 
 	if !utils.IsValidISO639(code) {
-		//Fallback to english instead? 
+		//Fallback to english instead?
 		code = "eng"
 	}
 	res.FlagSet = append(res.FlagSet, state.FLAG_LANG)
@@ -764,12 +764,11 @@ func (h *Handlers) VerifyYob(ctx context.Context, sym string, input []byte) (res
 		return res, nil
 	}
 
-	if len(date) == 4 {
+	if utils.IsValidYOb(date) {
 		res.FlagReset = append(res.FlagReset, flag_incorrect_date_format)
 	} else {
 		res.FlagSet = append(res.FlagSet, flag_incorrect_date_format)
 	}
-
 	return res, nil
 }
 

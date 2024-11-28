@@ -1391,10 +1391,14 @@ func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte)
 	// Construct the full name
 	name := defaultValue
 	if familyName != defaultValue {
-		if firstName == defaultValue {
-			name = familyName
-		} else {
+		if firstName != defaultValue {
 			name = firstName + " " + familyName
+		} else {
+			name = familyName
+		}
+	} else {
+		if firstName != defaultValue {
+			name = firstName
 		}
 	}
 

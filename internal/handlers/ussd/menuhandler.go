@@ -811,7 +811,16 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 		return res, err
 	}
 
-	balStr := fmt.Sprintf("%s %s", activeBal, activeSym)
+	// Convert activeBal from []byte to float64
+	balFloat, err := strconv.ParseFloat(string(activeBal), 64)
+	if err != nil {
+		logg.ErrorCtxf(ctx, "failed to parse activeBal as float", "value", string(activeBal), "error", err)
+		return res, err
+	}
+
+	// Format to 2 decimal places
+	balStr := fmt.Sprintf("%.2f %s", balFloat, activeSym)
+
 	res.Content = l.Get("Balance: %s\n", balStr)
 
 	return res, nil

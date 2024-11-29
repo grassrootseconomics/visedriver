@@ -54,7 +54,7 @@
                 },
                 {
                     "input": "1235",
-                    "expectedContent": "Incorrect pin\n1:Retry\n9:Quit"
+                    "expectedContent": "Incorrect PIN\n1:Retry\n9:Quit"
                 },
                 {
                     "input": "1",
@@ -62,7 +62,7 @@
                 },
                 {
                     "input": "1234",
-                    "expectedContent": "Select language:\n0:english\n1:kiswahili"
+                    "expectedContent": "Select language:\n0:English\n1:Kiswahili"
                 },
                 {
                     "input": "0",
@@ -95,7 +95,7 @@
                 },
                 {
                     "input": "1235",
-                    "expectedContent": "Incorrect pin\n1:Retry\n9:Quit"
+                    "expectedContent": "Incorrect PIN\n1:Retry\n9:Quit"
                 },
                 {
                     "input": "1",
@@ -141,7 +141,7 @@
                 },
                 {
                     "input": "1235",
-                    "expectedContent": "Incorrect pin\n1:Retry\n9:Quit"
+                    "expectedContent": "Incorrect PIN\n1:Retry\n9:Quit"
                 },
                 {
                     "input": "1",

@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"git.defalsify.org/vise.git/asm"
-	"github.com/grassrootseconomics/eth-custodial/pkg/api"
 
 	"git.defalsify.org/vise.git/cache"
 	"git.defalsify.org/vise.git/db"
@@ -32,8 +31,6 @@ var (
 	logg           = logging.NewVanilla().WithDomain("ussdmenuhandler")
 	scriptDir      = path.Join("services", "registration")
 	translationDir = path.Join(scriptDir, "locale")
-	okResponse     *api.OKResponse
-	errResponse    *api.ErrResponse
 )
 
 // Define the regex patterns as constants

@@ -25,6 +25,7 @@ import (
 	"gopkg.in/leonelquinteros/gotext.v1"
 
 	"git.grassecon.net/urdt/ussd/internal/storage"
+	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 )
 
 var (
@@ -1532,6 +1533,38 @@ func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) 
 	vouchersResp, err := h.accountService.FetchVouchers(ctx, string(publicKey))
 	if err != nil {
 		return res, nil
+	}
+
+	// check the current active sym and update the data
+	activeSym, _ := store.ReadEntry(ctx, sessionId, common.DATA_ACTIVE_SYM)
+	if activeSym != nil {
+		activeSymStr := string(activeSym)
+
+		// Find the matching voucher data
+		var activeData *dataserviceapi.TokenHoldings
+		for _, voucher := range vouchersResp {
+			if voucher.TokenSymbol == activeSymStr {
+				activeData = &voucher
+				break
+			}
+		}
+
+		if activeData == nil {
+			logg.ErrorCtxf(ctx, "activeSym not found in vouchers", "activeSym", activeSymStr)
+			return res, fmt.Errorf("activeSym %s not found in vouchers", activeSymStr)
+		}
+
+		// Scale down the balance
+		scaledBalance := common.ScaleDownBalance(activeData.Balance, activeData.TokenDecimals)
+
+		// Update the balance field with the scaled value
+		activeData.Balance = scaledBalance
+
+		// Pass the matching voucher data to UpdateVoucherData
+		if err := common.UpdateVoucherData(ctx, h.userdataStore, sessionId, activeData); err != nil {
+			logg.ErrorCtxf(ctx, "failed on UpdateVoucherData", "error", err)
+			return res, err
+		}
 	}
 
 	data := common.ProcessVouchers(vouchersResp)

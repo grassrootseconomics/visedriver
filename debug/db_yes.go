@@ -37,6 +37,10 @@ var (
 	}
 )
 
+func init() {
+	DebugCap |= 1
+}
+
 func typToString(v common.DataTyp) string {
 	return dbTypStr[v]
 }

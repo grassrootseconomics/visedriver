@@ -22,6 +22,7 @@ func init() {
 	initializers.LoadEnvVariables()
 }
 
+
 func main() {
 	config.LoadConfig()
 
@@ -59,6 +60,6 @@ func main() {
 		if k == nil {
 			break
 		}
-		fmt.Printf("%x %s\n", k, v)
+		fmt.Printf("%x %s %x\n", k, v)
 	}
 }

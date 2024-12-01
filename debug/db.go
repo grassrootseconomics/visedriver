@@ -8,6 +8,10 @@ import (
 	"git.grassecon.net/urdt/ussd/common"
 )
 
+var (
+	dbTypStr map[common.DataTyp]string = make(map[common.DataTyp]string)
+)
+
 type KeyInfo struct {
 	SessionId string
 	Typ uint8
@@ -19,6 +23,7 @@ type KeyInfo struct {
 func ToKeyInfo(k []byte, sessionId string) (KeyInfo, error) {
 	o := KeyInfo{}
 	b := []byte(sessionId)
+
 	if len(k) <= len(b) {
 		return o, fmt.Errorf("storage key missing")
 	}
@@ -35,8 +40,10 @@ func ToKeyInfo(k []byte, sessionId string) (KeyInfo, error) {
 		}
 		v := binary.BigEndian.Uint16(k[:2])
 		o.SubTyp = common.DataTyp(v)
-		o.Label = typToString(o.SubTyp)
+		o.Label = subTypToString(o.SubTyp)
 		k = k[2:]
+	} else {
+		o.Label = typToString(o.Typ)
 	}
 
 	if len(k) != 0 {
@@ -44,4 +51,12 @@ func ToKeyInfo(k []byte, sessionId string) (KeyInfo, error) {
 	}
 
 	return o, nil
+}
+
+func subTypToString(v common.DataTyp) string {
+	return dbTypStr[v + storage.DATATYPE_USERSUB + 1]
+}
+
+func typToString(v uint8) string {
+	return dbTypStr[common.DataTyp(uint16(v))]
 }

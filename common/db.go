@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/binary"
+	"errors"
 
 	"git.defalsify.org/vise.git/logging"
 )
@@ -47,4 +48,24 @@ func typToBytes(typ DataTyp) []byte {
 func PackKey(typ DataTyp, data []byte) []byte {
 	v := typToBytes(typ)
 	return append(v, data...)
+}
+
+func StringToDataTyp(str string) (DataTyp, error) {
+	switch str {
+	case "DATA_FIRST_NAME":
+		return DATA_FIRST_NAME, nil
+	case "DATA_FAMILY_NAME":
+		return DATA_FAMILY_NAME, nil
+	case "DATA_YOB":
+		return DATA_YOB, nil
+	case "DATA_LOCATION":
+		return DATA_LOCATION, nil
+	case "DATA_GENDER":
+		return DATA_GENDER, nil
+	case "DATA_OFFERINGS":
+		return DATA_OFFERINGS, nil
+
+	default:
+		return 0, errors.New("invalid DataTyp string")
+	}
 }

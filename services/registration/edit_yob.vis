@@ -1,0 +1,14 @@
+CATCH incorrect_pin flag_incorrect_pin 1
+CATCH update_yob flag_allow_update 1
+LOAD get_current_profile_info 0
+RELOAD get_current_profile_info
+MAP get_current_profile_info
+MOUT back 0
+HALT
+LOAD verify_yob 6
+RELOAD verify_yob
+CATCH incorrect_date_format flag_incorrect_date_format 1
+LOAD save_yob 0
+RELOAD save_yob
+INCMP _ 0
+INCMP pin_entry *

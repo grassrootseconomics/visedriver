@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"git.defalsify.org/vise.git/db"
-	"git.defalsify.org/vise.git/lang"
 	gdbmdb "git.defalsify.org/vise.git/db/gdbm"
+	"git.defalsify.org/vise.git/lang"
 )
 
 var (

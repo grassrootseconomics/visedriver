@@ -54,7 +54,7 @@
                 },
                 {
                     "input": "1235",
-                    "expectedContent": "Incorrect pin\n1:retry\n9:Quit"
+                    "expectedContent": "Incorrect pin\n1:Retry\n9:Quit"
                 },
                 {
                     "input": "1",
@@ -95,7 +95,7 @@
                 },
                 {
                     "input": "1235",
-                    "expectedContent": "Incorrect pin\n1:retry\n9:Quit"
+                    "expectedContent": "Incorrect pin\n1:Retry\n9:Quit"
                 },
                 {
                     "input": "1",
@@ -103,7 +103,7 @@
                 },
                 {
                     "input": "1234",
-                    "expectedContent": "Your balance is 0.003 CELO\n0:Back\n9:Quit"
+                    "expectedContent": "Balance: {balance}\n\n0:Back\n9:Quit"
                 },
                 {
                     "input": "0",
@@ -141,7 +141,7 @@
                 },
                 {
                     "input": "1235",
-                    "expectedContent": "Incorrect pin\n1:retry\n9:Quit"
+                    "expectedContent": "Incorrect pin\n1:Retry\n9:Quit"
                 },
                 {
                     "input": "1",
@@ -149,7 +149,7 @@
                 },
                 {
                     "input": "1234",
-                    "expectedContent": "Your community balance is 0.003 CELO\n0:Back\n9:Quit"
+                    "expectedContent": "{balance}\n0:Back\n9:Quit"
                 },
                 {
                     "input": "0",

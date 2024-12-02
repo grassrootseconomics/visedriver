@@ -35,11 +35,16 @@ var (
 	errResponse    *api.ErrResponse
 )
 
-// Define the regex patterns as  constants
+// Define the regex patterns as constants
 const (
-	phoneRegex = `(\(\d{3}\)\s?|\d{3}[-.\s]?)?\d{3}[-.\s]?\d{4}`
 	pinPattern = `^\d{4}$`
 )
+
+// isValidPIN checks whether the given input is a 4 digit number
+func isValidPIN(pin string) bool {
+	match, _ := regexp.MatchString(pinPattern, pin)
+	return match
+}
 
 // FlagManager handles centralized flag management
 type FlagManager struct {
@@ -93,17 +98,6 @@ func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, adminstore *util
 		prefixDb:       prefixDb,
 	}
 	return h, nil
-}
-
-// isValidPIN checks whether the given input is a 4 digit number
-func isValidPIN(pin string) bool {
-	match, _ := regexp.MatchString(pinPattern, pin)
-	return match
-}
-
-func isValidPhoneNumber(phonenumber string) bool {
-	match, _ := regexp.MatchString(phoneRegex, phonenumber)
-	return match
 }
 
 func (h *Handlers) WithPersister(pe *persist.Persister) *Handlers {
@@ -877,7 +871,7 @@ func (h *Handlers) ValidateBlockedNumber(ctx context.Context, sym string, input 
 	}
 	blockedNumber := string(input)
 	_, err = store.ReadEntry(ctx, blockedNumber, common.DATA_PUBLIC_KEY)
-	if !isValidPhoneNumber(blockedNumber) {
+	if !common.IsValidPhoneNumber(blockedNumber) {
 		res.FlagSet = append(res.FlagSet, flag_unregistered_number)
 		return res, nil
 	}
@@ -898,10 +892,9 @@ func (h *Handlers) ValidateBlockedNumber(ctx context.Context, sym string, input 
 	return res, nil
 }
 
-// ValidateRecipient validates that the given input is a valid phone number.
+// ValidateRecipient validates that the given input is valid.
 func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
-	var err error
 	store := h.userdataStore
 
 	sessionId, ok := ctx.Value("SessionId").(string)
@@ -909,13 +902,16 @@ func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []by
 		return res, fmt.Errorf("missing session")
 	}
 
-	recipient := string(input)
-
 	flag_invalid_recipient, _ := h.flagManager.GetFlag("flag_invalid_recipient")
 	flag_invalid_recipient_with_invite, _ := h.flagManager.GetFlag("flag_invalid_recipient_with_invite")
+	flag_api_error, _ := h.flagManager.GetFlag("flag_api_call_error")
+
+	recipient := string(input)
 
 	if recipient != "0" {
-		if !isValidPhoneNumber(recipient) {
+		recipientType, err := common.CheckRecipient(recipient)
+		if err != nil {
+			// Invalid recipient format (not a phone number, address, or valid alias format)
 			res.FlagSet = append(res.FlagSet, flag_invalid_recipient)
 			res.Content = recipient
 
@@ -929,25 +925,61 @@ func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []by
 			return res, err
 		}
 
-		publicKey, err := store.ReadEntry(ctx, recipient, common.DATA_PUBLIC_KEY)
-		if err != nil {
-			if db.IsNotFound(err) {
-				logg.InfoCtxf(ctx, "Unregistered number")
-
-				res.FlagSet = append(res.FlagSet, flag_invalid_recipient_with_invite)
-				res.Content = recipient
-
-				return res, nil
+		switch recipientType {
+		case "phone number":
+			// format the phone number
+			formattedNumber, err := common.FormatPhoneNumber(recipient)
+			if err != nil {
+				logg.ErrorCtxf(ctx, "Failed to format the phone number: %s", recipient, "error", err)
+				return res, err
 			}
 
-			logg.ErrorCtxf(ctx, "failed to read publicKey entry with", "key", common.DATA_PUBLIC_KEY, "error", err)
-			return res, err
-		}
+			// Check if the phone number is registered
+			publicKey, err := store.ReadEntry(ctx, formattedNumber, common.DATA_PUBLIC_KEY)
+			if err != nil {
+				if db.IsNotFound(err) {
+					logg.InfoCtxf(ctx, "Unregistered phone number: %s", recipient)
+					res.FlagSet = append(res.FlagSet, flag_invalid_recipient_with_invite)
+					res.Content = recipient
+					return res, nil
+				}
 
-		err = store.WriteEntry(ctx, sessionId, common.DATA_RECIPIENT, publicKey)
-		if err != nil {
-			logg.ErrorCtxf(ctx, "failed to write recipient entry with", "key", common.DATA_RECIPIENT, "value", string(publicKey), "error", err)
-			return res, nil
+				logg.ErrorCtxf(ctx, "failed to read publicKey entry with", "key", common.DATA_PUBLIC_KEY, "error", err)
+				return res, err
+			}
+
+			// Save the publicKey as the recipient
+			err = store.WriteEntry(ctx, sessionId, common.DATA_RECIPIENT, publicKey)
+			if err != nil {
+				logg.ErrorCtxf(ctx, "failed to write recipient entry with", "key", common.DATA_RECIPIENT, "value", string(publicKey), "error", err)
+				return res, err
+			}
+
+		case "address":
+			// Save the valid Ethereum address as the recipient
+			err = store.WriteEntry(ctx, sessionId, common.DATA_RECIPIENT, []byte(recipient))
+			if err != nil {
+				logg.ErrorCtxf(ctx, "failed to write recipient entry with", "key", common.DATA_RECIPIENT, "value", recipient, "error", err)
+				return res, err
+			}
+
+		case "alias":
+			// Call the API to validate and retrieve the address for the alias
+			r, aliasErr := h.accountService.CheckAliasAddress(ctx, recipient)
+			if aliasErr != nil {
+				res.FlagSet = append(res.FlagSet, flag_api_error)
+				res.Content = recipient
+
+				logg.ErrorCtxf(ctx, "failed on CheckAliasAddress", "error", aliasErr)
+				return res, err
+			}
+
+			// Alias validation succeeded, save the Ethereum address
+			err = store.WriteEntry(ctx, sessionId, common.DATA_RECIPIENT, []byte(r.Address))
+			if err != nil {
+				logg.ErrorCtxf(ctx, "failed to write recipient entry with", "key", common.DATA_RECIPIENT, "value", r.Address, "error", err)
+				return res, err
+			}
 		}
 	}
 
@@ -1629,6 +1661,175 @@ func (h *Handlers) GetVoucherDetails(ctx context.Context, sym string, input []by
 	res.Content = fmt.Sprintf(
 		"Name: %s\nSymbol: %s\nCommodity: %s\nLocation: %s", voucherData.TokenName, voucherData.TokenSymbol, voucherData.TokenCommodity, voucherData.TokenLocation,
 	)
+
+	return res, nil
+}
+
+// CheckTransactions retrieves the transactions from the API using the "PublicKey" and stores to prefixDb
+func (h *Handlers) CheckTransactions(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+
+	flag_no_transfers, _ := h.flagManager.GetFlag("flag_no_transfers")
+	flag_api_error, _ := h.flagManager.GetFlag("flag_api_error")
+
+	store := h.userdataStore
+	publicKey, err := store.ReadEntry(ctx, sessionId, common.DATA_PUBLIC_KEY)
+	if err != nil {
+		logg.ErrorCtxf(ctx, "failed to read publicKey entry with", "key", common.DATA_PUBLIC_KEY, "error", err)
+		return res, err
+	}
+
+	// Fetch transactions from the API using the public key
+	transactionsResp, err := h.accountService.FetchTransactions(ctx, string(publicKey))
+	if err != nil {
+		res.FlagSet = append(res.FlagSet, flag_api_error)
+		logg.ErrorCtxf(ctx, "failed on FetchTransactions", "error", err)
+		return res, err
+	}
+
+	// Return if there are no transactions
+	if len(transactionsResp) == 0 {
+		res.FlagSet = append(res.FlagSet, flag_no_transfers)
+		return res, nil
+	}
+
+	data := common.ProcessTransfers(transactionsResp)
+
+	// Store all transaction data
+	dataMap := map[string]string{
+		"txfrom": data.Senders,
+		"txto":   data.Recipients,
+		"txval":  data.TransferValues,
+		"txaddr": data.Addresses,
+		"txhash": data.TxHashes,
+		"txdate": data.Dates,
+		"txsym":  data.Symbols,
+		"txdeci": data.Decimals,
+	}
+
+	for key, value := range dataMap {
+		if err := h.prefixDb.Put(ctx, []byte(key), []byte(value)); err != nil {
+			logg.ErrorCtxf(ctx, "failed to write to prefixDb", "error", err)
+			return res, err
+		}
+	}
+
+	res.FlagReset = append(res.FlagReset, flag_no_transfers)
+
+	return res, nil
+}
+
+// GetTransactionsList fetches the list of transactions and formats them
+func (h *Handlers) GetTransactionsList(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+	store := h.userdataStore
+	publicKey, err := store.ReadEntry(ctx, sessionId, common.DATA_PUBLIC_KEY)
+	if err != nil {
+		logg.ErrorCtxf(ctx, "failed to read publicKey entry with", "key", common.DATA_PUBLIC_KEY, "error", err)
+		return res, err
+	}
+
+	// Read transactions from the store and format them
+	TransactionSenders, err := h.prefixDb.Get(ctx, []byte("txfrom"))
+	if err != nil {
+		logg.ErrorCtxf(ctx, "Failed to read the TransactionSenders from prefixDb", "error", err)
+		return res, err
+	}
+	TransactionSyms, err := h.prefixDb.Get(ctx, []byte("txsym"))
+	if err != nil {
+		logg.ErrorCtxf(ctx, "Failed to read the TransactionSyms from prefixDb", "error", err)
+		return res, err
+	}
+	TransactionValues, err := h.prefixDb.Get(ctx, []byte("txval"))
+	if err != nil {
+		logg.ErrorCtxf(ctx, "Failed to read the TransactionValues from prefixDb", "error", err)
+		return res, err
+	}
+	TransactionDates, err := h.prefixDb.Get(ctx, []byte("txdate"))
+	if err != nil {
+		logg.ErrorCtxf(ctx, "Failed to read the TransactionDates from prefixDb", "error", err)
+		return res, err
+	}
+
+	// Parse the data
+	senders := strings.Split(string(TransactionSenders), "\n")
+	syms := strings.Split(string(TransactionSyms), "\n")
+	values := strings.Split(string(TransactionValues), "\n")
+	dates := strings.Split(string(TransactionDates), "\n")
+
+	var formattedTransactions []string
+	for i := 0; i < len(senders); i++ {
+		sender := strings.TrimSpace(senders[i])
+		sym := strings.TrimSpace(syms[i])
+		value := strings.TrimSpace(values[i])
+		date := strings.Split(strings.TrimSpace(dates[i]), " ")[0]
+
+		status := "received"
+		if sender == string(publicKey) {
+			status = "sent"
+		}
+
+		formattedTransactions = append(formattedTransactions, fmt.Sprintf("%d:%s %s %s %s", i+1, status, value, sym, date))
+	}
+
+	res.Content = strings.Join(formattedTransactions, "\n")
+
+	return res, nil
+}
+
+// ViewTransactionStatement retrieves the transaction statement
+// and displays it to the user
+func (h *Handlers) ViewTransactionStatement(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+	store := h.userdataStore
+	publicKey, err := store.ReadEntry(ctx, sessionId, common.DATA_PUBLIC_KEY)
+	if err != nil {
+		logg.ErrorCtxf(ctx, "failed to read publicKey entry with", "key", common.DATA_PUBLIC_KEY, "error", err)
+		return res, err
+	}
+
+	flag_incorrect_statement, _ := h.flagManager.GetFlag("flag_incorrect_statement")
+
+	inputStr := string(input)
+	if inputStr == "0" || inputStr == "99" || inputStr == "11" || inputStr == "22" {
+		res.FlagReset = append(res.FlagReset, flag_incorrect_statement)
+		return res, nil
+	}
+
+	// Convert input string to integer
+	index, err := strconv.Atoi(strings.TrimSpace(inputStr))
+	if err != nil {
+		return res, fmt.Errorf("invalid input: must be a number between 1 and 10")
+	}
+
+	if index < 1 || index > 10 {
+		return res, fmt.Errorf("invalid input: index must be between 1 and 10")
+	}
+
+	statement, err := common.GetTransferData(ctx, h.prefixDb, string(publicKey), index)
+	if err != nil {
+		return res, fmt.Errorf("failed to retrieve transfer data: %v", err)
+	}
+
+	if statement == "" {
+		res.FlagSet = append(res.FlagSet, flag_incorrect_statement)
+		return res, nil
+	}
+
+	res.FlagReset = append(res.FlagReset, flag_incorrect_statement)
+	res.Content = statement
 
 	return res, nil
 }

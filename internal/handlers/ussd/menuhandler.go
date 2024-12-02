@@ -1658,10 +1658,9 @@ func (h *Handlers) GetVoucherDetails(ctx context.Context, sym string, input []by
 		return res, nil
 	}
 
-	tokenSymbol := voucherData.TokenSymbol
-	tokenName := voucherData.TokenName
-
-	res.Content = fmt.Sprintf("%s %s", tokenSymbol, tokenName)
+	res.Content = fmt.Sprintf(
+		"Name: %s\nSymbol: %s\nCommodity: %s\nLocation: %s", voucherData.TokenName, voucherData.TokenSymbol, voucherData.TokenCommodity, voucherData.TokenLocation,
+	)
 
 	return res, nil
 }

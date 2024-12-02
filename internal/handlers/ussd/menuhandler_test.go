@@ -2026,7 +2026,6 @@ func TestSetVoucher(t *testing.T) {
 }
 
 func TestGetVoucherDetails(t *testing.T) {
-
 	ctx, store := InitializeTestStore(t)
 	fm, err := NewFlagManager(flagsPath)
 	if err != nil {
@@ -2056,12 +2055,11 @@ func TestGetVoucherDetails(t *testing.T) {
 		TokenCommodity: "Farming",
 	}
 	expectedResult.Content = fmt.Sprintf(
-		"name: %s\nsymbol: %s\ncommodity: %s\nlocation: %s", tokenDetails.TokenName, tokenDetails.TokenSymbol, tokenDetails.TokenCommodity, tokenDetails.TokenLocation,
+		"Name: %s\nSymbol: %s\nCommodity: %s\nLocation: %s", tokenDetails.TokenName, tokenDetails.TokenSymbol, tokenDetails.TokenCommodity, tokenDetails.TokenLocation,
 	)
 	mockAccountService.On("VoucherData", string(tokA_AAddress)).Return(tokenDetails, nil)
 
 	res, err := h.GetVoucherDetails(ctx, "SessionId", []byte(""))
 	assert.NoError(t, err)
 	assert.Equal(t, expectedResult, res)
-
 }

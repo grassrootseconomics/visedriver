@@ -62,4 +62,10 @@ func main() {
 		}
 		fmt.Printf("%x %s %x\n", k, v)
 	}
+
+	err = store.Close()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
+	}
 }

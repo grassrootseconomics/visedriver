@@ -112,6 +112,9 @@ func (h *Handlers) Init(ctx context.Context, sym string, input []byte) (resource
 		logg.WarnCtxf(ctx, "handler init called before it is ready or more than once", "state", h.st, "cache", h.ca)
 		return r, nil
 	}
+	defer func() {
+		h.pe = nil
+	}()
 
 	h.st = h.pe.GetState()
 	h.ca = h.pe.GetMemory()
@@ -131,7 +134,6 @@ func (h *Handlers) Init(ctx context.Context, sym string, input []byte) (resource
 		logg.ErrorCtxf(ctx, "perister fail in handler", "state", h.st, "cache", h.ca)
 		return r, fmt.Errorf("cannot get state and memory for handler")
 	}
-	h.pe = nil
 
 	logg.DebugCtxf(ctx, "handler has been initialized", "state", h.st, "cache", h.ca)
 
@@ -1688,10 +1690,9 @@ func (h *Handlers) GetVoucherDetails(ctx context.Context, sym string, input []by
 		return res, nil
 	}
 
-	tokenSymbol := voucherData.TokenSymbol
-	tokenName := voucherData.TokenName
-
-	res.Content = fmt.Sprintf("%s %s", tokenSymbol, tokenName)
+	res.Content = fmt.Sprintf(
+		"Name: %s\nSymbol: %s\nCommodity: %s\nLocation: %s", voucherData.TokenName, voucherData.TokenSymbol, voucherData.TokenCommodity, voucherData.TokenLocation,
+	)
 
 	return res, nil
 }

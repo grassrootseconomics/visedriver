@@ -1,4 +1,5 @@
-LOAD save_gender 0
+LOAD save_gender 32
 CATCH incorrect_pin flag_incorrect_pin 1
 CATCH update_gender flag_allow_update 1
-MOVE pin_entry
+CATCH pin_entry flag_gender_set 1
+MOVE edit_yob

@@ -1,10 +1,11 @@
-CATCH incorrect_pin flag_incorrect_pin 1
 CATCH update_familyname flag_allow_update 1
 LOAD get_current_profile_info 0
 RELOAD get_current_profile_info
+MAP get_current_profile_info
 MOUT back 0
+LOAD save_familyname 64
 HALT
-LOAD save_familyname 0
 RELOAD save_familyname
 INCMP _ 0
-INCMP pin_entry *
+CATCH pin_entry flag_familyname_set 1
+INCMP select_gender *

@@ -2024,3 +2024,42 @@ func TestSetVoucher(t *testing.T) {
 
 	assert.Equal(t, string(tempData.TokenSymbol), res.Content)
 }
+
+func TestGetVoucherDetails(t *testing.T) {
+	ctx, store := InitializeTestStore(t)
+	fm, err := NewFlagManager(flagsPath)
+	if err != nil {
+		t.Logf(err.Error())
+	}
+	mockAccountService := new(mocks.MockAccountService)
+
+	sessionId := "session123"
+	ctx = context.WithValue(ctx, "SessionId", sessionId)
+	expectedResult := resource.Result{}
+
+	tokA_AAddress := "0x0000000000000000000000000000000000000000"
+
+	h := &Handlers{
+		userdataStore:  store,
+		flagManager:    fm.parser,
+		accountService: mockAccountService,
+	}
+	err = store.WriteEntry(ctx, sessionId, common.DATA_ACTIVE_ADDRESS, []byte(tokA_AAddress))
+	if err != nil {
+		t.Fatal(err)
+	}
+	tokenDetails := &models.VoucherDataResult{
+		TokenName:      "Token A",
+		TokenSymbol:    "TOKA",
+		TokenLocation:  "Kilifi,Kenya",
+		TokenCommodity: "Farming",
+	}
+	expectedResult.Content = fmt.Sprintf(
+		"Name: %s\nSymbol: %s\nCommodity: %s\nLocation: %s", tokenDetails.TokenName, tokenDetails.TokenSymbol, tokenDetails.TokenCommodity, tokenDetails.TokenLocation,
+	)
+	mockAccountService.On("VoucherData", string(tokA_AAddress)).Return(tokenDetails, nil)
+
+	res, err := h.GetVoucherDetails(ctx, "SessionId", []byte(""))
+	assert.NoError(t, err)
+	assert.Equal(t, expectedResult, res)
+}

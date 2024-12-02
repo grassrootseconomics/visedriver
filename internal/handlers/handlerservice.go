@@ -121,6 +121,7 @@ func (ls *LocalHandlerService) GetHandler(accountService remote.AccountServiceIn
 	ls.DbRs.AddLocalFunc("check_transactions", ussdHandlers.CheckTransactions)
 	ls.DbRs.AddLocalFunc("get_transactions", ussdHandlers.GetTransactionsList)
 	ls.DbRs.AddLocalFunc("view_statement", ussdHandlers.ViewTransactionStatement)
+	ls.DbRs.AddLocalFunc("update_all_profile_items", ussdHandlers.UpdateAllProfileItems)
 
 	return ussdHandlers, nil
 }

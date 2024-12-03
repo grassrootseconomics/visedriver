@@ -2008,7 +2008,7 @@ func TestViewVoucher(t *testing.T) {
 
 	res, err := h.ViewVoucher(ctx, "view_voucher", []byte("1"))
 	assert.NoError(t, err)
-	assert.Equal(t, res.Content, "SRF\n100")
+	assert.Equal(t, res.Content, "Symbol: SRF\nBalance: 100")
 }
 
 func TestSetVoucher(t *testing.T) {

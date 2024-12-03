@@ -113,7 +113,7 @@ func (h *Handlers) Init(ctx context.Context, sym string, input []byte) (resource
 		return r, nil
 	}
 	defer func() {
-		h.pe = nil
+		h.Exit()
 	}()
 
 	h.st = h.pe.GetState()
@@ -138,6 +138,10 @@ func (h *Handlers) Init(ctx context.Context, sym string, input []byte) (resource
 	logg.DebugCtxf(ctx, "handler has been initialized", "state", h.st, "cache", h.ca)
 
 	return r, nil
+}
+
+func (h *Handlers) Exit() {
+	h.pe = nil
 }
 
 // SetLanguage sets the language across the menu

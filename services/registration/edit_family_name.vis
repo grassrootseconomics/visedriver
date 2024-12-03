@@ -1,3 +1,4 @@
+CATCH incorrect_pin flag_incorrect_pin 1
 CATCH update_familyname flag_allow_update 1
 LOAD get_current_profile_info 0
 RELOAD get_current_profile_info

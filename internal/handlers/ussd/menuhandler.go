@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"git.defalsify.org/vise.git/asm"
-	"github.com/grassrootseconomics/eth-custodial/pkg/api"
 
 	"git.defalsify.org/vise.git/cache"
 	"git.defalsify.org/vise.git/db"
@@ -26,14 +25,13 @@ import (
 	"gopkg.in/leonelquinteros/gotext.v1"
 
 	"git.grassecon.net/urdt/ussd/internal/storage"
+	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 )
 
 var (
 	logg           = logging.NewVanilla().WithDomain("ussdmenuhandler")
 	scriptDir      = path.Join("services", "registration")
 	translationDir = path.Join(scriptDir, "locale")
-	okResponse     *api.OKResponse
-	errResponse    *api.ErrResponse
 )
 
 // Define the regex patterns as constants
@@ -117,6 +115,9 @@ func (h *Handlers) Init(ctx context.Context, sym string, input []byte) (resource
 		logg.WarnCtxf(ctx, "handler init called before it is ready or more than once", "state", h.st, "cache", h.ca)
 		return r, nil
 	}
+	defer func() {
+		h.Exit()
+	}()
 
 	h.st = h.pe.GetState()
 	h.ca = h.pe.GetMemory()
@@ -136,11 +137,14 @@ func (h *Handlers) Init(ctx context.Context, sym string, input []byte) (resource
 		logg.ErrorCtxf(ctx, "perister fail in handler", "state", h.st, "cache", h.ca)
 		return r, fmt.Errorf("cannot get state and memory for handler")
 	}
-	h.pe = nil
 
 	logg.DebugCtxf(ctx, "handler has been initialized", "state", h.st, "cache", h.ca)
 
 	return r, nil
+}
+
+func (h *Handlers) Exit() {
+	h.pe = nil
 }
 
 // SetLanguage sets the language across the menu
@@ -151,7 +155,8 @@ func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (r
 	code := strings.Split(symbol, "_")[1]
 
 	if !utils.IsValidISO639(code) {
-		return res, nil
+		//Fallback to english instead?
+		code = "eng"
 	}
 	res.FlagSet = append(res.FlagSet, state.FLAG_LANG)
 	res.Content = code
@@ -806,12 +811,11 @@ func (h *Handlers) VerifyYob(ctx context.Context, sym string, input []byte) (res
 		return res, nil
 	}
 
-	if len(date) == 4 {
+	if utils.IsValidYOb(date) {
 		res.FlagReset = append(res.FlagReset, flag_incorrect_date_format)
 	} else {
 		res.FlagSet = append(res.FlagSet, flag_incorrect_date_format)
 	}
-
 	return res, nil
 }
 
@@ -860,7 +864,17 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 		return res, err
 	}
 
-	res.Content = l.Get("Balance: %s\n", fmt.Sprintf("%s %s", activeBal, activeSym))
+	// Convert activeBal from []byte to float64
+	balFloat, err := strconv.ParseFloat(string(activeBal), 64)
+	if err != nil {
+		logg.ErrorCtxf(ctx, "failed to parse activeBal as float", "value", string(activeBal), "error", err)
+		return res, err
+	}
+
+	// Format to 2 decimal places
+	balStr := fmt.Sprintf("%.2f %s", balFloat, activeSym)
+
+	res.Content = l.Get("Balance: %s\n", balStr)
 
 	return res, nil
 }
@@ -1450,14 +1464,7 @@ func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte)
 	offerings := getEntryOrDefault(store.ReadEntry(ctx, sessionId, common.DATA_OFFERINGS))
 
 	// Construct the full name
-	name := defaultValue
-	if familyName != defaultValue {
-		if firstName == defaultValue {
-			name = familyName
-		} else {
-			name = firstName + " " + familyName
-		}
-	}
+	name := utils.ConstructName(firstName, familyName, defaultValue)
 
 	// Calculate age from year of birth
 	age := defaultValue
@@ -1596,6 +1603,38 @@ func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) 
 		return res, nil
 	}
 
+	// check the current active sym and update the data
+	activeSym, _ := store.ReadEntry(ctx, sessionId, common.DATA_ACTIVE_SYM)
+	if activeSym != nil {
+		activeSymStr := string(activeSym)
+
+		// Find the matching voucher data
+		var activeData *dataserviceapi.TokenHoldings
+		for _, voucher := range vouchersResp {
+			if voucher.TokenSymbol == activeSymStr {
+				activeData = &voucher
+				break
+			}
+		}
+
+		if activeData == nil {
+			logg.ErrorCtxf(ctx, "activeSym not found in vouchers", "activeSym", activeSymStr)
+			return res, fmt.Errorf("activeSym %s not found in vouchers", activeSymStr)
+		}
+
+		// Scale down the balance
+		scaledBalance := common.ScaleDownBalance(activeData.Balance, activeData.TokenDecimals)
+
+		// Update the balance field with the scaled value
+		activeData.Balance = scaledBalance
+
+		// Pass the matching voucher data to UpdateVoucherData
+		if err := common.UpdateVoucherData(ctx, h.userdataStore, sessionId, activeData); err != nil {
+			logg.ErrorCtxf(ctx, "failed on UpdateVoucherData", "error", err)
+			return res, err
+		}
+	}
+
 	data := common.ProcessVouchers(vouchersResp)
 
 	// Store all voucher data
@@ -1640,6 +1679,10 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 		return res, fmt.Errorf("missing session")
 	}
 
+	code := codeFromCtx(ctx)
+	l := gotext.NewLocale(translationDir, code)
+	l.AddDomain("default")
+
 	flag_incorrect_voucher, _ := h.flagManager.GetFlag("flag_incorrect_voucher")
 
 	inputStr := string(input)
@@ -1664,7 +1707,7 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 	}
 
 	res.FlagReset = append(res.FlagReset, flag_incorrect_voucher)
-	res.Content = fmt.Sprintf("%s\n%s", metadata.TokenSymbol, metadata.Balance)
+	res.Content = l.Get("Symbol: %s\nBalance: %s", metadata.TokenSymbol, metadata.Balance)
 
 	return res, nil
 }
@@ -1720,10 +1763,9 @@ func (h *Handlers) GetVoucherDetails(ctx context.Context, sym string, input []by
 		return res, nil
 	}
 
-	tokenSymbol := voucherData.TokenSymbol
-	tokenName := voucherData.TokenName
-
-	res.Content = fmt.Sprintf("%s %s", tokenSymbol, tokenName)
+	res.Content = fmt.Sprintf(
+		"Name: %s\nSymbol: %s\nCommodity: %s\nLocation: %s", voucherData.TokenName, voucherData.TokenSymbol, voucherData.TokenCommodity, voucherData.TokenLocation,
+	)
 
 	return res, nil
 }

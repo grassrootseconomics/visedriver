@@ -2,10 +2,10 @@ CATCH update_firstname flag_allow_update 1
 LOAD get_current_profile_info 0
 RELOAD get_current_profile_info
 MAP get_current_profile_info
-LOAD save_firstname 128
 MOUT back 0
 HALT
-RELOAD save_firstname
 INCMP _ 0
+LOAD save_firstname 128
+RELOAD save_firstname
 CATCH pin_entry flag_firstname_set 1
 INCMP edit_family_name *

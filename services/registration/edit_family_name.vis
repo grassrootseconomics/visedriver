@@ -3,8 +3,8 @@ LOAD get_current_profile_info 0
 RELOAD get_current_profile_info
 MAP get_current_profile_info
 MOUT back 0
-LOAD save_familyname 64
 HALT
+LOAD save_familyname 64
 RELOAD save_familyname
 INCMP _ 0
 CATCH pin_entry flag_familyname_set 1

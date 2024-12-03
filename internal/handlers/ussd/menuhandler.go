@@ -570,7 +570,6 @@ func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (re
 
 	allowUpdate := h.st.MatchFlag(flag_allow_update, true)
 	genderSet := h.st.MatchFlag(flag_gender_set, true)
-	fmt.Println("GenderSet:", genderSet)
 
 	if allowUpdate {
 		temporaryGender, _ := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE)
@@ -1312,6 +1311,14 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 	var res resource.Result
 	var profileInfo []byte
 	var err error
+
+	flag_firstname_set, _ := h.flagManager.GetFlag("flag_firstname_set")
+	flag_familyname_set, _ := h.flagManager.GetFlag("flag_familyname_set")
+	flag_yob_set, _ := h.flagManager.GetFlag("flag_yob_set")
+	flag_gender_set, _ := h.flagManager.GetFlag("flag_gender_set")
+	flag_location_set, _ := h.flagManager.GetFlag("flag_location_set")
+	flag_offerings_set, _ := h.flagManager.GetFlag("flag_offerings_set")
+
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
 		return res, fmt.Errorf("missing session")
@@ -1338,6 +1345,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 			logg.ErrorCtxf(ctx, "Failed to read first name entry with", "key", "error", common.DATA_FIRST_NAME, err)
 			return res, err
 		}
+		res.FlagSet = append(res.FlagSet, flag_firstname_set)
 		res.Content = string(profileInfo)
 	case common.DATA_FAMILY_NAME:
 		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_FAMILY_NAME)
@@ -1349,6 +1357,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 			logg.ErrorCtxf(ctx, "Failed to read family name entry with", "key", "error", common.DATA_FAMILY_NAME, err)
 			return res, err
 		}
+		res.FlagSet = append(res.FlagSet, flag_familyname_set)
 		res.Content = string(profileInfo)
 
 	case common.DATA_GENDER:
@@ -1361,6 +1370,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 			logg.ErrorCtxf(ctx, "Failed to read gender entry with", "key", "error", common.DATA_GENDER, err)
 			return res, err
 		}
+		res.FlagSet = append(res.FlagSet, flag_gender_set)
 		res.Content = string(profileInfo)
 	case common.DATA_YOB:
 		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_YOB)
@@ -1372,8 +1382,8 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 			logg.ErrorCtxf(ctx, "Failed to read year of birth(yob) entry with", "key", "error", common.DATA_YOB, err)
 			return res, err
 		}
+		res.FlagSet = append(res.FlagSet, flag_yob_set)
 		res.Content = string(profileInfo)
-
 	case common.DATA_LOCATION:
 		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_LOCATION)
 		if err != nil {
@@ -1384,6 +1394,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 			logg.ErrorCtxf(ctx, "Failed to read location entry with", "key", "error", common.DATA_LOCATION, err)
 			return res, err
 		}
+		res.FlagSet = append(res.FlagSet, flag_location_set)
 		res.Content = string(profileInfo)
 	case common.DATA_OFFERINGS:
 		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_OFFERINGS)
@@ -1395,6 +1406,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 			logg.ErrorCtxf(ctx, "Failed to read offerings entry with", "key", "error", common.DATA_OFFERINGS, err)
 			return res, err
 		}
+		res.FlagSet = append(res.FlagSet, flag_offerings_set)
 		res.Content = string(profileInfo)
 	default:
 		break

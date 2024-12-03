@@ -8,4 +8,5 @@ HALT
 RELOAD save_offerings
 INCMP _ 0
 CATCH pin_entry flag_offerings_set 1
+CATCH pin_entry flag_offerings_set 0
 INCMP update_profile_items *

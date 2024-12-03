@@ -12,5 +12,7 @@ LOAD save_yob 32
 RELOAD save_yob
 INCMP _ 0
 CATCH pin_entry flag_yob_set 1
+CATCH edit_location flag_location_set 0
+CATCH edit_offerings flag_offerings_set 0
+CATCH pin_entry flag_yob_set 0
 INCMP edit_location *
-

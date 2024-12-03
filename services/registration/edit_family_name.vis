@@ -8,4 +8,9 @@ LOAD save_familyname 64
 RELOAD save_familyname
 INCMP _ 0
 CATCH pin_entry flag_familyname_set 1
+CATCH select_gender flag_gender_set 0
+CATCH edit_yob flag_yob_set 0
+CATCH edit_location flag_location_set 0
+CATCH edit_offerings flag_offerings_set 0
+CATCH pin_entry flag_familyname_set 0
 INCMP select_gender *

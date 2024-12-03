@@ -1582,7 +1582,7 @@ func TestCheckBalance(t *testing.T) {
 			publicKey:      "0X98765432109",
 			activeSym:      "ETH",
 			activeBal:      "1.5",
-			expectedResult: resource.Result{Content: "Balance: 1.5 ETH\n"},
+			expectedResult: resource.Result{Content: "Balance: 1.50 ETH\n"},
 			expectError:    false,
 		},
 	}

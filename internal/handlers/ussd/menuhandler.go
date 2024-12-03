@@ -1398,18 +1398,7 @@ func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte)
 	offerings := getEntryOrDefault(store.ReadEntry(ctx, sessionId, common.DATA_OFFERINGS))
 
 	// Construct the full name
-	name := defaultValue
-	if familyName != defaultValue {
-		if firstName != defaultValue {
-			name = firstName + " " + familyName
-		} else {
-			name = familyName
-		}
-	} else {
-		if firstName != defaultValue {
-			name = firstName
-		}
-	}
+	name := utils.ConstructName(firstName, familyName, defaultValue)
 
 	// Calculate age from year of birth
 	age := defaultValue

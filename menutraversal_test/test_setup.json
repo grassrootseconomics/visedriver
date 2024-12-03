@@ -7,11 +7,11 @@
                 "steps": [
                     {
                         "input": "",
-                        "expectedContent": "Welcome to Sarafu Network\nPlease select a language\n0:english\n1:kiswahili"
+                        "expectedContent": "Welcome to Sarafu Network\nPlease select a language\n0:English\n1:Kiswahili"
                     },
                     {
                         "input": "0",
-                        "expectedContent": "Do you agree to terms and conditions?\n0:yes\n1:no"
+                        "expectedContent": "Do you agree to terms and conditions?\n0:Yes\n1:No"
                     },
                     {
                         "input": "0",
@@ -40,11 +40,11 @@
                 "steps": [
                     {
                         "input": "",
-                        "expectedContent": "Welcome to Sarafu Network\nPlease select a language\n0:english\n1:kiswahili"
+                        "expectedContent": "Welcome to Sarafu Network\nPlease select a language\n0:English\n1:Kiswahili"
                     },
                     {
                         "input": "0",
-                        "expectedContent": "Do you agree to terms and conditions?\n0:yes\n1:no"
+                        "expectedContent": "Do you agree to terms and conditions?\n0:Yes\n1:No"
                     },
                     {
                         "input": "1",

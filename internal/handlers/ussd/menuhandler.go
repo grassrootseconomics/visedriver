@@ -152,7 +152,8 @@ func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (r
 	code := strings.Split(symbol, "_")[1]
 
 	if !utils.IsValidISO639(code) {
-		return res, nil
+		//Fallback to english instead?
+		code = "eng"
 	}
 	res.FlagSet = append(res.FlagSet, state.FLAG_LANG)
 	res.Content = code
@@ -761,12 +762,11 @@ func (h *Handlers) VerifyYob(ctx context.Context, sym string, input []byte) (res
 		return res, nil
 	}
 
-	if len(date) == 4 {
+	if utils.IsValidYOb(date) {
 		res.FlagReset = append(res.FlagReset, flag_incorrect_date_format)
 	} else {
 		res.FlagSet = append(res.FlagSet, flag_incorrect_date_format)
 	}
-
 	return res, nil
 }
 
@@ -815,7 +815,17 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 		return res, err
 	}
 
-	res.Content = l.Get("Balance: %s\n", fmt.Sprintf("%s %s", activeBal, activeSym))
+	// Convert activeBal from []byte to float64
+	balFloat, err := strconv.ParseFloat(string(activeBal), 64)
+	if err != nil {
+		logg.ErrorCtxf(ctx, "failed to parse activeBal as float", "value", string(activeBal), "error", err)
+		return res, err
+	}
+
+	// Format to 2 decimal places
+	balStr := fmt.Sprintf("%.2f %s", balFloat, activeSym)
+
+	res.Content = l.Get("Balance: %s\n", balStr)
 
 	return res, nil
 }
@@ -1392,14 +1402,7 @@ func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte)
 	offerings := getEntryOrDefault(store.ReadEntry(ctx, sessionId, common.DATA_OFFERINGS))
 
 	// Construct the full name
-	name := defaultValue
-	if familyName != defaultValue {
-		if firstName == defaultValue {
-			name = familyName
-		} else {
-			name = firstName + " " + familyName
-		}
-	}
+	name := utils.ConstructName(firstName, familyName, defaultValue)
 
 	// Calculate age from year of birth
 	age := defaultValue
@@ -1614,6 +1617,10 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 		return res, fmt.Errorf("missing session")
 	}
 
+	code := codeFromCtx(ctx)
+	l := gotext.NewLocale(translationDir, code)
+	l.AddDomain("default")
+
 	flag_incorrect_voucher, _ := h.flagManager.GetFlag("flag_incorrect_voucher")
 
 	inputStr := string(input)
@@ -1638,7 +1645,7 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 	}
 
 	res.FlagReset = append(res.FlagReset, flag_incorrect_voucher)
-	res.Content = fmt.Sprintf("%s\n%s", metadata.TokenSymbol, metadata.Balance)
+	res.Content = l.Get("Symbol: %s\nBalance: %s", metadata.TokenSymbol, metadata.Balance)
 
 	return res, nil
 }

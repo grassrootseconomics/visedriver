@@ -6,10 +6,6 @@ import (
 	"git.defalsify.org/vise.git/db"
 )
 
-const (
-	DATATYPE_USERSUB = 64
-)
-
 // PrefixDb interface abstracts the database operations.
 type PrefixDb interface {
 	Get(ctx context.Context, key []byte) ([]byte, error)
@@ -35,13 +31,13 @@ func (s *SubPrefixDb) toKey(k []byte) []byte {
 }
 
 func (s *SubPrefixDb) Get(ctx context.Context, key []byte) ([]byte, error) {
-	s.store.SetPrefix(DATATYPE_USERSUB)
+	s.store.SetPrefix(db.DATATYPE_USERDATA)
 	key = s.toKey(key)
 	return s.store.Get(ctx, key)
 }
 
 func (s *SubPrefixDb) Put(ctx context.Context, key []byte, val []byte) error {
-	s.store.SetPrefix(DATATYPE_USERSUB)
+	s.store.SetPrefix(db.DATATYPE_USERDATA)
 	key = s.toKey(key)
 	return s.store.Put(ctx, key, val)
 }

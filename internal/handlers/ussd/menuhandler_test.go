@@ -1498,10 +1498,10 @@ func TestValidateRecipient(t *testing.T) {
 	}{
 		{
 			name:  "Test with invalid recepient",
-			input: []byte("9234adf5"),
+			input: []byte("7?1234"),
 			expectedResult: resource.Result{
 				FlagSet: []uint32{flag_invalid_recipient},
-				Content: "9234adf5",
+				Content: "7?1234",
 			},
 		},
 		{
@@ -1517,21 +1517,39 @@ func TestValidateRecipient(t *testing.T) {
 			input:          []byte("0711223344"),
 			expectedResult: resource.Result{},
 		},
+		{
+			name:           "Test with address",
+			input:          []byte("0xd4c288865Ce0985a481Eef3be02443dF5E2e4Ea9"),
+			expectedResult: resource.Result{},
+		},
+		{
+			name:           "Test with alias recepient",
+			input:          []byte("alias123"),
+			expectedResult: resource.Result{},
+		},
 	}
 
 	// store a public key for the valid recipient
-	err = store.WriteEntry(ctx, "0711223344", common.DATA_PUBLIC_KEY, []byte(publicKey))
+	err = store.WriteEntry(ctx, "+254711223344", common.DATA_PUBLIC_KEY, []byte(publicKey))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			mockAccountService := new(mocks.MockAccountService)
 			// Create the Handlers instance
 			h := &Handlers{
-				flagManager:   fm.parser,
-				userdataStore: store,
+				flagManager:    fm.parser,
+				userdataStore:  store,
+				accountService: mockAccountService,
 			}
+
+			aliasResponse := &dataserviceapi.AliasAddress{
+				Address: "0xd4c288865Ce0985a481Eef3be02443dF5E2e4Ea9",
+			}
+
+			mockAccountService.On("CheckAliasAddress", string(tt.input)).Return(aliasResponse, nil)
 
 			// Call the method
 			res, err := h.ValidateRecipient(ctx, "validate_recepient", tt.input)
@@ -1564,7 +1582,7 @@ func TestCheckBalance(t *testing.T) {
 			publicKey:      "0X98765432109",
 			activeSym:      "ETH",
 			activeBal:      "1.5",
-			expectedResult: resource.Result{Content: "Balance: 1.5 ETH\n"},
+			expectedResult: resource.Result{Content: "Balance: 1.50 ETH\n"},
 			expectError:    false,
 		},
 	}
@@ -1990,7 +2008,7 @@ func TestViewVoucher(t *testing.T) {
 
 	res, err := h.ViewVoucher(ctx, "view_voucher", []byte("1"))
 	assert.NoError(t, err)
-	assert.Equal(t, res.Content, "SRF\n100")
+	assert.Equal(t, res.Content, "Symbol: SRF\nBalance: 100")
 }
 
 func TestSetVoucher(t *testing.T) {

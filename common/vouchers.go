@@ -70,8 +70,7 @@ func GetVoucherData(ctx context.Context, db storage.PrefixDb, input string) (*da
 	for _, key := range keys {
 		value, err := db.Get(ctx, key.ToBytes())
 		if err != nil {
-			fmt.Printf("failed to get %v: %v\n", key, err)
-			continue
+			return nil, fmt.Errorf("failed to get %s: %v", key.ToBytes(), err)	
 		}
 		data[key] = string(value)
 	}

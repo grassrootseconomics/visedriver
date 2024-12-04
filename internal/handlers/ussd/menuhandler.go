@@ -543,6 +543,7 @@ func (h *Handlers) SaveLocation(ctx context.Context, sym string, input []byte) (
 			logg.ErrorCtxf(ctx, "failed to write location entry with", "key", common.DATA_LOCATION, "value", temporaryLocation, "error", err)
 			return res, err
 		}
+		res.FlagSet = append(res.FlagSet, flag_location_set)
 	} else {
 		if locationSet {
 			err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(location))

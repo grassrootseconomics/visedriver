@@ -32,7 +32,18 @@ const (
 	DATA_PUBLIC_KEY_REVERSE
 	DATA_ACTIVE_DECIMAL
 	DATA_ACTIVE_ADDRESS
-	DATA_TRANSACTIONS
+	DATA_PREFIX_SYMBOLS
+	DATA_PREFIX_BALANCES
+	DATA_PREFIX_DECIMALS
+	DATA_PREFIX_ADDRESSES
+	DATA_PREFIX_TX_SENDERS
+	DATA_PREFIX_TX_RECIPIENTS
+	DATA_PREFIX_TX_VALUES
+	DATA_PREFIX_TX_ADDRESSES
+	DATA_PREFIX_TX_HASHES
+	DATA_PREFIX_TX_DATES
+	DATA_PREFIX_TX_SYMBOLS
+	DATA_PREFIX_TX_DECIMALS
 )
 
 var (
@@ -68,4 +79,11 @@ func StringToDataTyp(str string) (DataTyp, error) {
 	default:
 		return 0, errors.New("invalid DataTyp string")
 	}
+}
+
+// Convert DataTyp to []byte
+func (d DataTyp) ToBytes() []byte {
+	bytes := make([]byte, 2)
+	binary.BigEndian.PutUint16(bytes, uint16(d))
+	return bytes
 }

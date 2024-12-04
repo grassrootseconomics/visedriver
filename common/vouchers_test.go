@@ -86,16 +86,16 @@ func TestGetVoucherData(t *testing.T) {
 	spdb := storage.NewSubPrefixDb(db, []byte("vouchers"))
 
 	// Test voucher data
-	mockData := map[string][]byte{
-		"sym":  []byte("1:SRF\n2:MILO"),
-		"bal":  []byte("1:100\n2:200"),
-		"deci": []byte("1:6\n2:4"),
-		"addr": []byte("1:0xd4c288865Ce\n2:0x41c188d63Qa"),
+	mockData := map[DataTyp][]byte{
+		DATA_PREFIX_SYMBOLS:   []byte("1:SRF\n2:MILO"),
+		DATA_PREFIX_BALANCES:  []byte("1:100\n2:200"),
+		DATA_PREFIX_DECIMALS:  []byte("1:6\n2:4"),
+		DATA_PREFIX_ADDRESSES: []byte("1:0xd4c288865Ce\n2:0x41c188d63Qa"),
 	}
 
 	// Put the data
 	for key, value := range mockData {
-		err = spdb.Put(ctx, []byte(key), []byte(value))
+		err = spdb.Put(ctx, []byte(key.ToBytes()), []byte(value))
 		if err != nil {
 			t.Fatal(err)
 		}

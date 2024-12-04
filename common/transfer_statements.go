@@ -63,7 +63,7 @@ func GetTransferData(ctx context.Context, db storage.PrefixDb, publicKey string,
 	for _, key := range keys {
 		value, err := db.Get(ctx, key.ToBytes())
 		if err != nil {
-			return "", fmt.Errorf("failed to get %s: %v", key, err)
+			return "", fmt.Errorf("failed to get %s: %v", key.ToBytes(), err)
 		}
 		data[key] = string(value)
 	}

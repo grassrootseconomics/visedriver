@@ -726,6 +726,18 @@ func (h *Handlers) ResetIncorrectPin(ctx context.Context, sym string, input []by
 	return res, nil
 }
 
+// Setback sets the flag_back_set flag when the navigation is back
+func (h *Handlers) SetBack(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	//TODO:
+	//Add check if the navigation is lateral nav instead of checking the input.
+	if string(input) == "0" {
+		flag_back_set, _ := h.flagManager.GetFlag("flag_back_set")
+		res.FlagSet = append(res.FlagSet, flag_back_set)
+	}
+	return res, nil
+}
+
 // CheckAccountStatus queries the API using the TrackingId and sets flags
 // based on the account status
 func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []byte) (resource.Result, error) {
@@ -1332,6 +1344,9 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 	flag_gender_set, _ := h.flagManager.GetFlag("flag_gender_set")
 	flag_location_set, _ := h.flagManager.GetFlag("flag_location_set")
 	flag_offerings_set, _ := h.flagManager.GetFlag("flag_offerings_set")
+	flag_back_set, _ := h.flagManager.GetFlag("flag_back_set")
+
+	res.FlagReset = append(res.FlagReset, flag_back_set)
 
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
@@ -2017,6 +2032,7 @@ func (h *Handlers) insertProfileItems(ctx context.Context, sessionId string, res
 	return nil
 }
 
+// UpdateAllProfileItems  is used to persist all the  new profile information and setup  the required profile flags
 func (h *Handlers) UpdateAllProfileItems(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	sessionId, ok := ctx.Value("SessionId").(string)

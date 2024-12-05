@@ -22,6 +22,7 @@ import (
 	testdataloader "github.com/peteole/testdata-loader"
 	"github.com/stretchr/testify/require"
 
+	visedb "git.defalsify.org/vise.git/db"
 	memdb "git.defalsify.org/vise.git/db/mem"
 	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 )
@@ -56,7 +57,8 @@ func InitializeTestSubPrefixDb(t *testing.T, ctx context.Context) *storage.SubPr
 	if err != nil {
 		t.Fatal(err)
 	}
-	spdb := storage.NewSubPrefixDb(db, []byte("vouchers"))
+	prefix := common.ToBytes(visedb.DATATYPE_USERDATA)
+	spdb := storage.NewSubPrefixDb(db, prefix)
 
 	return spdb
 }
@@ -1967,7 +1969,7 @@ func TestCheckVouchers(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Read voucher sym data from the store
-	voucherData, err := spdb.Get(ctx, []byte("sym"))
+	voucherData, err := spdb.Get(ctx, common.ToBytes(common.DATA_VOUCHER_SYMBOLS))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1991,7 +1993,7 @@ func TestGetVoucherList(t *testing.T) {
 	expectedSym := []byte("1:SRF\n2:MILO")
 
 	// Put voucher sym data from the store
-	err := spdb.Put(ctx, []byte("sym"), expectedSym)
+	err := spdb.Put(ctx, common.ToBytes(common.DATA_VOUCHER_SYMBOLS), expectedSym)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2021,16 +2023,16 @@ func TestViewVoucher(t *testing.T) {
 	}
 
 	// Define mock voucher data
-	mockData := map[string][]byte{
-		"sym":  []byte("1:SRF\n2:MILO"),
-		"bal":  []byte("1:100\n2:200"),
-		"deci": []byte("1:6\n2:4"),
-		"addr": []byte("1:0xd4c288865Ce\n2:0x41c188d63Qa"),
+	mockData := map[common.DataTyp][]byte{
+		common.DATA_VOUCHER_SYMBOLS:   []byte("1:SRF\n2:MILO"),
+		common.DATA_VOUCHER_BALANCES:  []byte("1:100\n2:200"),
+		common.DATA_VOUCHER_DECIMALS:  []byte("1:6\n2:4"),
+		common.DATA_VOUCHER_ADDRESSES: []byte("1:0xd4c288865Ce\n2:0x41c188d63Qa"),
 	}
 
 	// Put the data
 	for key, value := range mockData {
-		err = spdb.Put(ctx, []byte(key), []byte(value))
+		err = spdb.Put(ctx, []byte(common.ToBytes(key)), []byte(value))
 		if err != nil {
 			t.Fatal(err)
 		}

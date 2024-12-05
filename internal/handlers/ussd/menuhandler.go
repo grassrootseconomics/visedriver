@@ -87,8 +87,10 @@ func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, adminstore *util
 	userDb := &common.UserDataStore{
 		Db: userdataStore,
 	}
-	// Instantiate the SubPrefixDb with "vouchers" prefix
-	prefixDb := storage.NewSubPrefixDb(userdataStore, []byte("vouchers"))
+
+	// Instantiate the SubPrefixDb with "DATATYPE_USERDATA" prefix
+	prefix := common.ToBytes(db.DATATYPE_USERDATA)
+	prefixDb := storage.NewSubPrefixDb(userdataStore, prefix)
 
 	h := &Handlers{
 		userdataStore:  userDb,
@@ -1654,15 +1656,15 @@ func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) 
 	data := common.ProcessVouchers(vouchersResp)
 
 	// Store all voucher data
-	dataMap := map[string]string{
-		"sym":  data.Symbols,
-		"bal":  data.Balances,
-		"deci": data.Decimals,
-		"addr": data.Addresses,
+	dataMap := map[common.DataTyp]string{
+		common.DATA_VOUCHER_SYMBOLS:   data.Symbols,
+		common.DATA_VOUCHER_BALANCES:  data.Balances,
+		common.DATA_VOUCHER_DECIMALS:  data.Decimals,
+		common.DATA_VOUCHER_ADDRESSES: data.Addresses,
 	}
 
 	for key, value := range dataMap {
-		if err := h.prefixDb.Put(ctx, []byte(key), []byte(value)); err != nil {
+		if err := h.prefixDb.Put(ctx, []byte(common.ToBytes(key)), []byte(value)); err != nil {
 			return res, nil
 		}
 	}
@@ -1675,7 +1677,7 @@ func (h *Handlers) GetVoucherList(ctx context.Context, sym string, input []byte)
 	var res resource.Result
 
 	// Read vouchers from the store
-	voucherData, err := h.prefixDb.Get(ctx, []byte("sym"))
+	voucherData, err := h.prefixDb.Get(ctx, common.ToBytes(common.DATA_VOUCHER_SYMBOLS))
 	if err != nil {
 		logg.ErrorCtxf(ctx, "Failed to read the voucherData from prefixDb", "error", err)
 		return res, err
@@ -1821,19 +1823,19 @@ func (h *Handlers) CheckTransactions(ctx context.Context, sym string, input []by
 	data := common.ProcessTransfers(transactionsResp)
 
 	// Store all transaction data
-	dataMap := map[string]string{
-		"txfrom": data.Senders,
-		"txto":   data.Recipients,
-		"txval":  data.TransferValues,
-		"txaddr": data.Addresses,
-		"txhash": data.TxHashes,
-		"txdate": data.Dates,
-		"txsym":  data.Symbols,
-		"txdeci": data.Decimals,
+	dataMap := map[common.DataTyp]string{
+		common.DATA_TX_SENDERS:    data.Senders,
+		common.DATA_TX_RECIPIENTS: data.Recipients,
+		common.DATA_TX_VALUES:     data.TransferValues,
+		common.DATA_TX_ADDRESSES:  data.Addresses,
+		common.DATA_TX_HASHES:     data.TxHashes,
+		common.DATA_TX_DATES:      data.Dates,
+		common.DATA_TX_SYMBOLS:    data.Symbols,
+		common.DATA_TX_DECIMALS:   data.Decimals,
 	}
 
 	for key, value := range dataMap {
-		if err := h.prefixDb.Put(ctx, []byte(key), []byte(value)); err != nil {
+		if err := h.prefixDb.Put(ctx, []byte(common.ToBytes(key)), []byte(value)); err != nil {
 			logg.ErrorCtxf(ctx, "failed to write to prefixDb", "error", err)
 			return res, err
 		}
@@ -1859,22 +1861,22 @@ func (h *Handlers) GetTransactionsList(ctx context.Context, sym string, input []
 	}
 
 	// Read transactions from the store and format them
-	TransactionSenders, err := h.prefixDb.Get(ctx, []byte("txfrom"))
+	TransactionSenders, err := h.prefixDb.Get(ctx, common.ToBytes(common.DATA_TX_SENDERS))
 	if err != nil {
 		logg.ErrorCtxf(ctx, "Failed to read the TransactionSenders from prefixDb", "error", err)
 		return res, err
 	}
-	TransactionSyms, err := h.prefixDb.Get(ctx, []byte("txsym"))
+	TransactionSyms, err := h.prefixDb.Get(ctx, common.ToBytes(common.DATA_TX_SYMBOLS))
 	if err != nil {
 		logg.ErrorCtxf(ctx, "Failed to read the TransactionSyms from prefixDb", "error", err)
 		return res, err
 	}
-	TransactionValues, err := h.prefixDb.Get(ctx, []byte("txval"))
+	TransactionValues, err := h.prefixDb.Get(ctx, common.ToBytes(common.DATA_TX_VALUES))
 	if err != nil {
 		logg.ErrorCtxf(ctx, "Failed to read the TransactionValues from prefixDb", "error", err)
 		return res, err
 	}
-	TransactionDates, err := h.prefixDb.Get(ctx, []byte("txdate"))
+	TransactionDates, err := h.prefixDb.Get(ctx, common.ToBytes(common.DATA_TX_DATES))
 	if err != nil {
 		logg.ErrorCtxf(ctx, "Failed to read the TransactionDates from prefixDb", "error", err)
 		return res, err

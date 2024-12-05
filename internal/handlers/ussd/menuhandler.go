@@ -1966,68 +1966,26 @@ func (h *Handlers) insertProfileItems(ctx context.Context, sessionId string, res
 		"flag_location_set",
 		"flag_offerings_set",
 	}
+	profileDataKeys := map[int]common.DataTyp{
+		0: common.DATA_FIRST_NAME,
+		1: common.DATA_FAMILY_NAME,
+		2: common.DATA_GENDER,
+		3: common.DATA_YOB,
+		4: common.DATA_LOCATION,
+		5: common.DATA_OFFERINGS,
+	}
 	for index, profileItem := range h.profile.ProfileItems {
-		switch index {
-		case 0:
-			if profileItem != "0" {
-				err = store.WriteEntry(ctx, sessionId, common.DATA_FIRST_NAME, []byte(profileItem))
-				if err != nil {
-					logg.ErrorCtxf(ctx, "failed to write profile first  name entry with", "key", common.DATA_TEMPORARY_VALUE, "value", profileItem, "error", err)
-					return err
-				}
-				flag, _ := h.flagManager.GetFlag(profileFlagNames[index])
-				res.FlagSet = append(res.FlagSet, flag)
+		// Ensure the profileItem is not "0"(is set)
+		if profileItem != "0" {
+			err = store.WriteEntry(ctx, sessionId, profileDataKeys[index], []byte(profileItem))
+			if err != nil {
+				logg.ErrorCtxf(ctx, "failed to write profile entry with", "key", profileDataKeys[index], "value", profileItem, "error", err)
+				return err
 			}
-		case 1:
-			if profileItem != "0" {
-				err = store.WriteEntry(ctx, sessionId, common.DATA_FAMILY_NAME, []byte(profileItem))
-				if err != nil {
-					logg.ErrorCtxf(ctx, "failed to write profile family name entry with", "key", common.DATA_TEMPORARY_VALUE, "value", profileItem, "error", err)
-					return err
-				}
-				flag, _ := h.flagManager.GetFlag(profileFlagNames[index])
-				res.FlagSet = append(res.FlagSet, flag)
-			}
-		case 2:
-			if profileItem != "0" {
-				err = store.WriteEntry(ctx, sessionId, common.DATA_GENDER, []byte(profileItem))
-				if err != nil {
-					logg.ErrorCtxf(ctx, "failed to write profile gender entry with", "key", common.DATA_TEMPORARY_VALUE, "value", profileItem, "error", err)
-					return err
-				}
-				flag, _ := h.flagManager.GetFlag(profileFlagNames[index])
-				res.FlagSet = append(res.FlagSet, flag)
-			}
-		case 3:
-			if profileItem != "0" {
-				err = store.WriteEntry(ctx, sessionId, common.DATA_YOB, []byte(profileItem))
-				if err != nil {
-					logg.ErrorCtxf(ctx, "failed to write profile yob entry with", "key", common.DATA_TEMPORARY_VALUE, "value", profileItem, "error", err)
-					return err
-				}
-				flag, _ := h.flagManager.GetFlag(profileFlagNames[index])
-				res.FlagSet = append(res.FlagSet, flag)
-			}
-		case 4:
-			if profileItem != "0" {
-				err = store.WriteEntry(ctx, sessionId, common.DATA_LOCATION, []byte(profileItem))
-				if err != nil {
-					logg.ErrorCtxf(ctx, "failed to write profile location entry with", "key", common.DATA_TEMPORARY_VALUE, "value", profileItem, "error", err)
-					return err
-				}
-				flag, _ := h.flagManager.GetFlag(profileFlagNames[index])
-				res.FlagSet = append(res.FlagSet, flag)
-			}
-		case 5:
-			if profileItem != "0" {
-				err = store.WriteEntry(ctx, sessionId, common.DATA_OFFERINGS, []byte(profileItem))
-				if err != nil {
-					logg.ErrorCtxf(ctx, "failed to write profile offerings entry with", "key", common.DATA_TEMPORARY_VALUE, "value", profileItem, "error", err)
-					return err
-				}
-				flag, _ := h.flagManager.GetFlag(profileFlagNames[index])
-				res.FlagSet = append(res.FlagSet, flag)
-			}
+
+			// Get the flag for the current index
+			flag, _ := h.flagManager.GetFlag(profileFlagNames[index])
+			res.FlagSet = append(res.FlagSet, flag)
 		}
 	}
 	return nil

@@ -167,7 +167,7 @@
             ]
         },
         {
-            "name": "menu_my_account_edit_firstname",
+            "name": "menu_my_account_edit_all_account_details_starting_from_firstname",
             "steps": [
                 {
                     "input": "",
@@ -224,7 +224,7 @@
             ]
         },
         {
-            "name": "menu_my_account_edit_familyname",
+            "name": "menu_my_account_edit_familyname_when_all_account__details_have_been_set",
             "steps": [
                 {
                     "input": "",
@@ -262,7 +262,7 @@
             ]
         },
         {
-            "name": "menu_my_account_edit_gender",
+            "name": "menu_my_account_edit_gender_when_all_account__details_have_been_set",
             "steps": [
                 {
                     "input": "",
@@ -299,7 +299,7 @@
             ]
         },
         {
-            "name": "menu_my_account_edit_yob",
+            "name": "menu_my_account_edit_yob_when_all_account__details_have_been_set",
             "steps": [
                 {
                     "input": "",
@@ -336,7 +336,7 @@
             ]
         },
         {
-            "name": "menu_my_account_edit_location",
+            "name": "menu_my_account_edit_location_when_all_account_details_have_been_set",
             "steps": [
                 {
                     "input": "",
@@ -373,7 +373,7 @@
             ]
         },
         {
-            "name": "menu_my_account_edit_offerings",
+            "name": "menu_my_account_edit_offerings_when_all_account__details_have_been_set",
             "steps": [
                 {
                     "input": "",

@@ -1966,13 +1966,13 @@ func (h *Handlers) insertProfileItems(ctx context.Context, sessionId string, res
 		"flag_location_set",
 		"flag_offerings_set",
 	}
-	profileDataKeys := map[int]common.DataTyp{
-		0: common.DATA_FIRST_NAME,
-		1: common.DATA_FAMILY_NAME,
-		2: common.DATA_GENDER,
-		3: common.DATA_YOB,
-		4: common.DATA_LOCATION,
-		5: common.DATA_OFFERINGS,
+	profileDataKeys := []common.DataTyp{
+		common.DATA_FIRST_NAME,
+		common.DATA_FAMILY_NAME,
+		common.DATA_GENDER,
+		common.DATA_YOB,
+		common.DATA_LOCATION,
+		common.DATA_OFFERINGS,
 	}
 	for index, profileItem := range h.profile.ProfileItems {
 		// Ensure the profileItem is not "0"(is set)

@@ -88,3 +88,10 @@ func (d DataTyp) ToBytes() []byte {
 	binary.BigEndian.PutUint16(bytes, uint16(d))
 	return bytes
 }
+
+// Convert int to []byte
+func IntToBytes(value int) []byte {
+	bytes := make([]byte, 2)
+	binary.BigEndian.PutUint16(bytes, uint16(value))
+	return bytes
+}

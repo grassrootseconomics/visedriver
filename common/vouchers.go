@@ -64,22 +64,22 @@ func ScaleDownBalance(balance, decimals string) string {
 
 // GetVoucherData retrieves and matches voucher data
 func GetVoucherData(ctx context.Context, db storage.PrefixDb, input string) (*dataserviceapi.TokenHoldings, error) {
-	keys := []DataTyp{DATA_PREFIX_SYMBOLS, DATA_PREFIX_BALANCES, DATA_PREFIX_DECIMALS, DATA_PREFIX_ADDRESSES}
+	keys := []DataTyp{DATA_VOUCHER_SYMBOLS, DATA_VOUCHER_BALANCES, DATA_VOUCHER_DECIMALS, DATA_VOUCHER_ADDRESSES}
 	data := make(map[DataTyp]string)
 
 	for _, key := range keys {
 		value, err := db.Get(ctx, key.ToBytes())
 		if err != nil {
-			return nil, fmt.Errorf("failed to get %s: %v", key.ToBytes(), err)	
+			return nil, fmt.Errorf("failed to get %s: %v", key.ToBytes(), err)
 		}
 		data[key] = string(value)
 	}
 
 	symbol, balance, decimal, address := MatchVoucher(input,
-		data[DATA_PREFIX_SYMBOLS],
-		data[DATA_PREFIX_BALANCES],
-		data[DATA_PREFIX_DECIMALS],
-		data[DATA_PREFIX_ADDRESSES],
+		data[DATA_VOUCHER_SYMBOLS],
+		data[DATA_VOUCHER_BALANCES],
+		data[DATA_VOUCHER_DECIMALS],
+		data[DATA_VOUCHER_ADDRESSES],
 	)
 
 	if symbol == "" {

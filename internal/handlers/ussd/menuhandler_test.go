@@ -1937,7 +1937,7 @@ func TestCheckVouchers(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Read voucher sym data from the store
-	voucherData, err := spdb.Get(ctx, common.DATA_PREFIX_SYMBOLS.ToBytes())
+	voucherData, err := spdb.Get(ctx, common.DATA_VOUCHER_SYMBOLS.ToBytes())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1961,7 +1961,7 @@ func TestGetVoucherList(t *testing.T) {
 	expectedSym := []byte("1:SRF\n2:MILO")
 
 	// Put voucher sym data from the store
-	err := spdb.Put(ctx, common.DATA_PREFIX_SYMBOLS.ToBytes(), expectedSym)
+	err := spdb.Put(ctx, common.DATA_VOUCHER_SYMBOLS.ToBytes(), expectedSym)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1992,10 +1992,10 @@ func TestViewVoucher(t *testing.T) {
 
 	// Define mock voucher data
 	mockData := map[common.DataTyp][]byte{
-		common.DATA_PREFIX_SYMBOLS:   []byte("1:SRF\n2:MILO"),
-		common.DATA_PREFIX_BALANCES:  []byte("1:100\n2:200"),
-		common.DATA_PREFIX_DECIMALS:  []byte("1:6\n2:4"),
-		common.DATA_PREFIX_ADDRESSES: []byte("1:0xd4c288865Ce\n2:0x41c188d63Qa"),
+		common.DATA_VOUCHER_SYMBOLS:   []byte("1:SRF\n2:MILO"),
+		common.DATA_VOUCHER_BALANCES:  []byte("1:100\n2:200"),
+		common.DATA_VOUCHER_DECIMALS:  []byte("1:6\n2:4"),
+		common.DATA_VOUCHER_ADDRESSES: []byte("1:0xd4c288865Ce\n2:0x41c188d63Qa"),
 	}
 
 	// Put the data

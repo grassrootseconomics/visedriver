@@ -8,8 +8,8 @@ import (
 	"github.com/alecthomas/assert/v2"
 	"github.com/stretchr/testify/require"
 
-	"git.grassecon.net/urdt/ussd/internal/storage"
 	memdb "git.defalsify.org/vise.git/db/mem"
+	"git.grassecon.net/urdt/ussd/internal/storage"
 	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 )
 
@@ -87,10 +87,10 @@ func TestGetVoucherData(t *testing.T) {
 
 	// Test voucher data
 	mockData := map[DataTyp][]byte{
-		DATA_PREFIX_SYMBOLS:   []byte("1:SRF\n2:MILO"),
-		DATA_PREFIX_BALANCES:  []byte("1:100\n2:200"),
-		DATA_PREFIX_DECIMALS:  []byte("1:6\n2:4"),
-		DATA_PREFIX_ADDRESSES: []byte("1:0xd4c288865Ce\n2:0x41c188d63Qa"),
+		DATA_VOUCHER_SYMBOLS:   []byte("1:SRF\n2:MILO"),
+		DATA_VOUCHER_BALANCES:  []byte("1:100\n2:200"),
+		DATA_VOUCHER_DECIMALS:  []byte("1:6\n2:4"),
+		DATA_VOUCHER_ADDRESSES: []byte("1:0xd4c288865Ce\n2:0x41c188d63Qa"),
 	}
 
 	// Put the data

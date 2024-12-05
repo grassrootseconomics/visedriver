@@ -1577,10 +1577,10 @@ func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) 
 
 	// Store all voucher data
 	dataMap := map[common.DataTyp]string{
-		common.DATA_PREFIX_SYMBOLS:   data.Symbols,
-		common.DATA_PREFIX_BALANCES:  data.Balances,
-		common.DATA_PREFIX_DECIMALS:  data.Decimals,
-		common.DATA_PREFIX_ADDRESSES: data.Addresses,
+		common.DATA_VOUCHER_SYMBOLS:   data.Symbols,
+		common.DATA_VOUCHER_BALANCES:  data.Balances,
+		common.DATA_VOUCHER_DECIMALS:  data.Decimals,
+		common.DATA_VOUCHER_ADDRESSES: data.Addresses,
 	}
 
 	for key, value := range dataMap {
@@ -1597,7 +1597,7 @@ func (h *Handlers) GetVoucherList(ctx context.Context, sym string, input []byte)
 	var res resource.Result
 
 	// Read vouchers from the store
-	voucherData, err := h.prefixDb.Get(ctx, common.DATA_PREFIX_SYMBOLS.ToBytes())
+	voucherData, err := h.prefixDb.Get(ctx, common.DATA_VOUCHER_SYMBOLS.ToBytes())
 	if err != nil {
 		logg.ErrorCtxf(ctx, "Failed to read the voucherData from prefixDb", "error", err)
 		return res, err

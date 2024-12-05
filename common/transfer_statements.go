@@ -57,25 +57,25 @@ func ProcessTransfers(transfers []dataserviceapi.Last10TxResponse) TransferMetad
 // GetTransferData retrieves and matches transfer data
 // returns a formatted string of the full transaction/statement
 func GetTransferData(ctx context.Context, db storage.PrefixDb, publicKey string, index int) (string, error) {
-	keys := []string{"txfrom", "txto", "txval", "txaddr", "txhash", "txdate", "txsym"}
-	data := make(map[string]string)
+	keys := []DataTyp{DATA_TX_SENDERS, DATA_TX_RECIPIENTS, DATA_TX_VALUES, DATA_TX_ADDRESSES, DATA_TX_HASHES, DATA_TX_DATES, DATA_TX_SYMBOLS}
+	data := make(map[DataTyp]string)
 
 	for _, key := range keys {
-		value, err := db.Get(ctx, []byte(key))
+		value, err := db.Get(ctx, ToBytes(key))
 		if err != nil {
-			return "", fmt.Errorf("failed to get %s: %v", key, err)
+			return "", fmt.Errorf("failed to get %s: %v", ToBytes(key), err)
 		}
 		data[key] = string(value)
 	}
 
 	// Split the data
-	senders := strings.Split(string(data["txfrom"]), "\n")
-	recipients := strings.Split(string(data["txto"]), "\n")
-	values := strings.Split(string(data["txval"]), "\n")
-	addresses := strings.Split(string(data["txaddr"]), "\n")
-	hashes := strings.Split(string(data["txhash"]), "\n")
-	dates := strings.Split(string(data["txdate"]), "\n")
-	syms := strings.Split(string(data["txsym"]), "\n")
+	senders := strings.Split(string(data[DATA_TX_SENDERS]), "\n")
+	recipients := strings.Split(string(data[DATA_TX_RECIPIENTS]), "\n")
+	values := strings.Split(string(data[DATA_TX_VALUES]), "\n")
+	addresses := strings.Split(string(data[DATA_TX_ADDRESSES]), "\n")
+	hashes := strings.Split(string(data[DATA_TX_HASHES]), "\n")
+	dates := strings.Split(string(data[DATA_TX_DATES]), "\n")
+	syms := strings.Split(string(data[DATA_TX_SYMBOLS]), "\n")
 
 	// Check if index is within range
 	if index < 1 || index > len(senders) {

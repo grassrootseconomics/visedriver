@@ -1746,14 +1746,14 @@ func (h *Handlers) CheckTransactions(ctx context.Context, sym string, input []by
 
 	// Store all transaction data
 	dataMap := map[common.DataTyp]string{
-		common.DATA_PREFIX_TX_SENDERS:    data.Senders,
-		common.DATA_PREFIX_TX_RECIPIENTS: data.Recipients,
-		common.DATA_PREFIX_TX_VALUES:     data.TransferValues,
-		common.DATA_PREFIX_TX_ADDRESSES:  data.Addresses,
-		common.DATA_PREFIX_TX_HASHES:     data.TxHashes,
-		common.DATA_PREFIX_TX_DATES:      data.Dates,
-		common.DATA_PREFIX_TX_SYMBOLS:    data.Symbols,
-		common.DATA_PREFIX_TX_DECIMALS:   data.Decimals,
+		common.DATA_TX_SENDERS:    data.Senders,
+		common.DATA_TX_RECIPIENTS: data.Recipients,
+		common.DATA_TX_VALUES:     data.TransferValues,
+		common.DATA_TX_ADDRESSES:  data.Addresses,
+		common.DATA_TX_HASHES:     data.TxHashes,
+		common.DATA_TX_DATES:      data.Dates,
+		common.DATA_TX_SYMBOLS:    data.Symbols,
+		common.DATA_TX_DECIMALS:   data.Decimals,
 	}
 
 	for key, value := range dataMap {
@@ -1783,22 +1783,22 @@ func (h *Handlers) GetTransactionsList(ctx context.Context, sym string, input []
 	}
 
 	// Read transactions from the store and format them
-	TransactionSenders, err := h.prefixDb.Get(ctx, common.ToBytes(common.DATA_PREFIX_TX_SENDERS))
+	TransactionSenders, err := h.prefixDb.Get(ctx, common.ToBytes(common.DATA_TX_SENDERS))
 	if err != nil {
 		logg.ErrorCtxf(ctx, "Failed to read the TransactionSenders from prefixDb", "error", err)
 		return res, err
 	}
-	TransactionSyms, err := h.prefixDb.Get(ctx, common.ToBytes(common.DATA_PREFIX_TX_SYMBOLS))
+	TransactionSyms, err := h.prefixDb.Get(ctx, common.ToBytes(common.DATA_TX_SYMBOLS))
 	if err != nil {
 		logg.ErrorCtxf(ctx, "Failed to read the TransactionSyms from prefixDb", "error", err)
 		return res, err
 	}
-	TransactionValues, err := h.prefixDb.Get(ctx, common.ToBytes(common.DATA_PREFIX_TX_VALUES))
+	TransactionValues, err := h.prefixDb.Get(ctx, common.ToBytes(common.DATA_TX_VALUES))
 	if err != nil {
 		logg.ErrorCtxf(ctx, "Failed to read the TransactionValues from prefixDb", "error", err)
 		return res, err
 	}
-	TransactionDates, err := h.prefixDb.Get(ctx, common.ToBytes(common.DATA_PREFIX_TX_DATES))
+	TransactionDates, err := h.prefixDb.Get(ctx, common.ToBytes(common.DATA_TX_DATES))
 	if err != nil {
 		logg.ErrorCtxf(ctx, "Failed to read the TransactionDates from prefixDb", "error", err)
 		return res, err

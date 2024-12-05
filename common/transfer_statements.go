@@ -57,7 +57,7 @@ func ProcessTransfers(transfers []dataserviceapi.Last10TxResponse) TransferMetad
 // GetTransferData retrieves and matches transfer data
 // returns a formatted string of the full transaction/statement
 func GetTransferData(ctx context.Context, db storage.PrefixDb, publicKey string, index int) (string, error) {
-	keys := []DataTyp{DATA_PREFIX_TX_SENDERS, DATA_PREFIX_TX_RECIPIENTS, DATA_PREFIX_TX_VALUES, DATA_PREFIX_TX_ADDRESSES, DATA_PREFIX_TX_HASHES, DATA_PREFIX_TX_DATES, DATA_PREFIX_TX_SYMBOLS}
+	keys := []DataTyp{DATA_TX_SENDERS, DATA_TX_RECIPIENTS, DATA_TX_VALUES, DATA_TX_ADDRESSES, DATA_TX_HASHES, DATA_TX_DATES, DATA_TX_SYMBOLS}
 	data := make(map[DataTyp]string)
 
 	for _, key := range keys {
@@ -69,13 +69,13 @@ func GetTransferData(ctx context.Context, db storage.PrefixDb, publicKey string,
 	}
 
 	// Split the data
-	senders := strings.Split(string(data[DATA_PREFIX_TX_SENDERS]), "\n")
-	recipients := strings.Split(string(data[DATA_PREFIX_TX_RECIPIENTS]), "\n")
-	values := strings.Split(string(data[DATA_PREFIX_TX_VALUES]), "\n")
-	addresses := strings.Split(string(data[DATA_PREFIX_TX_ADDRESSES]), "\n")
-	hashes := strings.Split(string(data[DATA_PREFIX_TX_HASHES]), "\n")
-	dates := strings.Split(string(data[DATA_PREFIX_TX_DATES]), "\n")
-	syms := strings.Split(string(data[DATA_PREFIX_TX_SYMBOLS]), "\n")
+	senders := strings.Split(string(data[DATA_TX_SENDERS]), "\n")
+	recipients := strings.Split(string(data[DATA_TX_RECIPIENTS]), "\n")
+	values := strings.Split(string(data[DATA_TX_VALUES]), "\n")
+	addresses := strings.Split(string(data[DATA_TX_ADDRESSES]), "\n")
+	hashes := strings.Split(string(data[DATA_TX_HASHES]), "\n")
+	dates := strings.Split(string(data[DATA_TX_DATES]), "\n")
+	syms := strings.Split(string(data[DATA_TX_SYMBOLS]), "\n")
 
 	// Check if index is within range
 	if index < 1 || index > len(senders) {

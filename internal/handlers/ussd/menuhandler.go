@@ -85,8 +85,10 @@ func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, adminstore *util
 	userDb := &common.UserDataStore{
 		Db: userdataStore,
 	}
-	// Instantiate the SubPrefixDb with "vouchers" prefix
-	prefixDb := storage.NewSubPrefixDb(userdataStore, []byte("vouchers"))
+
+	// Instantiate the SubPrefixDb with "DATATYPE_USERDATA" prefix
+	prefix := common.ToBytes(db.DATATYPE_USERDATA)
+	prefixDb := storage.NewSubPrefixDb(userdataStore, prefix)
 
 	h := &Handlers{
 		userdataStore:  userDb,
@@ -113,7 +115,7 @@ func (h *Handlers) Init(ctx context.Context, sym string, input []byte) (resource
 		return r, nil
 	}
 	defer func() {
-		h.pe = nil
+		h.Exit()
 	}()
 
 	h.st = h.pe.GetState()
@@ -140,6 +142,10 @@ func (h *Handlers) Init(ctx context.Context, sym string, input []byte) (resource
 	return r, nil
 }
 
+func (h *Handlers) Exit() {
+	h.pe = nil
+}
+
 // SetLanguage sets the language across the menu
 func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
@@ -148,7 +154,8 @@ func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (r
 	code := strings.Split(symbol, "_")[1]
 
 	if !utils.IsValidISO639(code) {
-		return res, nil
+		//Fallback to english instead?
+		code = "eng"
 	}
 	res.FlagSet = append(res.FlagSet, state.FLAG_LANG)
 	res.Content = code
@@ -757,12 +764,11 @@ func (h *Handlers) VerifyYob(ctx context.Context, sym string, input []byte) (res
 		return res, nil
 	}
 
-	if len(date) == 4 {
+	if utils.IsValidYOb(date) {
 		res.FlagReset = append(res.FlagReset, flag_incorrect_date_format)
 	} else {
 		res.FlagSet = append(res.FlagSet, flag_incorrect_date_format)
 	}
-
 	return res, nil
 }
 
@@ -811,7 +817,17 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 		return res, err
 	}
 
-	res.Content = l.Get("Balance: %s\n", fmt.Sprintf("%s %s", activeBal, activeSym))
+	// Convert activeBal from []byte to float64
+	balFloat, err := strconv.ParseFloat(string(activeBal), 64)
+	if err != nil {
+		logg.ErrorCtxf(ctx, "failed to parse activeBal as float", "value", string(activeBal), "error", err)
+		return res, err
+	}
+
+	// Format to 2 decimal places
+	balStr := fmt.Sprintf("%.2f %s", balFloat, activeSym)
+
+	res.Content = l.Get("Balance: %s\n", balStr)
 
 	return res, nil
 }
@@ -1388,14 +1404,7 @@ func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte)
 	offerings := getEntryOrDefault(store.ReadEntry(ctx, sessionId, common.DATA_OFFERINGS))
 
 	// Construct the full name
-	name := defaultValue
-	if familyName != defaultValue {
-		if firstName == defaultValue {
-			name = familyName
-		} else {
-			name = firstName + " " + familyName
-		}
-	}
+	name := utils.ConstructName(firstName, familyName, defaultValue)
 
 	// Calculate age from year of birth
 	age := defaultValue
@@ -1569,15 +1578,15 @@ func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) 
 	data := common.ProcessVouchers(vouchersResp)
 
 	// Store all voucher data
-	dataMap := map[string]string{
-		"sym":  data.Symbols,
-		"bal":  data.Balances,
-		"deci": data.Decimals,
-		"addr": data.Addresses,
+	dataMap := map[common.DataTyp]string{
+		common.DATA_VOUCHER_SYMBOLS:   data.Symbols,
+		common.DATA_VOUCHER_BALANCES:  data.Balances,
+		common.DATA_VOUCHER_DECIMALS:  data.Decimals,
+		common.DATA_VOUCHER_ADDRESSES: data.Addresses,
 	}
 
 	for key, value := range dataMap {
-		if err := h.prefixDb.Put(ctx, []byte(key), []byte(value)); err != nil {
+		if err := h.prefixDb.Put(ctx, []byte(common.ToBytes(key)), []byte(value)); err != nil {
 			return res, nil
 		}
 	}
@@ -1590,7 +1599,7 @@ func (h *Handlers) GetVoucherList(ctx context.Context, sym string, input []byte)
 	var res resource.Result
 
 	// Read vouchers from the store
-	voucherData, err := h.prefixDb.Get(ctx, []byte("sym"))
+	voucherData, err := h.prefixDb.Get(ctx, common.ToBytes(common.DATA_VOUCHER_SYMBOLS))
 	if err != nil {
 		logg.ErrorCtxf(ctx, "Failed to read the voucherData from prefixDb", "error", err)
 		return res, err
@@ -1609,6 +1618,10 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
+
+	code := codeFromCtx(ctx)
+	l := gotext.NewLocale(translationDir, code)
+	l.AddDomain("default")
 
 	flag_incorrect_voucher, _ := h.flagManager.GetFlag("flag_incorrect_voucher")
 
@@ -1634,7 +1647,7 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 	}
 
 	res.FlagReset = append(res.FlagReset, flag_incorrect_voucher)
-	res.Content = fmt.Sprintf("%s\n%s", metadata.TokenSymbol, metadata.Balance)
+	res.Content = l.Get("Symbol: %s\nBalance: %s", metadata.TokenSymbol, metadata.Balance)
 
 	return res, nil
 }
@@ -1732,19 +1745,19 @@ func (h *Handlers) CheckTransactions(ctx context.Context, sym string, input []by
 	data := common.ProcessTransfers(transactionsResp)
 
 	// Store all transaction data
-	dataMap := map[string]string{
-		"txfrom": data.Senders,
-		"txto":   data.Recipients,
-		"txval":  data.TransferValues,
-		"txaddr": data.Addresses,
-		"txhash": data.TxHashes,
-		"txdate": data.Dates,
-		"txsym":  data.Symbols,
-		"txdeci": data.Decimals,
+	dataMap := map[common.DataTyp]string{
+		common.DATA_TX_SENDERS:    data.Senders,
+		common.DATA_TX_RECIPIENTS: data.Recipients,
+		common.DATA_TX_VALUES:     data.TransferValues,
+		common.DATA_TX_ADDRESSES:  data.Addresses,
+		common.DATA_TX_HASHES:     data.TxHashes,
+		common.DATA_TX_DATES:      data.Dates,
+		common.DATA_TX_SYMBOLS:    data.Symbols,
+		common.DATA_TX_DECIMALS:   data.Decimals,
 	}
 
 	for key, value := range dataMap {
-		if err := h.prefixDb.Put(ctx, []byte(key), []byte(value)); err != nil {
+		if err := h.prefixDb.Put(ctx, []byte(common.ToBytes(key)), []byte(value)); err != nil {
 			logg.ErrorCtxf(ctx, "failed to write to prefixDb", "error", err)
 			return res, err
 		}
@@ -1770,22 +1783,22 @@ func (h *Handlers) GetTransactionsList(ctx context.Context, sym string, input []
 	}
 
 	// Read transactions from the store and format them
-	TransactionSenders, err := h.prefixDb.Get(ctx, []byte("txfrom"))
+	TransactionSenders, err := h.prefixDb.Get(ctx, common.ToBytes(common.DATA_TX_SENDERS))
 	if err != nil {
 		logg.ErrorCtxf(ctx, "Failed to read the TransactionSenders from prefixDb", "error", err)
 		return res, err
 	}
-	TransactionSyms, err := h.prefixDb.Get(ctx, []byte("txsym"))
+	TransactionSyms, err := h.prefixDb.Get(ctx, common.ToBytes(common.DATA_TX_SYMBOLS))
 	if err != nil {
 		logg.ErrorCtxf(ctx, "Failed to read the TransactionSyms from prefixDb", "error", err)
 		return res, err
 	}
-	TransactionValues, err := h.prefixDb.Get(ctx, []byte("txval"))
+	TransactionValues, err := h.prefixDb.Get(ctx, common.ToBytes(common.DATA_TX_VALUES))
 	if err != nil {
 		logg.ErrorCtxf(ctx, "Failed to read the TransactionValues from prefixDb", "error", err)
 		return res, err
 	}
-	TransactionDates, err := h.prefixDb.Get(ctx, []byte("txdate"))
+	TransactionDates, err := h.prefixDb.Get(ctx, common.ToBytes(common.DATA_TX_DATES))
 	if err != nil {
 		logg.ErrorCtxf(ctx, "Failed to read the TransactionDates from prefixDb", "error", err)
 		return res, err

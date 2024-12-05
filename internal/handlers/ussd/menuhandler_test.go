@@ -22,6 +22,7 @@ import (
 	testdataloader "github.com/peteole/testdata-loader"
 	"github.com/stretchr/testify/require"
 
+	visedb "git.defalsify.org/vise.git/db"
 	memdb "git.defalsify.org/vise.git/db/mem"
 	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 )
@@ -56,7 +57,8 @@ func InitializeTestSubPrefixDb(t *testing.T, ctx context.Context) *storage.SubPr
 	if err != nil {
 		t.Fatal(err)
 	}
-	spdb := storage.NewSubPrefixDb(db, []byte("vouchers"))
+	prefix := common.ToBytes(visedb.DATATYPE_USERDATA)
+	spdb := storage.NewSubPrefixDb(db, prefix)
 
 	return spdb
 }
@@ -1498,10 +1500,10 @@ func TestValidateRecipient(t *testing.T) {
 	}{
 		{
 			name:  "Test with invalid recepient",
-			input: []byte("9234adf5"),
+			input: []byte("7?1234"),
 			expectedResult: resource.Result{
 				FlagSet: []uint32{flag_invalid_recipient},
-				Content: "9234adf5",
+				Content: "7?1234",
 			},
 		},
 		{
@@ -1517,21 +1519,39 @@ func TestValidateRecipient(t *testing.T) {
 			input:          []byte("0711223344"),
 			expectedResult: resource.Result{},
 		},
+		{
+			name:           "Test with address",
+			input:          []byte("0xd4c288865Ce0985a481Eef3be02443dF5E2e4Ea9"),
+			expectedResult: resource.Result{},
+		},
+		{
+			name:           "Test with alias recepient",
+			input:          []byte("alias123"),
+			expectedResult: resource.Result{},
+		},
 	}
 
 	// store a public key for the valid recipient
-	err = store.WriteEntry(ctx, "0711223344", common.DATA_PUBLIC_KEY, []byte(publicKey))
+	err = store.WriteEntry(ctx, "+254711223344", common.DATA_PUBLIC_KEY, []byte(publicKey))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			mockAccountService := new(mocks.MockAccountService)
 			// Create the Handlers instance
 			h := &Handlers{
-				flagManager:   fm.parser,
-				userdataStore: store,
+				flagManager:    fm.parser,
+				userdataStore:  store,
+				accountService: mockAccountService,
 			}
+
+			aliasResponse := &dataserviceapi.AliasAddress{
+				Address: "0xd4c288865Ce0985a481Eef3be02443dF5E2e4Ea9",
+			}
+
+			mockAccountService.On("CheckAliasAddress", string(tt.input)).Return(aliasResponse, nil)
 
 			// Call the method
 			res, err := h.ValidateRecipient(ctx, "validate_recepient", tt.input)
@@ -1564,7 +1584,7 @@ func TestCheckBalance(t *testing.T) {
 			publicKey:      "0X98765432109",
 			activeSym:      "ETH",
 			activeBal:      "1.5",
-			expectedResult: resource.Result{Content: "Balance: 1.5 ETH\n"},
+			expectedResult: resource.Result{Content: "Balance: 1.50 ETH\n"},
 			expectError:    false,
 		},
 	}
@@ -1919,7 +1939,7 @@ func TestCheckVouchers(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Read voucher sym data from the store
-	voucherData, err := spdb.Get(ctx, []byte("sym"))
+	voucherData, err := spdb.Get(ctx, common.ToBytes(common.DATA_VOUCHER_SYMBOLS))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1943,7 +1963,7 @@ func TestGetVoucherList(t *testing.T) {
 	expectedSym := []byte("1:SRF\n2:MILO")
 
 	// Put voucher sym data from the store
-	err := spdb.Put(ctx, []byte("sym"), expectedSym)
+	err := spdb.Put(ctx, common.ToBytes(common.DATA_VOUCHER_SYMBOLS), expectedSym)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1973,16 +1993,16 @@ func TestViewVoucher(t *testing.T) {
 	}
 
 	// Define mock voucher data
-	mockData := map[string][]byte{
-		"sym":  []byte("1:SRF\n2:MILO"),
-		"bal":  []byte("1:100\n2:200"),
-		"deci": []byte("1:6\n2:4"),
-		"addr": []byte("1:0xd4c288865Ce\n2:0x41c188d63Qa"),
+	mockData := map[common.DataTyp][]byte{
+		common.DATA_VOUCHER_SYMBOLS:   []byte("1:SRF\n2:MILO"),
+		common.DATA_VOUCHER_BALANCES:  []byte("1:100\n2:200"),
+		common.DATA_VOUCHER_DECIMALS:  []byte("1:6\n2:4"),
+		common.DATA_VOUCHER_ADDRESSES: []byte("1:0xd4c288865Ce\n2:0x41c188d63Qa"),
 	}
 
 	// Put the data
 	for key, value := range mockData {
-		err = spdb.Put(ctx, []byte(key), []byte(value))
+		err = spdb.Put(ctx, []byte(common.ToBytes(key)), []byte(value))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1990,7 +2010,7 @@ func TestViewVoucher(t *testing.T) {
 
 	res, err := h.ViewVoucher(ctx, "view_voucher", []byte("1"))
 	assert.NoError(t, err)
-	assert.Equal(t, res.Content, "SRF\n100")
+	assert.Equal(t, res.Content, "Symbol: SRF\nBalance: 100")
 }
 
 func TestSetVoucher(t *testing.T) {

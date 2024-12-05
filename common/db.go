@@ -32,7 +32,19 @@ const (
 	DATA_PUBLIC_KEY_REVERSE
 	DATA_ACTIVE_DECIMAL
 	DATA_ACTIVE_ADDRESS
-	DATA_TRANSACTIONS
+	// Start the sub prefix data at 256 (0x0100)
+	DATA_VOUCHER_SYMBOLS DataTyp = 256 + iota
+	DATA_VOUCHER_BALANCES
+	DATA_VOUCHER_DECIMALS
+	DATA_VOUCHER_ADDRESSES
+	DATA_TX_SENDERS
+	DATA_TX_RECIPIENTS
+	DATA_TX_VALUES
+	DATA_TX_ADDRESSES
+	DATA_TX_HASHES
+	DATA_TX_DATES
+	DATA_TX_SYMBOLS
+	DATA_TX_DECIMALS
 )
 
 var (
@@ -68,4 +80,11 @@ func StringToDataTyp(str string) (DataTyp, error) {
 	default:
 		return 0, errors.New("invalid DataTyp string")
 	}
+}
+
+// ToBytes converts DataTyp or int to a byte slice
+func ToBytes[T ~uint16 | int](value T) []byte {
+	bytes := make([]byte, 2)
+	binary.BigEndian.PutUint16(bytes, uint16(value))
+	return bytes
 }

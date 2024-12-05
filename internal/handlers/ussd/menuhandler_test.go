@@ -57,7 +57,7 @@ func InitializeTestSubPrefixDb(t *testing.T, ctx context.Context) *storage.SubPr
 	if err != nil {
 		t.Fatal(err)
 	}
-	prefix := common.IntToBytes(visedb.DATATYPE_USERDATA)
+	prefix := common.ToBytes(visedb.DATATYPE_USERDATA)
 	spdb := storage.NewSubPrefixDb(db, prefix)
 
 	return spdb
@@ -1939,7 +1939,7 @@ func TestCheckVouchers(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Read voucher sym data from the store
-	voucherData, err := spdb.Get(ctx, common.DATA_VOUCHER_SYMBOLS.ToBytes())
+	voucherData, err := spdb.Get(ctx, common.ToBytes(common.DATA_VOUCHER_SYMBOLS))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1963,7 +1963,7 @@ func TestGetVoucherList(t *testing.T) {
 	expectedSym := []byte("1:SRF\n2:MILO")
 
 	// Put voucher sym data from the store
-	err := spdb.Put(ctx, common.DATA_VOUCHER_SYMBOLS.ToBytes(), expectedSym)
+	err := spdb.Put(ctx, common.ToBytes(common.DATA_VOUCHER_SYMBOLS), expectedSym)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2002,7 +2002,7 @@ func TestViewVoucher(t *testing.T) {
 
 	// Put the data
 	for key, value := range mockData {
-		err = spdb.Put(ctx, []byte(key.ToBytes()), []byte(value))
+		err = spdb.Put(ctx, []byte(common.ToBytes(key)), []byte(value))
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -87,7 +87,7 @@ func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, adminstore *util
 	}
 
 	// Instantiate the SubPrefixDb with "DATATYPE_USERDATA" prefix
-	prefix := common.IntToBytes(db.DATATYPE_USERDATA)
+	prefix := common.ToBytes(db.DATATYPE_USERDATA)
 	prefixDb := storage.NewSubPrefixDb(userdataStore, prefix)
 
 	h := &Handlers{
@@ -1586,7 +1586,7 @@ func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) 
 	}
 
 	for key, value := range dataMap {
-		if err := h.prefixDb.Put(ctx, []byte(key.ToBytes()), []byte(value)); err != nil {
+		if err := h.prefixDb.Put(ctx, []byte(common.ToBytes(key)), []byte(value)); err != nil {
 			return res, nil
 		}
 	}
@@ -1599,7 +1599,7 @@ func (h *Handlers) GetVoucherList(ctx context.Context, sym string, input []byte)
 	var res resource.Result
 
 	// Read vouchers from the store
-	voucherData, err := h.prefixDb.Get(ctx, common.DATA_VOUCHER_SYMBOLS.ToBytes())
+	voucherData, err := h.prefixDb.Get(ctx, common.ToBytes(common.DATA_VOUCHER_SYMBOLS))
 	if err != nil {
 		logg.ErrorCtxf(ctx, "Failed to read the voucherData from prefixDb", "error", err)
 		return res, err
@@ -1757,7 +1757,7 @@ func (h *Handlers) CheckTransactions(ctx context.Context, sym string, input []by
 	}
 
 	for key, value := range dataMap {
-		if err := h.prefixDb.Put(ctx, []byte(key.ToBytes()), []byte(value)); err != nil {
+		if err := h.prefixDb.Put(ctx, []byte(common.ToBytes(key)), []byte(value)); err != nil {
 			logg.ErrorCtxf(ctx, "failed to write to prefixDb", "error", err)
 			return res, err
 		}
@@ -1783,22 +1783,22 @@ func (h *Handlers) GetTransactionsList(ctx context.Context, sym string, input []
 	}
 
 	// Read transactions from the store and format them
-	TransactionSenders, err := h.prefixDb.Get(ctx, common.DATA_PREFIX_TX_SENDERS.ToBytes())
+	TransactionSenders, err := h.prefixDb.Get(ctx, common.ToBytes(common.DATA_PREFIX_TX_SENDERS))
 	if err != nil {
 		logg.ErrorCtxf(ctx, "Failed to read the TransactionSenders from prefixDb", "error", err)
 		return res, err
 	}
-	TransactionSyms, err := h.prefixDb.Get(ctx, common.DATA_PREFIX_TX_SYMBOLS.ToBytes())
+	TransactionSyms, err := h.prefixDb.Get(ctx, common.ToBytes(common.DATA_PREFIX_TX_SYMBOLS))
 	if err != nil {
 		logg.ErrorCtxf(ctx, "Failed to read the TransactionSyms from prefixDb", "error", err)
 		return res, err
 	}
-	TransactionValues, err := h.prefixDb.Get(ctx, common.DATA_PREFIX_TX_VALUES.ToBytes())
+	TransactionValues, err := h.prefixDb.Get(ctx, common.ToBytes(common.DATA_PREFIX_TX_VALUES))
 	if err != nil {
 		logg.ErrorCtxf(ctx, "Failed to read the TransactionValues from prefixDb", "error", err)
 		return res, err
 	}
-	TransactionDates, err := h.prefixDb.Get(ctx, common.DATA_PREFIX_TX_DATES.ToBytes())
+	TransactionDates, err := h.prefixDb.Get(ctx, common.ToBytes(common.DATA_PREFIX_TX_DATES))
 	if err != nil {
 		logg.ErrorCtxf(ctx, "Failed to read the TransactionDates from prefixDb", "error", err)
 		return res, err

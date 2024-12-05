@@ -85,7 +85,7 @@ func TestGetVoucherData(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	prefix := IntToBytes(visedb.DATATYPE_USERDATA)
+	prefix := ToBytes(visedb.DATATYPE_USERDATA)
 	spdb := storage.NewSubPrefixDb(db, prefix)
 
 	// Test voucher data
@@ -98,7 +98,7 @@ func TestGetVoucherData(t *testing.T) {
 
 	// Put the data
 	for key, value := range mockData {
-		err = spdb.Put(ctx, []byte(key.ToBytes()), []byte(value))
+		err = spdb.Put(ctx, []byte(ToBytes(key)), []byte(value))
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -22,6 +22,7 @@ import (
 	testdataloader "github.com/peteole/testdata-loader"
 	"github.com/stretchr/testify/require"
 
+	visedb "git.defalsify.org/vise.git/db"
 	memdb "git.defalsify.org/vise.git/db/mem"
 	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 )
@@ -56,7 +57,8 @@ func InitializeTestSubPrefixDb(t *testing.T, ctx context.Context) *storage.SubPr
 	if err != nil {
 		t.Fatal(err)
 	}
-	spdb := storage.NewSubPrefixDb(db, []byte("vouchers"))
+	prefix := common.IntToBytes(visedb.DATATYPE_USERDATA)
+	spdb := storage.NewSubPrefixDb(db, prefix)
 
 	return spdb
 }

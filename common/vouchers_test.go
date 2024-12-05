@@ -8,6 +8,7 @@ import (
 	"github.com/alecthomas/assert/v2"
 	"github.com/stretchr/testify/require"
 
+	visedb "git.defalsify.org/vise.git/db"
 	memdb "git.defalsify.org/vise.git/db/mem"
 	"git.grassecon.net/urdt/ussd/internal/storage"
 	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
@@ -83,7 +84,9 @@ func TestGetVoucherData(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	spdb := storage.NewSubPrefixDb(db, []byte("vouchers"))
+
+	prefix := IntToBytes(visedb.DATATYPE_USERDATA)
+	spdb := storage.NewSubPrefixDb(db, prefix)
 
 	// Test voucher data
 	mockData := map[DataTyp][]byte{

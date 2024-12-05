@@ -85,8 +85,10 @@ func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, adminstore *util
 	userDb := &common.UserDataStore{
 		Db: userdataStore,
 	}
-	// Instantiate the SubPrefixDb with "vouchers" prefix
-	prefixDb := storage.NewSubPrefixDb(userdataStore, []byte("vouchers"))
+
+	// Instantiate the SubPrefixDb with "DATATYPE_USERDATA" prefix
+	prefix := common.IntToBytes(db.DATATYPE_USERDATA)
+	prefixDb := storage.NewSubPrefixDb(userdataStore, prefix)
 
 	h := &Handlers{
 		userdataStore:  userDb,

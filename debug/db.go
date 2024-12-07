@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"encoding/binary"
 
-	"git.grassecon.net/urdt/ussd/internal/storage"
 	"git.grassecon.net/urdt/ussd/common"
+	"git.defalsify.org/vise.git/db"
 )
 
 var (
@@ -30,11 +30,12 @@ func ToKeyInfo(k []byte, sessionId string) (KeyInfo, error) {
 
 	o.SessionId = sessionId
 
-	k = k[len(b):]
-	o.Typ = k[0]
+	o.Typ = uint8(k[0])
 	k = k[1:]
+	o.SessionId = string(k[:len(b)])
+	k = k[len(b):]
 
-	if o.Typ == storage.DATATYPE_USERSUB {
+	if o.Typ == db.DATATYPE_USERDATA {
 		if len(k) == 0 {
 			return o, fmt.Errorf("missing subtype key")
 		}
@@ -53,8 +54,19 @@ func ToKeyInfo(k []byte, sessionId string) (KeyInfo, error) {
 	return o, nil
 }
 
+func FromKey(k []byte) (KeyInfo, error) {
+	o := KeyInfo{}
+
+	if len(k) < 4 {
+		return o, fmt.Errorf("insufficient key length")
+	}
+
+	sessionIdBytes := k[1:len(k)-2]
+	return ToKeyInfo(k, string(sessionIdBytes))
+}
+
 func subTypToString(v common.DataTyp) string {
-	return dbTypStr[v + storage.DATATYPE_USERSUB + 1]
+	return dbTypStr[v + db.DATATYPE_USERDATA + 1]
 }
 
 func typToString(v uint8) string {

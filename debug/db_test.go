@@ -2,12 +2,16 @@ package debug
 
 import (
 	"testing"
+
+	"git.grassecon.net/urdt/ussd/common"
+	"git.defalsify.org/vise.git/db"
 )
 
 func TestDebugDbSubKeyInfo(t *testing.T) {
 	s := "foo"
-	b := []byte(s)
-	b = append(b, []byte{0x40, 0x00, 0x02}...)
+	b := []byte{0x20}
+	b = append(b, []byte(s)...)
+	b = append(b, []byte{0x00, 0x02}...)
 	r, err := ToKeyInfo(b, s)
 	if err != nil {
 		t.Fatal(err)
@@ -15,7 +19,7 @@ func TestDebugDbSubKeyInfo(t *testing.T) {
 	if r.SessionId != s {
 		t.Fatalf("expected %s, got %s", s, r.SessionId)
 	}
-	if r.Typ != 64 {
+	if r.Typ != 32 {
 		t.Fatalf("expected 64, got %d", r.Typ)
 	}
 	if r.SubTyp != 2 {
@@ -30,8 +34,32 @@ func TestDebugDbSubKeyInfo(t *testing.T) {
 
 func TestDebugDbKeyInfo(t *testing.T) {
 	s := "bar"
-	b := []byte(s)
-	b = append(b, []byte{0x20}...)
+	b := []byte{0x10}
+	b = append(b, []byte(s)...)
+	r, err := ToKeyInfo(b, s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.SessionId != s {
+		t.Fatalf("expected %s, got %s", s, r.SessionId)
+	}
+	if r.Typ != 16 {
+		t.Fatalf("expected 16, got %d", r.Typ)
+	}
+	if DebugCap & 1 > 0 {
+		if r.Label != "internal state" {
+			t.Fatalf("expected 'internal_state', got '%s'", r.Label)
+		}
+	}
+}
+
+func TestDebugDbKeyInfoRestore(t *testing.T) {
+	s := "bar"
+	b := []byte{db.DATATYPE_USERDATA}
+	b = append(b, []byte(s)...)
+	k := common.ToBytes(common.DATA_ACTIVE_SYM)
+	b = append(b, k...)
+
 	r, err := ToKeyInfo(b, s)
 	if err != nil {
 		t.Fatal(err)
@@ -40,11 +68,11 @@ func TestDebugDbKeyInfo(t *testing.T) {
 		t.Fatalf("expected %s, got %s", s, r.SessionId)
 	}
 	if r.Typ != 32 {
-		t.Fatalf("expected 64, got %d", r.Typ)
+		t.Fatalf("expected 32, got %d", r.Typ)
 	}
 	if DebugCap & 1 > 0 {
-		if r.Label != "userdata" {
-			t.Fatalf("expected 'userdata', got '%s'", r.Label)
+		if r.Label != "active sym" {
+			t.Fatalf("expected 'active sym', got '%s'", r.Label)
 		}
 	}
 }

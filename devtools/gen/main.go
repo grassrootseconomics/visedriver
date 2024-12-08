@@ -11,6 +11,7 @@ import (
 	"git.defalsify.org/vise.git/logging"
 	"git.grassecon.net/urdt/ussd/config"
 	"git.grassecon.net/urdt/ussd/internal/storage"
+	"git.grassecon.net/urdt/ussd/initializers"
 	"git.grassecon.net/urdt/ussd/common"
 )
 
@@ -18,6 +19,11 @@ var (
 	logg      = logging.NewVanilla()
 	scriptDir = path.Join("services", "registration")
 )
+
+func init() {
+	initializers.LoadEnvVariables()
+}
+
 
 func main() {
 	config.LoadConfig()

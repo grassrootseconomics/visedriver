@@ -116,5 +116,7 @@ func(tdb *ThreadGdbmDb) Close() error {
 }
 
 func(tdb *ThreadGdbmDb) Dump(ctx context.Context, key []byte) (*db.Dumper, error) {
+	tdb.reserve()
+	defer tdb.release()
 	return tdb.db.Dump(ctx, key)
 }

@@ -10,6 +10,7 @@ import (
 	"git.grassecon.net/urdt/ussd/config"
 	"git.grassecon.net/urdt/ussd/initializers"
 	"git.grassecon.net/urdt/ussd/internal/storage"
+	"git.grassecon.net/urdt/ussd/debug"
 	"git.defalsify.org/vise.git/logging"
 )
 
@@ -30,6 +31,7 @@ func main() {
 	var sessionId string
 	var database string
 	var engineDebug bool
+
 	flag.StringVar(&sessionId, "session-id", "075xx2123", "session id")
 	flag.StringVar(&database, "db", "gdbm", "database to be used")
 	flag.StringVar(&dbDir, "dbdir", ".state", "database dir to read from")
@@ -37,7 +39,7 @@ func main() {
 	flag.Parse()
 
 	ctx := context.Background()
-	//ctx = context.WithValue(ctx, "SessionId", sessionId)
+	ctx = context.WithValue(ctx, "SessionId", sessionId)
 	ctx = context.WithValue(ctx, "Database", database)
 
 	resourceDir := scriptDir
@@ -60,7 +62,12 @@ func main() {
 		if k == nil {
 			break
 		}
-		fmt.Printf("%x %s %x\n", k, v)
+		o, err := debug.FromKey(k)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, err.Error())
+			os.Exit(1)
+		}
+		fmt.Printf("%vValue: %v\n\n", o, v)
 	}
 
 	err = store.Close()

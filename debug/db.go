@@ -20,6 +20,16 @@ type KeyInfo struct {
 	Description string
 }
 
+func (k KeyInfo) String() string {
+	v := uint16(k.SubTyp)
+	s := subTypToString(k.SubTyp)
+	if s == "" {
+		v = uint16(k.Typ)
+		s = typToString(k.Typ)
+	}
+	return fmt.Sprintf("Session Id: %s\nTyp: %s (%d)\n", k.SessionId, s, v)
+}
+
 func ToKeyInfo(k []byte, sessionId string) (KeyInfo, error) {
 	o := KeyInfo{}
 	b := []byte(sessionId)

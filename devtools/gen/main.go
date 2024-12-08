@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/sha1"
 	"flag"
 	"fmt"
 	"os"
@@ -46,7 +47,18 @@ func main() {
 	}
 	userStore := common.UserDataStore{store}
 
-	err = userStore.WriteEntry(ctx, sessionId, common.DATA_AMOUNT, []byte("1.0"))
+	h := sha1.New()
+	h.Write([]byte(sessionId))
+	address := h.Sum(nil)
+	addressString := fmt.Sprintf("%x", address)
+
+	err = userStore.WriteEntry(ctx, sessionId, common.DATA_PUBLIC_KEY, []byte(addressString))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+
+	err = userStore.WriteEntry(ctx, addressString, common.DATA_PUBLIC_KEY_REVERSE, []byte(sessionId))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)

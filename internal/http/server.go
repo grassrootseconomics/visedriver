@@ -17,8 +17,7 @@ var (
 type DefaultRequestParser struct {
 }
 
-
-func(rp *DefaultRequestParser) GetSessionId(rq any) (string, error) {
+func (rp *DefaultRequestParser) GetSessionId(rq any) (string, error) {
 	rqv, ok := rq.(*http.Request)
 	if !ok {
 		return "", handlers.ErrInvalidRequest
@@ -30,7 +29,7 @@ func(rp *DefaultRequestParser) GetSessionId(rq any) (string, error) {
 	return v, nil
 }
 
-func(rp *DefaultRequestParser) GetInput(rq any) ([]byte, error) {
+func (rp *DefaultRequestParser) GetInput(rq any) ([]byte, error) {
 	rqv, ok := rq.(*http.Request)
 	if !ok {
 		return nil, handlers.ErrInvalidRequest
@@ -53,25 +52,24 @@ func ToSessionHandler(h handlers.RequestHandler) *SessionHandler {
 	}
 }
 
-func(f *SessionHandler) writeError(w http.ResponseWriter, code int, err error) {
+func (f *SessionHandler) writeError(w http.ResponseWriter, code int, err error) {
 	s := err.Error()
 	w.Header().Set("Content-Length", strconv.Itoa(len(s)))
 	w.WriteHeader(code)
-	_, err = w.Write([]byte{})
+	_, err = w.Write([]byte(s))
 	if err != nil {
 		logg.Errorf("error writing error!!", "err", err, "olderr", s)
 		w.WriteHeader(500)
 	}
-	return 
 }
 
-func(f *SessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (f *SessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	var code int
 	var err error
 	var perr error
 
 	rqs := handlers.RequestSession{
-		Ctx: req.Context(),
+		Ctx:    req.Context(),
 		Writer: w,
 	}
 

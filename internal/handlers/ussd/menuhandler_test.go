@@ -1961,7 +1961,7 @@ func TestCheckVouchers(t *testing.T) {
 		{ContractAddress: "0x41c188d63Qa", TokenSymbol: "MILO", TokenDecimals: "4", Balance: "200"},
 	}
 
-	expectedSym := []byte("1:SRF\n2:MILO")
+	expectedSym := []byte("1: SRF\n2: MILO")
 
 	mockAccountService.On("FetchVouchers", string(publicKey)).Return(mockVouchersResponse, nil)
 
@@ -2024,7 +2024,7 @@ func TestViewVoucher(t *testing.T) {
 
 	// Define mock voucher data
 	mockData := map[common.DataTyp][]byte{
-		common.DATA_VOUCHER_SYMBOLS:   []byte("1:SRF\n2:MILO"),
+		common.DATA_VOUCHER_SYMBOLS:   []byte("1: SRF\n2: MILO"),
 		common.DATA_VOUCHER_BALANCES:  []byte("1:100\n2:200"),
 		common.DATA_VOUCHER_DECIMALS:  []byte("1:6\n2:4"),
 		common.DATA_VOUCHER_ADDRESSES: []byte("1:0xd4c288865Ce\n2:0x41c188d63Qa"),

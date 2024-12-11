@@ -1846,7 +1846,7 @@ func (h *Handlers) CheckTransactions(ctx context.Context, sym string, input []by
 	return res, nil
 }
 
-// GetTransactionsList fetches the list of transactions and formats them
+// GetTransactionsList reads the list of transactions from the db and formats them
 func (h *Handlers) GetTransactionsList(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	sessionId, ok := ctx.Value("SessionId").(string)

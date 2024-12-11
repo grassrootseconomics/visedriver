@@ -1895,12 +1895,12 @@ func (h *Handlers) GetTransactionsList(ctx context.Context, sym string, input []
 		value := strings.TrimSpace(values[i])
 		date := strings.Split(strings.TrimSpace(dates[i]), " ")[0]
 
-		status := "received"
+		status := "Received"
 		if sender == string(publicKey) {
-			status = "sent"
+			status = "Sent"
 		}
 
-		formattedTransactions = append(formattedTransactions, fmt.Sprintf("%d:%s %s %s %s", i+1, status, value, sym, date))
+		formattedTransactions = append(formattedTransactions, fmt.Sprintf("%d: %s %s %s %s", i+1, status, value, sym, date))
 	}
 
 	res.Content = strings.Join(formattedTransactions, "\n")

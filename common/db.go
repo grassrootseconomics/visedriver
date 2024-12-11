@@ -19,20 +19,12 @@ import (
 type DataTyp uint16
 
 const (
-	// TODO: Seems unused
-	DATA_ACCOUNT DataTyp = iota
-	// TODO: Seems unused, only read not written
-	DATA_ACCOUNT_CREATED
 	// API Tracking id to follow status of account creation
-	DATA_TRACKING_ID
+	DATA_TRACKING_ID = iota
 	// EVM address returned from API on account creation
 	DATA_PUBLIC_KEY
-	// TODO: Seems unused
-	DATA_CUSTODIAL_ID
 	// Currently active PIN used to authenticate ussd state change requests
 	DATA_ACCOUNT_PIN
-	// TODO: Seems unused
-	DATA_ACCOUNT_STATUS
 	// The first name of the user
 	DATA_FIRST_NAME
 	// The last name of the user
@@ -75,7 +67,10 @@ const (
 	// List of voucher EVM addresses for vouchers valid in the user context.
 	DATA_VOUCHER_ADDRESSES
 	// List of senders for valid transactions in the user context.
-	DATA_TX_SENDERS
+)
+
+const (
+	DATA_TX_SENDERS = 512 + iota
 	// List of recipients for valid transactions in the user context.
 	DATA_TX_RECIPIENTS
 	// List of voucher values for valid transactions in the user context.

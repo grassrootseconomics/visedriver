@@ -3,7 +3,7 @@ module git.grassecon.net/urdt/ussd
 go 1.23.0
 
 require (
-	git.defalsify.org/vise.git v0.2.1-0.20241209194740-26fc82a76ede
+	git.defalsify.org/vise.git v0.2.1-0.20241212130612-18a95521a7cf
 	github.com/alecthomas/assert/v2 v2.2.2
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/grassrootseconomics/eth-custodial v1.3.0-beta

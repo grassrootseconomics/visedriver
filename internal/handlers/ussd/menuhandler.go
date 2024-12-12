@@ -732,9 +732,7 @@ func (h *Handlers) ResetIncorrectPin(ctx context.Context, sym string, input []by
 // Setback sets the flag_back_set flag when the navigation is back
 func (h *Handlers) SetBack(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
-	//TODO:
-	//Add check if the navigation is lateral nav instead of checking the input.
-	if string(input) == "0" {
+	if h.st.Back() {
 		flag_back_set, _ := h.flagManager.GetFlag("flag_back_set")
 		res.FlagSet = append(res.FlagSet, flag_back_set)
 	}

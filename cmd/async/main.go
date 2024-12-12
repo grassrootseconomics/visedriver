@@ -53,6 +53,7 @@ func main() {
 	var engineDebug bool
 	var host string
 	var port uint
+	var separator string
 	flag.StringVar(&sessionId, "session-id", "075xx2123", "session id")
 	flag.StringVar(&dbDir, "dbdir", ".state", "database dir to read from")
 	flag.StringVar(&resourceDir, "resourcedir", path.Join("services", "registration"), "resource dir")
@@ -61,6 +62,7 @@ func main() {
 	flag.UintVar(&size, "s", 160, "max size of output")
 	flag.StringVar(&host, "h", initializers.GetEnv("HOST", "127.0.0.1"), "http host")
 	flag.UintVar(&port, "p", initializers.GetEnvUint("PORT", 7123), "http port")
+	flag.StringVar(&separator, "sep", ": ", "custom separator for the menu")
 	flag.Parse()
 
 	logg.Infof("start command", "dbdir", dbDir, "resourcedir", resourceDir, "outputsize", size, "sessionId", sessionId)
@@ -70,9 +72,10 @@ func main() {
 	pfp := path.Join(scriptDir, "pp.csv")
 
 	cfg := engine.Config{
-		Root:       "root",
-		OutputSize: uint32(size),
-		FlagCount:  uint32(128),
+		Root:          "root",
+		OutputSize:    uint32(size),
+		FlagCount:     uint32(128),
+		MenuSeparator: separator,
 	}
 
 	if engineDebug {

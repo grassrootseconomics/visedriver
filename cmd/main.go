@@ -34,13 +34,11 @@ func main() {
 	var sessionId string
 	var database string
 	var engineDebug bool
-	var separator string
 	flag.StringVar(&sessionId, "session-id", "075xx2123", "session id")
 	flag.StringVar(&database, "db", "gdbm", "database to be used")
 	flag.StringVar(&dbDir, "dbdir", ".state", "database dir to read from")
 	flag.BoolVar(&engineDebug, "d", false, "use engine debug output")
 	flag.UintVar(&size, "s", 160, "max size of output")
-	flag.StringVar(&separator, "sep", ": ", "custom separator for the menu")
 	flag.Parse()
 
 	logg.Infof("start command", "dbdir", dbDir, "outputsize", size)
@@ -55,7 +53,7 @@ func main() {
 		SessionId:     sessionId,
 		OutputSize:    uint32(size),
 		FlagCount:     uint32(128),
-		MenuSeparator: separator,
+		MenuSeparator: ": ",
 	}
 
 	resourceDir := scriptDir

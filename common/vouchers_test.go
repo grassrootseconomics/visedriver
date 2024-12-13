@@ -34,7 +34,7 @@ func InitializeTestDb(t *testing.T) (context.Context, *UserDataStore) {
 }
 
 func TestMatchVoucher(t *testing.T) {
-	symbols := "1: SRF\n2: MILO"
+	symbols := "1:SRF\n2:MILO"
 	balances := "1:100\n2:200"
 	decimals := "1:6\n2:4"
 	addresses := "1:0xd4c288865Ce\n2:0x41c188d63Qa"
@@ -65,7 +65,7 @@ func TestProcessVouchers(t *testing.T) {
 	}
 
 	expectedResult := VoucherMetadata{
-		Symbols:   "1: SRF\n2: MILO",
+		Symbols:   "1:SRF\n2:MILO",
 		Balances:  "1:100\n2:20000",
 		Decimals:  "1:6\n2:4",
 		Addresses: "1:0xd4c288865Ce\n2:0x41c188d63Qa",
@@ -90,7 +90,7 @@ func TestGetVoucherData(t *testing.T) {
 
 	// Test voucher data
 	mockData := map[DataTyp][]byte{
-		DATA_VOUCHER_SYMBOLS:   []byte("1: SRF\n2: MILO"),
+		DATA_VOUCHER_SYMBOLS:   []byte("1:SRF\n2:MILO"),
 		DATA_VOUCHER_BALANCES:  []byte("1:100\n2:200"),
 		DATA_VOUCHER_DECIMALS:  []byte("1:6\n2:4"),
 		DATA_VOUCHER_ADDRESSES: []byte("1:0xd4c288865Ce\n2:0x41c188d63Qa"),

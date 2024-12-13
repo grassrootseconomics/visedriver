@@ -24,7 +24,7 @@ func ProcessVouchers(holdings []dataserviceapi.TokenHoldings) VoucherMetadata {
 	var symbols, balances, decimals, addresses []string
 
 	for i, h := range holdings {
-		symbols = append(symbols, fmt.Sprintf("%d: %s", i+1, h.TokenSymbol))
+		symbols = append(symbols, fmt.Sprintf("%d:%s", i+1, h.TokenSymbol))
 
 		// Scale down the balance
 		scaledBalance := ScaleDownBalance(h.Balance, h.TokenDecimals)
@@ -103,7 +103,7 @@ func MatchVoucher(input, symbols, balances, decimals, addresses string) (symbol,
 
 	logg.Tracef("found", "symlist", symList, "syms", symbols, "input", input)
 	for i, sym := range symList {
-		parts := strings.SplitN(sym, ": ", 2)
+		parts := strings.SplitN(sym, ":", 2)
 
 		if input == parts[0] || strings.EqualFold(input, parts[1]) {
 			symbol = parts[1]

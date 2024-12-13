@@ -30,10 +30,10 @@ import (
 )
 
 var (
-	logg      = logging.NewVanilla()
-	scriptDir = path.Join("services", "registration")
-
-	build = "dev"
+	logg          = logging.NewVanilla()
+	scriptDir     = path.Join("services", "registration")
+	build         = "dev"
+	menuSeparator = ": "
 )
 
 func init() {
@@ -128,13 +128,14 @@ func main() {
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "Database", database)
+	ctx = context.WithValue(ctx, "MenuSeparator", menuSeparator)
 	pfp := path.Join(scriptDir, "pp.csv")
 
 	cfg := engine.Config{
 		Root:          "root",
 		OutputSize:    uint32(size),
 		FlagCount:     uint32(128),
-		MenuSeparator: ": ",
+		MenuSeparator: menuSeparator,
 	}
 
 	if engineDebug {

@@ -1,20 +1,11 @@
-CATCH incorrect_pin flag_incorrect_pin 1
-CATCH update_yob flag_allow_update 1
 LOAD get_current_profile_info 0
+LOAD save_yob 16
 RELOAD get_current_profile_info
 MAP get_current_profile_info
 MOUT back 0
 HALT
-INCMP _ 0
-RELOAD set_back 
-CATCH _ flag_back_set 1
-LOAD verify_yob 6
+LOAD verify_yob 0
 RELOAD verify_yob
-CATCH incorrect_date_format flag_incorrect_date_format 1
-LOAD save_yob 32
 RELOAD save_yob
-CATCH pin_entry flag_yob_set 1
-CATCH edit_location flag_location_set 0
-CATCH edit_offerings flag_offerings_set 0
-CATCH pin_entry flag_yob_set 0
-INCMP edit_location *
+INCMP _ 0
+INCMP edit_yob_next *

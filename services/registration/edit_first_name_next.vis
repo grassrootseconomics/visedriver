@@ -1,0 +1,11 @@
+RELOAD save_firstname
+CATCH incorrect_pin flag_incorrect_pin 1
+CATCH update_firstname flag_allow_update 1
+RELOAD set_back
+CATCH _ flag_back_set 1
+CATCH pin_entry flag_firstname_set 1
+CATCH edit_family_name flag_familyname_set 0
+CATCH select_gender flag_gender_set 0
+CATCH edit_yob flag_yob_set 0
+CATCH edit_location flag_location_set 0
+CATCH pin_entry flag_firstname_set 0

@@ -1,3 +1,7 @@
+LOAD save_yob 16
+LOAD verify_yob 8
+RELOAD verify_yob
+RELOAD save_yob
 CATCH incorrect_date_format flag_incorrect_date_format 1
 CATCH incorrect_pin flag_incorrect_pin 1
 CATCH update_yob flag_allow_update 1

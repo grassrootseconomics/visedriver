@@ -1,3 +1,5 @@
+LOAD save_offerings 8
+RELOAD save_offerings
 CATCH incorrect_pin flag_incorrect_pin 1
 CATCH update_offerings flag_allow_update 1
 RELOAD set_back 

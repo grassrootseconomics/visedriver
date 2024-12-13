@@ -3,6 +3,5 @@ RELOAD get_current_profile_info
 MAP get_current_profile_info
 MOUT back 0
 HALT
-LOAD save_firstname 64
 INCMP _ 0
 INCMP edit_first_name_next *

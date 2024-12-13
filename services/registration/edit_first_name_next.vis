@@ -1,3 +1,4 @@
+LOAD save_firstname 64
 RELOAD save_firstname
 CATCH incorrect_pin flag_incorrect_pin 1
 CATCH update_firstname flag_allow_update 1

@@ -1,3 +1,5 @@
+LOAD save_location 16
+RELOAD save_location
 CATCH incorrect_pin flag_incorrect_pin 1
 CATCH update_location flag_allow_update 1
 RELOAD set_back

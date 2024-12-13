@@ -1,9 +1,7 @@
 LOAD get_current_profile_info 0
 RELOAD get_current_profile_info
-LOAD save_offerings 8
 MOUT back 0
 HALT
-RELOAD save_offerings
 INCMP _ 0
 INCMP edit_offerings_next *
 

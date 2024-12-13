@@ -1,11 +1,7 @@
 LOAD get_current_profile_info 0
-LOAD save_yob 16
 RELOAD get_current_profile_info
 MAP get_current_profile_info
 MOUT back 0
 HALT
-LOAD verify_yob 0
-RELOAD verify_yob
-RELOAD save_yob
 INCMP _ 0
 INCMP edit_yob_next *

@@ -1676,6 +1676,11 @@ func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) 
 func (h *Handlers) GetVoucherList(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 
+	menuSeparator, ok := ctx.Value("MenuSeparator").(string)
+	if !ok {
+		return res, fmt.Errorf("missing menu Separator")
+	}
+
 	// Read vouchers from the store
 	voucherData, err := h.prefixDb.Get(ctx, common.ToBytes(common.DATA_VOUCHER_SYMBOLS))
 	if err != nil {
@@ -1683,7 +1688,9 @@ func (h *Handlers) GetVoucherList(ctx context.Context, sym string, input []byte)
 		return res, err
 	}
 
-	res.Content = string(voucherData)
+	formattedData := strings.ReplaceAll(string(voucherData), ":", menuSeparator)
+
+	res.Content = string(formattedData)
 
 	return res, nil
 }
@@ -1853,6 +1860,12 @@ func (h *Handlers) GetTransactionsList(ctx context.Context, sym string, input []
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
+
+	menuSeparator, ok := ctx.Value("MenuSeparator").(string)
+	if !ok {
+		return res, fmt.Errorf("missing menu Separator")
+	}
+
 	store := h.userdataStore
 	publicKey, err := store.ReadEntry(ctx, sessionId, common.DATA_PUBLIC_KEY)
 	if err != nil {
@@ -1900,7 +1913,7 @@ func (h *Handlers) GetTransactionsList(ctx context.Context, sym string, input []
 			status = "Sent"
 		}
 
-		formattedTransactions = append(formattedTransactions, fmt.Sprintf("%d: %s %s %s %s", i+1, status, value, sym, date))
+		formattedTransactions = append(formattedTransactions, fmt.Sprintf("%d%s%s %s %s %s", i+1, menuSeparator, status, value, sym, date))
 	}
 
 	res.Content = strings.Join(formattedTransactions, "\n")

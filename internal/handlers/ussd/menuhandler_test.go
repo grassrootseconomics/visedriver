@@ -181,10 +181,13 @@ func TestSaveFirstname(t *testing.T) {
 	fm, _ := NewFlagManager(flagsPath)
 
 	flag_allow_update, _ := fm.GetFlag("flag_allow_update")
+	flag_firstname_set, _ := fm.GetFlag("flag_firstname_set")
 
 	// Set the flag in the State
-	mockState := state.NewState(16)
+	mockState := state.NewState(128)
 	mockState.SetFlag(flag_allow_update)
+
+	expectedResult := resource.Result{}
 
 	// Define test data
 	firstName := "John"
@@ -192,6 +195,8 @@ func TestSaveFirstname(t *testing.T) {
 	if err := store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(firstName)); err != nil {
 		t.Fatal(err)
 	}
+
+	expectedResult.FlagSet = []uint32{flag_firstname_set}
 
 	// Create the Handlers instance with the mock store
 	h := &Handlers{
@@ -205,7 +210,7 @@ func TestSaveFirstname(t *testing.T) {
 
 	// Assert results
 	assert.NoError(t, err)
-	assert.Equal(t, resource.Result{}, res)
+	assert.Equal(t, expectedResult, res)
 
 	// Verify that the DATA_FIRST_NAME entry has been updated with the temporary value
 	storedFirstName, _ := store.ReadEntry(ctx, sessionId, common.DATA_FIRST_NAME)
@@ -220,10 +225,15 @@ func TestSaveFamilyname(t *testing.T) {
 	fm, _ := NewFlagManager(flagsPath)
 
 	flag_allow_update, _ := fm.GetFlag("flag_allow_update")
+	flag_firstname_set, _ := fm.GetFlag("flag_familyname_set")
 
 	// Set the flag in the State
-	mockState := state.NewState(16)
+	mockState := state.NewState(128)
 	mockState.SetFlag(flag_allow_update)
+
+	expectedResult := resource.Result{}
+
+	expectedResult.FlagSet = []uint32{flag_firstname_set}
 
 	// Define test data
 	familyName := "Doeee"
@@ -244,7 +254,7 @@ func TestSaveFamilyname(t *testing.T) {
 
 	// Assert results
 	assert.NoError(t, err)
-	assert.Equal(t, resource.Result{}, res)
+	assert.Equal(t, expectedResult, res)
 
 	// Verify that the DATA_FAMILY_NAME entry has been updated with the temporary value
 	storedFamilyName, _ := store.ReadEntry(ctx, sessionId, common.DATA_FAMILY_NAME)
@@ -259,10 +269,13 @@ func TestSaveYoB(t *testing.T) {
 	fm, _ := NewFlagManager(flagsPath)
 
 	flag_allow_update, _ := fm.GetFlag("flag_allow_update")
+	flag_yob_set, _ := fm.GetFlag("flag_yob_set")
 
 	// Set the flag in the State
-	mockState := state.NewState(16)
+	mockState := state.NewState(108)
 	mockState.SetFlag(flag_allow_update)
+
+	expectedResult := resource.Result{}
 
 	// Define test data
 	yob := "1980"
@@ -270,6 +283,8 @@ func TestSaveYoB(t *testing.T) {
 	if err := store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(yob)); err != nil {
 		t.Fatal(err)
 	}
+
+	expectedResult.FlagSet = []uint32{flag_yob_set}
 
 	// Create the Handlers instance with the mock store
 	h := &Handlers{
@@ -283,7 +298,7 @@ func TestSaveYoB(t *testing.T) {
 
 	// Assert results
 	assert.NoError(t, err)
-	assert.Equal(t, resource.Result{}, res)
+	assert.Equal(t, expectedResult, res)
 
 	// Verify that the DATA_YOB entry has been updated with the temporary value
 	storedYob, _ := store.ReadEntry(ctx, sessionId, common.DATA_YOB)
@@ -298,10 +313,13 @@ func TestSaveLocation(t *testing.T) {
 	fm, _ := NewFlagManager(flagsPath)
 
 	flag_allow_update, _ := fm.GetFlag("flag_allow_update")
+	flag_location_set, _ := fm.GetFlag("flag_location_set")
 
 	// Set the flag in the State
-	mockState := state.NewState(16)
+	mockState := state.NewState(108)
 	mockState.SetFlag(flag_allow_update)
+
+	expectedResult := resource.Result{}
 
 	// Define test data
 	location := "Kilifi"
@@ -309,6 +327,8 @@ func TestSaveLocation(t *testing.T) {
 	if err := store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(location)); err != nil {
 		t.Fatal(err)
 	}
+
+	expectedResult.FlagSet = []uint32{flag_location_set}
 
 	// Create the Handlers instance with the mock store
 	h := &Handlers{
@@ -322,7 +342,7 @@ func TestSaveLocation(t *testing.T) {
 
 	// Assert results
 	assert.NoError(t, err)
-	assert.Equal(t, resource.Result{}, res)
+	assert.Equal(t, expectedResult, res)
 
 	// Verify that the DATA_LOCATION entry has been updated with the temporary value
 	storedLocation, _ := store.ReadEntry(ctx, sessionId, common.DATA_LOCATION)
@@ -337,10 +357,13 @@ func TestSaveOfferings(t *testing.T) {
 	fm, _ := NewFlagManager(flagsPath)
 
 	flag_allow_update, _ := fm.GetFlag("flag_allow_update")
+	flag_offerings_set, _ := fm.GetFlag("flag_offerings_set")
 
 	// Set the flag in the State
-	mockState := state.NewState(16)
+	mockState := state.NewState(108)
 	mockState.SetFlag(flag_allow_update)
+
+	expectedResult := resource.Result{}
 
 	// Define test data
 	offerings := "Bananas"
@@ -348,6 +371,8 @@ func TestSaveOfferings(t *testing.T) {
 	if err := store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(offerings)); err != nil {
 		t.Fatal(err)
 	}
+
+	expectedResult.FlagSet = []uint32{flag_offerings_set}
 
 	// Create the Handlers instance with the mock store
 	h := &Handlers{
@@ -361,7 +386,7 @@ func TestSaveOfferings(t *testing.T) {
 
 	// Assert results
 	assert.NoError(t, err)
-	assert.Equal(t, resource.Result{}, res)
+	assert.Equal(t, expectedResult, res)
 
 	// Verify that the DATA_OFFERINGS entry has been updated with the temporary value
 	storedOfferings, _ := store.ReadEntry(ctx, sessionId, common.DATA_OFFERINGS)
@@ -376,9 +401,10 @@ func TestSaveGender(t *testing.T) {
 	fm, _ := NewFlagManager(flagsPath)
 
 	flag_allow_update, _ := fm.GetFlag("flag_allow_update")
+	flag_gender_set, _ := fm.GetFlag("flag_gender_set")
 
 	// Set the flag in the State
-	mockState := state.NewState(16)
+	mockState := state.NewState(108)
 	mockState.SetFlag(flag_allow_update)
 
 	// Define test cases
@@ -422,12 +448,16 @@ func TestSaveGender(t *testing.T) {
 				flagManager:   fm.parser,
 			}
 
+			expectedResult := resource.Result{}
+
 			// Call the method
 			res, err := h.SaveGender(ctx, "save_gender", tt.input)
 
+			expectedResult.FlagSet = []uint32{flag_gender_set}
+
 			// Assert results
 			assert.NoError(t, err)
-			assert.Equal(t, resource.Result{}, res)
+			assert.Equal(t, expectedResult, res)
 
 			// Verify that the DATA_GENDER entry has been updated with the temporary value
 			storedGender, _ := store.ReadEntry(ctx, sessionId, common.DATA_GENDER)

@@ -20,6 +20,7 @@ import (
 	"git.defalsify.org/vise.git/state"
 	"git.grassecon.net/urdt/ussd/common"
 	"git.grassecon.net/urdt/ussd/internal/utils"
+	"git.grassecon.net/urdt/ussd/models"
 	"git.grassecon.net/urdt/ussd/remote"
 	"gopkg.in/leonelquinteros/gotext.v1"
 
@@ -76,6 +77,7 @@ type Handlers struct {
 	flagManager    *asm.FlagParser
 	accountService remote.AccountServiceInterface
 	prefixDb       storage.PrefixDb
+	profile        *models.Profile
 }
 
 func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, adminstore *utils.AdminStore, accountService remote.AccountServiceInterface) (*Handlers, error) {
@@ -96,6 +98,7 @@ func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, adminstore *util
 		adminstore:     adminstore,
 		accountService: accountService,
 		prefixDb:       prefixDb,
+		profile:        &models.Profile{Max: 6},
 	}
 	return h, nil
 }
@@ -413,7 +416,10 @@ func (h *Handlers) SaveFirstname(ctx context.Context, sym string, input []byte) 
 	firstName := string(input)
 	store := h.userdataStore
 	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+	flag_firstname_set, _ := h.flagManager.GetFlag("flag_firstname_set")
+
 	allowUpdate := h.st.MatchFlag(flag_allow_update, true)
+	firstNameSet := h.st.MatchFlag(flag_firstname_set, true)
 	if allowUpdate {
 		temporaryFirstName, _ := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE)
 		err = store.WriteEntry(ctx, sessionId, common.DATA_FIRST_NAME, []byte(temporaryFirstName))
@@ -421,11 +427,16 @@ func (h *Handlers) SaveFirstname(ctx context.Context, sym string, input []byte) 
 			logg.ErrorCtxf(ctx, "failed to write firstName entry with", "key", common.DATA_FIRST_NAME, "value", temporaryFirstName, "error", err)
 			return res, err
 		}
+		res.FlagSet = append(res.FlagSet, flag_firstname_set)
 	} else {
-		err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(firstName))
-		if err != nil {
-			logg.ErrorCtxf(ctx, "failed to write temporaryFirstName entry with", "key", common.DATA_TEMPORARY_VALUE, "value", firstName, "error", err)
-			return res, err
+		if firstNameSet {
+			err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(firstName))
+			if err != nil {
+				logg.ErrorCtxf(ctx, "failed to write temporaryFirstName entry with", "key", common.DATA_TEMPORARY_VALUE, "value", firstName, "error", err)
+				return res, err
+			}
+		} else {
+			h.profile.InsertOrShift(0, firstName)
 		}
 	}
 
@@ -445,7 +456,9 @@ func (h *Handlers) SaveFamilyname(ctx context.Context, sym string, input []byte)
 	familyName := string(input)
 
 	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+	flag_familyname_set, _ := h.flagManager.GetFlag("flag_familyname_set")
 	allowUpdate := h.st.MatchFlag(flag_allow_update, true)
+	familyNameSet := h.st.MatchFlag(flag_familyname_set, true)
 
 	if allowUpdate {
 		temporaryFamilyName, _ := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE)
@@ -454,11 +467,16 @@ func (h *Handlers) SaveFamilyname(ctx context.Context, sym string, input []byte)
 			logg.ErrorCtxf(ctx, "failed to write familyName entry with", "key", common.DATA_FAMILY_NAME, "value", temporaryFamilyName, "error", err)
 			return res, err
 		}
+		res.FlagSet = append(res.FlagSet, flag_familyname_set)
 	} else {
-		err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(familyName))
-		if err != nil {
-			logg.ErrorCtxf(ctx, "failed to write temporaryFamilyName entry with", "key", common.DATA_TEMPORARY_VALUE, "value", familyName, "error", err)
-			return res, err
+		if familyNameSet {
+			err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(familyName))
+			if err != nil {
+				logg.ErrorCtxf(ctx, "failed to write temporaryFamilyName entry with", "key", common.DATA_TEMPORARY_VALUE, "value", familyName, "error", err)
+				return res, err
+			}
+		} else {
+			h.profile.InsertOrShift(1, familyName)
 		}
 	}
 
@@ -476,7 +494,10 @@ func (h *Handlers) SaveYob(ctx context.Context, sym string, input []byte) (resou
 	yob := string(input)
 	store := h.userdataStore
 	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+	flag_yob_set, _ := h.flagManager.GetFlag("flag_yob_set")
+
 	allowUpdate := h.st.MatchFlag(flag_allow_update, true)
+	yobSet := h.st.MatchFlag(flag_yob_set, true)
 
 	if allowUpdate {
 		temporaryYob, _ := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE)
@@ -485,11 +506,16 @@ func (h *Handlers) SaveYob(ctx context.Context, sym string, input []byte) (resou
 			logg.ErrorCtxf(ctx, "failed to write yob entry with", "key", common.DATA_TEMPORARY_VALUE, "value", temporaryYob, "error", err)
 			return res, err
 		}
+		res.FlagSet = append(res.FlagSet, flag_yob_set)
 	} else {
-		err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(yob))
-		if err != nil {
-			logg.ErrorCtxf(ctx, "failed to write temporaryYob entry with", "key", common.DATA_TEMPORARY_VALUE, "value", yob, "error", err)
-			return res, err
+		if yobSet {
+			err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(yob))
+			if err != nil {
+				logg.ErrorCtxf(ctx, "failed to write temporaryYob entry with", "key", common.DATA_TEMPORARY_VALUE, "value", yob, "error", err)
+				return res, err
+			}
+		} else {
+			h.profile.InsertOrShift(3, yob)
 		}
 	}
 
@@ -508,7 +534,9 @@ func (h *Handlers) SaveLocation(ctx context.Context, sym string, input []byte) (
 	store := h.userdataStore
 
 	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+	flag_location_set, _ := h.flagManager.GetFlag("flag_location_set")
 	allowUpdate := h.st.MatchFlag(flag_allow_update, true)
+	locationSet := h.st.MatchFlag(flag_location_set, true)
 
 	if allowUpdate {
 		temporaryLocation, _ := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE)
@@ -517,11 +545,17 @@ func (h *Handlers) SaveLocation(ctx context.Context, sym string, input []byte) (
 			logg.ErrorCtxf(ctx, "failed to write location entry with", "key", common.DATA_LOCATION, "value", temporaryLocation, "error", err)
 			return res, err
 		}
+		res.FlagSet = append(res.FlagSet, flag_location_set)
 	} else {
-		err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(location))
-		if err != nil {
-			logg.ErrorCtxf(ctx, "failed to write temporaryLocation entry with", "key", common.DATA_TEMPORARY_VALUE, "value", location, "error", err)
-			return res, err
+		if locationSet {
+			err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(location))
+			if err != nil {
+				logg.ErrorCtxf(ctx, "failed to write temporaryLocation entry with", "key", common.DATA_TEMPORARY_VALUE, "value", location, "error", err)
+				return res, err
+			}
+			res.FlagSet = append(res.FlagSet, flag_location_set)
+		} else {
+			h.profile.InsertOrShift(4, location)
 		}
 	}
 
@@ -540,7 +574,10 @@ func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (re
 	gender := strings.Split(symbol, "_")[1]
 	store := h.userdataStore
 	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+	flag_gender_set, _ := h.flagManager.GetFlag("flag_gender_set")
+
 	allowUpdate := h.st.MatchFlag(flag_allow_update, true)
+	genderSet := h.st.MatchFlag(flag_gender_set, true)
 
 	if allowUpdate {
 		temporaryGender, _ := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE)
@@ -549,11 +586,16 @@ func (h *Handlers) SaveGender(ctx context.Context, sym string, input []byte) (re
 			logg.ErrorCtxf(ctx, "failed to write gender entry with", "key", common.DATA_GENDER, "value", gender, "error", err)
 			return res, err
 		}
+		res.FlagSet = append(res.FlagSet, flag_gender_set)
 	} else {
-		err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(gender))
-		if err != nil {
-			logg.ErrorCtxf(ctx, "failed to write temporaryGender entry with", "key", common.DATA_TEMPORARY_VALUE, "value", gender, "error", err)
-			return res, err
+		if genderSet {
+			err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(gender))
+			if err != nil {
+				logg.ErrorCtxf(ctx, "failed to write temporaryGender entry with", "key", common.DATA_TEMPORARY_VALUE, "value", gender, "error", err)
+				return res, err
+			}
+		} else {
+			h.profile.InsertOrShift(2, gender)
 		}
 	}
 
@@ -573,7 +615,10 @@ func (h *Handlers) SaveOfferings(ctx context.Context, sym string, input []byte) 
 	store := h.userdataStore
 
 	flag_allow_update, _ := h.flagManager.GetFlag("flag_allow_update")
+	flag_offerings_set, _ := h.flagManager.GetFlag("flag_offerings_set")
+
 	allowUpdate := h.st.MatchFlag(flag_allow_update, true)
+	offeringsSet := h.st.MatchFlag(flag_offerings_set, true)
 
 	if allowUpdate {
 		temporaryOfferings, _ := store.ReadEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE)
@@ -582,11 +627,16 @@ func (h *Handlers) SaveOfferings(ctx context.Context, sym string, input []byte) 
 			logg.ErrorCtxf(ctx, "failed to write offerings entry with", "key", common.DATA_TEMPORARY_VALUE, "value", offerings, "error", err)
 			return res, err
 		}
+		res.FlagSet = append(res.FlagSet, flag_offerings_set)
 	} else {
-		err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(offerings))
-		if err != nil {
-			logg.ErrorCtxf(ctx, "failed to write temporaryOfferings entry with", "key", common.DATA_TEMPORARY_VALUE, "value", offerings, "error", err)
-			return res, err
+		if offeringsSet {
+			err = store.WriteEntry(ctx, sessionId, common.DATA_TEMPORARY_VALUE, []byte(offerings))
+			if err != nil {
+				logg.ErrorCtxf(ctx, "failed to write temporaryOfferings entry with", "key", common.DATA_TEMPORARY_VALUE, "value", offerings, "error", err)
+				return res, err
+			}
+		} else {
+			h.profile.InsertOrShift(5, offerings)
 		}
 	}
 
@@ -676,6 +726,18 @@ func (h *Handlers) ResetIncorrectPin(ctx context.Context, sym string, input []by
 	var res resource.Result
 	flag_incorrect_pin, _ := h.flagManager.GetFlag("flag_incorrect_pin")
 	res.FlagReset = append(res.FlagReset, flag_incorrect_pin)
+	return res, nil
+}
+
+// Setback sets the flag_back_set flag when the navigation is back
+func (h *Handlers) SetBack(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	//TODO:
+	//Add check if the navigation is lateral nav instead of checking the input.
+	if string(input) == "0" {
+		flag_back_set, _ := h.flagManager.GetFlag("flag_back_set")
+		res.FlagSet = append(res.FlagSet, flag_back_set)
+	}
 	return res, nil
 }
 
@@ -1278,6 +1340,17 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 	var res resource.Result
 	var profileInfo []byte
 	var err error
+
+	flag_firstname_set, _ := h.flagManager.GetFlag("flag_firstname_set")
+	flag_familyname_set, _ := h.flagManager.GetFlag("flag_familyname_set")
+	flag_yob_set, _ := h.flagManager.GetFlag("flag_yob_set")
+	flag_gender_set, _ := h.flagManager.GetFlag("flag_gender_set")
+	flag_location_set, _ := h.flagManager.GetFlag("flag_location_set")
+	flag_offerings_set, _ := h.flagManager.GetFlag("flag_offerings_set")
+	flag_back_set, _ := h.flagManager.GetFlag("flag_back_set")
+
+	res.FlagReset = append(res.FlagReset, flag_back_set)
+
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
 		return res, fmt.Errorf("missing session")
@@ -1304,6 +1377,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 			logg.ErrorCtxf(ctx, "Failed to read first name entry with", "key", "error", common.DATA_FIRST_NAME, err)
 			return res, err
 		}
+		res.FlagSet = append(res.FlagSet, flag_firstname_set)
 		res.Content = string(profileInfo)
 	case common.DATA_FAMILY_NAME:
 		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_FAMILY_NAME)
@@ -1315,6 +1389,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 			logg.ErrorCtxf(ctx, "Failed to read family name entry with", "key", "error", common.DATA_FAMILY_NAME, err)
 			return res, err
 		}
+		res.FlagSet = append(res.FlagSet, flag_familyname_set)
 		res.Content = string(profileInfo)
 
 	case common.DATA_GENDER:
@@ -1327,6 +1402,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 			logg.ErrorCtxf(ctx, "Failed to read gender entry with", "key", "error", common.DATA_GENDER, err)
 			return res, err
 		}
+		res.FlagSet = append(res.FlagSet, flag_gender_set)
 		res.Content = string(profileInfo)
 	case common.DATA_YOB:
 		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_YOB)
@@ -1338,8 +1414,8 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 			logg.ErrorCtxf(ctx, "Failed to read year of birth(yob) entry with", "key", "error", common.DATA_YOB, err)
 			return res, err
 		}
+		res.FlagSet = append(res.FlagSet, flag_yob_set)
 		res.Content = string(profileInfo)
-
 	case common.DATA_LOCATION:
 		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_LOCATION)
 		if err != nil {
@@ -1350,6 +1426,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 			logg.ErrorCtxf(ctx, "Failed to read location entry with", "key", "error", common.DATA_LOCATION, err)
 			return res, err
 		}
+		res.FlagSet = append(res.FlagSet, flag_location_set)
 		res.Content = string(profileInfo)
 	case common.DATA_OFFERINGS:
 		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_OFFERINGS)
@@ -1361,6 +1438,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 			logg.ErrorCtxf(ctx, "Failed to read offerings entry with", "key", "error", common.DATA_OFFERINGS, err)
 			return res, err
 		}
+		res.FlagSet = append(res.FlagSet, flag_offerings_set)
 		res.Content = string(profileInfo)
 	default:
 		break
@@ -1876,5 +1954,55 @@ func (h *Handlers) ViewTransactionStatement(ctx context.Context, sym string, inp
 	res.FlagReset = append(res.FlagReset, flag_incorrect_statement)
 	res.Content = statement
 
+	return res, nil
+}
+
+func (h *Handlers) insertProfileItems(ctx context.Context, sessionId string, res *resource.Result) error {
+	var err error
+	store := h.userdataStore
+	profileFlagNames := []string{
+		"flag_firstname_set",
+		"flag_familyname_set",
+		"flag_yob_set",
+		"flag_gender_set",
+		"flag_location_set",
+		"flag_offerings_set",
+	}
+	profileDataKeys := []common.DataTyp{
+		common.DATA_FIRST_NAME,
+		common.DATA_FAMILY_NAME,
+		common.DATA_GENDER,
+		common.DATA_YOB,
+		common.DATA_LOCATION,
+		common.DATA_OFFERINGS,
+	}
+	for index, profileItem := range h.profile.ProfileItems {
+		// Ensure the profileItem is not "0"(is set)
+		if profileItem != "0" {
+			err = store.WriteEntry(ctx, sessionId, profileDataKeys[index], []byte(profileItem))
+			if err != nil {
+				logg.ErrorCtxf(ctx, "failed to write profile entry with", "key", profileDataKeys[index], "value", profileItem, "error", err)
+				return err
+			}
+
+			// Get the flag for the current index
+			flag, _ := h.flagManager.GetFlag(profileFlagNames[index])
+			res.FlagSet = append(res.FlagSet, flag)
+		}
+	}
+	return nil
+}
+
+// UpdateAllProfileItems  is used to persist all the  new profile information and setup  the required profile flags
+func (h *Handlers) UpdateAllProfileItems(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return res, fmt.Errorf("missing session")
+	}
+	err := h.insertProfileItems(ctx, sessionId, &res)
+	if err != nil {
+		return res, err
+	}
 	return res, nil
 }

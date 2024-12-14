@@ -7,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -45,14 +44,14 @@ type atRequestParser struct{}
 func (arp *atRequestParser) GetSessionId(rq any) (string, error) {
 	rqv, ok := rq.(*http.Request)
 	if !ok {
-		log.Printf("got an invalid request:", rq)
+		logg.Warnf("got an invalid request", "req", rq)
 		return "", handlers.ErrInvalidRequest
 	}
 
 	// Capture body (if any) for logging
 	body, err := io.ReadAll(rqv.Body)
 	if err != nil {
-		log.Printf("failed to read request body:", err)
+		logg.Warnf("failed to read request body", "err", err)
 		return "", fmt.Errorf("failed to read request body: %v", err)
 	}
 	// Reset the body for further reading
@@ -62,13 +61,13 @@ func (arp *atRequestParser) GetSessionId(rq any) (string, error) {
 	bodyLog := map[string]string{"body": string(body)}
 	logBytes, err := json.Marshal(bodyLog)
 	if err != nil {
-		log.Printf("failed to marshal request body:", err)
+		logg.Warnf("failed to marshal request body", "err", err)
 	} else {
-		log.Printf("Received request:", string(logBytes))
+		logg.Debugf("received request", "bytes", logBytes)
 	}
 
 	if err := rqv.ParseForm(); err != nil {
-		log.Printf("failed to parse form data: %v", err)
+		logg.Warnf("failed to parse form data", "err", err)
 		return "", fmt.Errorf("failed to parse form data: %v", err)
 	}
 
@@ -79,7 +78,7 @@ func (arp *atRequestParser) GetSessionId(rq any) (string, error) {
 
 	formattedNumber, err := common.FormatPhoneNumber(phoneNumber)
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
+		logg.Warnf("failed to format phone number", "err", err)
 		return "", fmt.Errorf("failed to format number")
 	}
 

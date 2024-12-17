@@ -11,7 +11,7 @@
                     },
                     {
                         "input": "0",
-                        "expectedContent": "Do you agree to terms and conditions?\n0:Yes\n1:No"
+                        "expectedContent": "Do you agree to terms and conditions?\nhttps://grassecon.org/pages/terms-and-conditions\n0:Yes\n1:No"
                     },
                     {
                         "input": "0",
@@ -44,7 +44,7 @@
                     },
                     {
                         "input": "0",
-                        "expectedContent": "Do you agree to terms and conditions?\n0:Yes\n1:No"
+                        "expectedContent": "Do you agree to terms and conditions?\nhttps://grassecon.org/pages/terms-and-conditions\n0:Yes\n1:No"
                     },
                     {
                         "input": "1",

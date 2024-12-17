@@ -124,6 +124,16 @@ func (h *Handlers) Init(ctx context.Context, sym string, input []byte) (resource
 	h.st = h.pe.GetState()
 	h.ca = h.pe.GetMemory()
 
+	
+	fmt.Println("Pre restart state:", h.st)	
+
+	if len(input) == 0 {
+		h.st.Restart()
+		h.st = h.pe.GetState()
+	}
+
+	fmt.Println("New state:", h.st)
+
 	sessionId, _ := ctx.Value("SessionId").(string)
 	flag_admin_privilege, _ := h.flagManager.GetFlag("flag_admin_privilege")
 

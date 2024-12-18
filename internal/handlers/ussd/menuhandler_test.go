@@ -33,6 +33,11 @@ var (
 	flagsPath = path.Join(baseDir, "services", "registration", "pp.csv")
 )
 
+// mockReplaceSeparator function
+var mockReplaceSeparator = func(input string) string {
+	return strings.ReplaceAll(input, ":", ": ")
+}
+
 // InitializeTestStore sets up and returns an in-memory database and store.
 func InitializeTestStore(t *testing.T) (context.Context, *common.UserDataStore) {
 	ctx := context.Background()
@@ -73,11 +78,6 @@ func TestNewHandlers(t *testing.T) {
 	}
 
 	accountService := testservice.TestAccountService{}
-
-	// Mock function for replaceSeparator
-	mockReplaceSeparator := func(input string) string {
-		return strings.ReplaceAll(input, ":", ": ")
-	}
 
 	// Test case for valid UserDataStore
 	t.Run("Valid UserDataStore", func(t *testing.T) {
@@ -2007,15 +2007,10 @@ func TestGetVoucherList(t *testing.T) {
 
 	spdb := InitializeTestSubPrefixDb(t, ctx)
 
-	// Mock replaceSeparator function
-	replaceSeparator := func(input string) string {
-		return strings.ReplaceAll(input, ":", ": ")
-	}
-
 	// Initialize Handlers
 	h := &Handlers{
 		prefixDb:         spdb,
-		ReplaceSeparator: replaceSeparator,
+		ReplaceSeparator: mockReplaceSeparator,
 	}
 
 	mockSyms := []byte("1:SRF\n2:MILO")

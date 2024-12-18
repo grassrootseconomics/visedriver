@@ -56,7 +56,6 @@ func main() {
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "Database", database)
-	ctx = context.WithValue(ctx, "MenuSeparator", menuSeparator)
 	pfp := path.Join(scriptDir, "pp.csv")
 
 	cfg := engine.Config{

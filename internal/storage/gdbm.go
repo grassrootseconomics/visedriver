@@ -115,7 +115,8 @@ func(tdb *ThreadGdbmDb) Close() error {
 	return err
 }
 
-func(tdb *ThreadGdbmDb) Dump(_ context.Context, _ []byte) (*db.Dumper, error) {
-	logg.Warnf("method not implemented for thread gdbm db")
-	return nil, nil
+func(tdb *ThreadGdbmDb) Dump(ctx context.Context, key []byte) (*db.Dumper, error) {
+	tdb.reserve()
+	defer tdb.release()
+	return tdb.db.Dump(ctx, key)
 }

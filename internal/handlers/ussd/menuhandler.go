@@ -226,7 +226,7 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 		return res, fmt.Errorf("missing session")
 	}
 	store := h.userdataStore
-	_, err = store.ReadEntry(ctx, sessionId, common.DATA_ACCOUNT_CREATED)
+	_, err = store.ReadEntry(ctx, sessionId, common.DATA_PUBLIC_KEY)
 	if err != nil {
 		if db.IsNotFound(err) {
 			logg.InfoCtxf(ctx, "Creating an account because it doesn't exist")

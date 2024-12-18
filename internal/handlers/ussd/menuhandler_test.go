@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"path"
+	"strings"
 	"testing"
 
 	"git.defalsify.org/vise.git/lang"
@@ -67,12 +68,20 @@ func TestNewHandlers(t *testing.T) {
 	_, store := InitializeTestStore(t)
 
 	fm, err := NewFlagManager(flagsPath)
-	accountService := testservice.TestAccountService{}
 	if err != nil {
-		t.Logf(err.Error())
+		log.Fatal(err)
 	}
+
+	accountService := testservice.TestAccountService{}
+
+	// Mock function for replaceSeparator
+	mockReplaceSeparator := func(input string) string {
+		return strings.ReplaceAll(input, ":", ": ")
+	}
+
+	// Test case for valid UserDataStore
 	t.Run("Valid UserDataStore", func(t *testing.T) {
-		handlers, err := NewHandlers(fm.parser, store, nil, &accountService)
+		handlers, err := NewHandlers(fm.parser, store, nil, &accountService, mockReplaceSeparator)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -82,19 +91,30 @@ func TestNewHandlers(t *testing.T) {
 		if handlers.userdataStore == nil {
 			t.Fatal("expected userdataStore to be set in handlers")
 		}
+		if handlers.ReplaceSeparator == nil {
+			t.Fatal("expected ReplaceSeparator to be set in handlers")
+		}
+
+		// Test ReplaceSeparator functionality
+		input := "1:Menu item"
+		expectedOutput := "1: Menu item"
+		if handlers.ReplaceSeparator(input) != expectedOutput {
+			t.Fatalf("ReplaceSeparator function did not return expected output: got %v, want %v", handlers.ReplaceSeparator(input), expectedOutput)
+		}
 	})
 
-	// Test case for nil userdataStore
+	// Test case for nil UserDataStore
 	t.Run("Nil UserDataStore", func(t *testing.T) {
-		handlers, err := NewHandlers(fm.parser, nil, nil, &accountService)
+		handlers, err := NewHandlers(fm.parser, nil, nil, &accountService, mockReplaceSeparator)
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}
 		if handlers != nil {
 			t.Fatal("expected handlers to be nil")
 		}
-		if err.Error() != "cannot create handler with nil userdata store" {
-			t.Fatalf("expected specific error, got %v", err)
+		expectedError := "cannot create handler with nil userdata store"
+		if err.Error() != expectedError {
+			t.Fatalf("expected error '%s', got '%v'", expectedError, err)
 		}
 	})
 }
@@ -1982,30 +2002,36 @@ func TestCheckVouchers(t *testing.T) {
 
 func TestGetVoucherList(t *testing.T) {
 	sessionId := "session123"
-	menuSeparator := ":"
-	
+
 	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
-	ctx = context.WithValue(ctx, "MenuSeparator", menuSeparator)
-	
 
 	spdb := InitializeTestSubPrefixDb(t, ctx)
 
-	h := &Handlers{
-		prefixDb: spdb,
+	// Mock replaceSeparator function
+	replaceSeparator := func(input string) string {
+		return strings.ReplaceAll(input, ":", ": ")
 	}
 
-	expectedSym := []byte("1:SRF\n2:MILO")
+	// Initialize Handlers
+	h := &Handlers{
+		prefixDb:         spdb,
+		ReplaceSeparator: replaceSeparator,
+	}
+
+	mockSyms := []byte("1:SRF\n2:MILO")
 
 	// Put voucher sym data from the store
-	err := spdb.Put(ctx, common.ToBytes(common.DATA_VOUCHER_SYMBOLS), expectedSym)
+	err := spdb.Put(ctx, common.ToBytes(common.DATA_VOUCHER_SYMBOLS), mockSyms)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	expectedSyms := []byte("1: SRF\n2: MILO")
+
 	res, err := h.GetVoucherList(ctx, "", []byte(""))
 
 	assert.NoError(t, err)
-	assert.Equal(t, res.Content, string(expectedSym))
+	assert.Equal(t, res.Content, string(expectedSyms))
 }
 
 func TestViewVoucher(t *testing.T) {

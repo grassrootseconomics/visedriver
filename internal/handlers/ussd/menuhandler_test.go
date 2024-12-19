@@ -91,15 +91,15 @@ func TestNewHandlers(t *testing.T) {
 		if handlers.userdataStore == nil {
 			t.Fatal("expected userdataStore to be set in handlers")
 		}
-		if handlers.ReplaceSeparator == nil {
-			t.Fatal("expected ReplaceSeparator to be set in handlers")
+		if handlers.ReplaceSeparatorFunc == nil {
+			t.Fatal("expected ReplaceSeparatorFunc to be set in handlers")
 		}
 
-		// Test ReplaceSeparator functionality
+		// Test ReplaceSeparatorFunc functionality
 		input := "1:Menu item"
 		expectedOutput := "1: Menu item"
-		if handlers.ReplaceSeparator(input) != expectedOutput {
-			t.Fatalf("ReplaceSeparator function did not return expected output: got %v, want %v", handlers.ReplaceSeparator(input), expectedOutput)
+		if handlers.ReplaceSeparatorFunc(input) != expectedOutput {
+			t.Fatalf("ReplaceSeparatorFunc function did not return expected output: got %v, want %v", handlers.ReplaceSeparatorFunc(input), expectedOutput)
 		}
 	})
 
@@ -2009,8 +2009,8 @@ func TestGetVoucherList(t *testing.T) {
 
 	// Initialize Handlers
 	h := &Handlers{
-		prefixDb:         spdb,
-		ReplaceSeparator: mockReplaceSeparator,
+		prefixDb:             spdb,
+		ReplaceSeparatorFunc: mockReplaceSeparator,
 	}
 
 	mockSyms := []byte("1:SRF\n2:MILO")

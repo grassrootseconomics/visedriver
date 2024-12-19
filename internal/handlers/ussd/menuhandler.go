@@ -78,10 +78,10 @@ type Handlers struct {
 	accountService   remote.AccountServiceInterface
 	prefixDb         storage.PrefixDb
 	profile          *models.Profile
-	ReplaceSeparator func(string) string
+	ReplaceSeparatorFunc func(string) string
 }
 
-func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, adminstore *utils.AdminStore, accountService remote.AccountServiceInterface, replaceSeparator func(string) string) (*Handlers, error) {
+func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, adminstore *utils.AdminStore, accountService remote.AccountServiceInterface, replaceSeparatorFunc func(string) string) (*Handlers, error) {
 	if userdataStore == nil {
 		return nil, fmt.Errorf("cannot create handler with nil userdata store")
 	}
@@ -100,7 +100,7 @@ func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, adminstore *util
 		accountService:   accountService,
 		prefixDb:         prefixDb,
 		profile:          &models.Profile{Max: 6},
-		ReplaceSeparator: replaceSeparator,
+		ReplaceSeparatorFunc: replaceSeparatorFunc,
 	}
 	return h, nil
 }
@@ -1685,7 +1685,7 @@ func (h *Handlers) GetVoucherList(ctx context.Context, sym string, input []byte)
 		return res, err
 	}
 
-	formattedData := h.ReplaceSeparator(string(voucherData))
+	formattedData := h.ReplaceSeparatorFunc(string(voucherData))
 
 	res.Content = string(formattedData)
 
@@ -1906,7 +1906,7 @@ func (h *Handlers) GetTransactionsList(ctx context.Context, sym string, input []
 		}
 
 		// Use the ReplaceSeparator function for the menu separator
-		transactionLine := fmt.Sprintf("%d%s%s %s %s %s", i+1, h.ReplaceSeparator(":"), status, value, sym, date)
+		transactionLine := fmt.Sprintf("%d%s%s %s %s %s", i+1, h.ReplaceSeparatorFunc(":"), status, value, sym, date)
 		formattedTransactions = append(formattedTransactions, transactionLine)
 	}
 

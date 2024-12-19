@@ -65,11 +65,11 @@ func (ls *LocalHandlerService) SetDataStore(db *db.Db) {
 }
 
 func (ls *LocalHandlerService) GetHandler(accountService remote.AccountServiceInterface) (*ussd.Handlers, error) {
-	replaceSeparator := func(input string) string {
+	replaceSeparatorFunc := func(input string) string {
 		return strings.ReplaceAll(input, ":", ls.Cfg.MenuSeparator)
 	}
 
-	ussdHandlers, err := ussd.NewHandlers(ls.Parser, *ls.UserdataStore, ls.AdminStore, accountService, replaceSeparator)
+	ussdHandlers, err := ussd.NewHandlers(ls.Parser, *ls.UserdataStore, ls.AdminStore, accountService, replaceSeparatorFunc)
 	if err != nil {
 		return nil, err
 	}

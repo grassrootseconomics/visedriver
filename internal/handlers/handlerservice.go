@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"strings"
 
 	"git.defalsify.org/vise.git/asm"
 	"git.defalsify.org/vise.git/db"
@@ -64,7 +65,11 @@ func (ls *LocalHandlerService) SetDataStore(db *db.Db) {
 }
 
 func (ls *LocalHandlerService) GetHandler(accountService remote.AccountServiceInterface) (*ussd.Handlers, error) {
-	ussdHandlers, err := ussd.NewHandlers(ls.Parser, *ls.UserdataStore, ls.AdminStore, accountService)
+	replaceSeparatorFunc := func(input string) string {
+		return strings.ReplaceAll(input, ":", ls.Cfg.MenuSeparator)
+	}
+
+	ussdHandlers, err := ussd.NewHandlers(ls.Parser, *ls.UserdataStore, ls.AdminStore, accountService, replaceSeparatorFunc)
 	if err != nil {
 		return nil, err
 	}

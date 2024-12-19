@@ -69,18 +69,19 @@ func (fm *FlagManager) GetFlag(label string) (uint32, error) {
 }
 
 type Handlers struct {
-	pe             *persist.Persister
-	st             *state.State
-	ca             cache.Memory
-	userdataStore  common.DataStore
-	adminstore     *utils.AdminStore
-	flagManager    *asm.FlagParser
-	accountService remote.AccountServiceInterface
-	prefixDb       storage.PrefixDb
-	profile        *models.Profile
+	pe               *persist.Persister
+	st               *state.State
+	ca               cache.Memory
+	userdataStore    common.DataStore
+	adminstore       *utils.AdminStore
+	flagManager      *asm.FlagParser
+	accountService   remote.AccountServiceInterface
+	prefixDb         storage.PrefixDb
+	profile          *models.Profile
+	ReplaceSeparatorFunc func(string) string
 }
 
-func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, adminstore *utils.AdminStore, accountService remote.AccountServiceInterface) (*Handlers, error) {
+func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, adminstore *utils.AdminStore, accountService remote.AccountServiceInterface, replaceSeparatorFunc func(string) string) (*Handlers, error) {
 	if userdataStore == nil {
 		return nil, fmt.Errorf("cannot create handler with nil userdata store")
 	}
@@ -93,12 +94,13 @@ func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, adminstore *util
 	prefixDb := storage.NewSubPrefixDb(userdataStore, prefix)
 
 	h := &Handlers{
-		userdataStore:  userDb,
-		flagManager:    appFlags,
-		adminstore:     adminstore,
-		accountService: accountService,
-		prefixDb:       prefixDb,
-		profile:        &models.Profile{Max: 6},
+		userdataStore:    userDb,
+		flagManager:      appFlags,
+		adminstore:       adminstore,
+		accountService:   accountService,
+		prefixDb:         prefixDb,
+		profile:          &models.Profile{Max: 6},
+		ReplaceSeparatorFunc: replaceSeparatorFunc,
 	}
 	return h, nil
 }
@@ -1683,7 +1685,9 @@ func (h *Handlers) GetVoucherList(ctx context.Context, sym string, input []byte)
 		return res, err
 	}
 
-	res.Content = string(voucherData)
+	formattedData := h.ReplaceSeparatorFunc(string(voucherData))
+
+	res.Content = string(formattedData)
 
 	return res, nil
 }
@@ -1846,13 +1850,14 @@ func (h *Handlers) CheckTransactions(ctx context.Context, sym string, input []by
 	return res, nil
 }
 
-// GetTransactionsList fetches the list of transactions and formats them
+// GetTransactionsList reads the list of transactions from the db and formats them
 func (h *Handlers) GetTransactionsList(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
+
 	store := h.userdataStore
 	publicKey, err := store.ReadEntry(ctx, sessionId, common.DATA_PUBLIC_KEY)
 	if err != nil {
@@ -1895,12 +1900,14 @@ func (h *Handlers) GetTransactionsList(ctx context.Context, sym string, input []
 		value := strings.TrimSpace(values[i])
 		date := strings.Split(strings.TrimSpace(dates[i]), " ")[0]
 
-		status := "received"
+		status := "Received"
 		if sender == string(publicKey) {
-			status = "sent"
+			status = "Sent"
 		}
 
-		formattedTransactions = append(formattedTransactions, fmt.Sprintf("%d:%s %s %s %s", i+1, status, value, sym, date))
+		// Use the ReplaceSeparator function for the menu separator
+		transactionLine := fmt.Sprintf("%d%s%s %s %s %s", i+1, h.ReplaceSeparatorFunc(":"), status, value, sym, date)
+		formattedTransactions = append(formattedTransactions, transactionLine)
 	}
 
 	res.Content = strings.Join(formattedTransactions, "\n")

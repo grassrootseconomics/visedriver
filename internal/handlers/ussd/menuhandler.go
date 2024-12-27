@@ -69,15 +69,15 @@ func (fm *FlagManager) GetFlag(label string) (uint32, error) {
 }
 
 type Handlers struct {
-	pe               *persist.Persister
-	st               *state.State
-	ca               cache.Memory
-	userdataStore    common.DataStore
-	adminstore       *utils.AdminStore
-	flagManager      *asm.FlagParser
-	accountService   remote.AccountServiceInterface
-	prefixDb         storage.PrefixDb
-	profile          *models.Profile
+	pe                   *persist.Persister
+	st                   *state.State
+	ca                   cache.Memory
+	userdataStore        common.DataStore
+	adminstore           *utils.AdminStore
+	flagManager          *asm.FlagParser
+	accountService       remote.AccountServiceInterface
+	prefixDb             storage.PrefixDb
+	profile              *models.Profile
 	ReplaceSeparatorFunc func(string) string
 }
 
@@ -94,12 +94,12 @@ func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, adminstore *util
 	prefixDb := storage.NewSubPrefixDb(userdataStore, prefix)
 
 	h := &Handlers{
-		userdataStore:    userDb,
-		flagManager:      appFlags,
-		adminstore:       adminstore,
-		accountService:   accountService,
-		prefixDb:         prefixDb,
-		profile:          &models.Profile{Max: 6},
+		userdataStore:        userDb,
+		flagManager:          appFlags,
+		adminstore:           adminstore,
+		accountService:       accountService,
+		prefixDb:             prefixDb,
+		profile:              &models.Profile{Max: 6},
 		ReplaceSeparatorFunc: replaceSeparatorFunc,
 	}
 	return h, nil
@@ -1986,15 +1986,16 @@ func (h *Handlers) insertProfileItems(ctx context.Context, sessionId string, res
 	for index, profileItem := range h.profile.ProfileItems {
 		// Ensure the profileItem is not "0"(is set)
 		if profileItem != "0" {
-			err = store.WriteEntry(ctx, sessionId, profileDataKeys[index], []byte(profileItem))
-			if err != nil {
-				logg.ErrorCtxf(ctx, "failed to write profile entry with", "key", profileDataKeys[index], "value", profileItem, "error", err)
-				return err
-			}
-
-			// Get the flag for the current index
 			flag, _ := h.flagManager.GetFlag(profileFlagNames[index])
-			res.FlagSet = append(res.FlagSet, flag)
+			isProfileItemSet := h.st.MatchFlag(flag, true)
+			if !isProfileItemSet {
+				err = store.WriteEntry(ctx, sessionId, profileDataKeys[index], []byte(profileItem))
+				if err != nil {
+					logg.ErrorCtxf(ctx, "failed to write profile entry with", "key", profileDataKeys[index], "value", profileItem, "error", err)
+					return err
+				}
+				res.FlagSet = append(res.FlagSet, flag)
+			}
 		}
 	}
 	return nil

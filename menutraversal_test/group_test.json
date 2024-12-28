@@ -430,7 +430,7 @@
                 },
                 {
                     "input": "1234",
-                    "expectedContent": "My profile:\nName: foo bar\nGender: male\nAge: 84\nLocation: Kilifi\nYou provide: Bananas\n\n0:Back"
+                    "expectedContent": "My profile:\nName: foo bar\nGender: male\nAge: 79\nLocation: Kilifi\nYou provide: Bananas\n\n0:Back"
                 },
                 {
                     "input": "0",

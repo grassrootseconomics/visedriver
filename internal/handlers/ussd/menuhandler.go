@@ -2015,15 +2015,16 @@ func (h *Handlers) insertProfileItems(ctx context.Context, sessionId string, res
 	for index, profileItem := range h.profile.ProfileItems {
 		// Ensure the profileItem is not "0"(is set)
 		if profileItem != "0" {
-			err = store.WriteEntry(ctx, sessionId, profileDataKeys[index], []byte(profileItem))
-			if err != nil {
-				logg.ErrorCtxf(ctx, "failed to write profile entry with", "key", profileDataKeys[index], "value", profileItem, "error", err)
-				return err
-			}
-
-			// Get the flag for the current index
 			flag, _ := h.flagManager.GetFlag(profileFlagNames[index])
-			res.FlagSet = append(res.FlagSet, flag)
+			isProfileItemSet := h.st.MatchFlag(flag, true)
+			if !isProfileItemSet {
+				err = store.WriteEntry(ctx, sessionId, profileDataKeys[index], []byte(profileItem))
+				if err != nil {
+					logg.ErrorCtxf(ctx, "failed to write profile entry with", "key", profileDataKeys[index], "value", profileItem, "error", err)
+					return err
+				}
+				res.FlagSet = append(res.FlagSet, flag)
+			}
 		}
 	}
 	return nil

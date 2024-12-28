@@ -39,7 +39,7 @@ const (
 	pinPattern = `^\d{4}$`
 )
 
-// isValidPIN checks whether the given input is a 4 digit number
+// checks whether the given input is a 4 digit number
 func isValidPIN(pin string) bool {
 	match, _ := regexp.MatchString(pinPattern, pin)
 	return match
@@ -81,6 +81,7 @@ type Handlers struct {
 	ReplaceSeparatorFunc func(string) string
 }
 
+// NewHandlers creates a new instance of the Handlers struct with the provided dependencies.
 func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, adminstore *utils.AdminStore, accountService remote.AccountServiceInterface, replaceSeparatorFunc func(string) string) (*Handlers, error) {
 	if userdataStore == nil {
 		return nil, fmt.Errorf("cannot create handler with nil userdata store")
@@ -105,6 +106,7 @@ func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, adminstore *util
 	return h, nil
 }
 
+// WithPersister sets persister instance to the handlers.
 func (h *Handlers) WithPersister(pe *persist.Persister) *Handlers {
 	if h.pe != nil {
 		panic("persister already set")
@@ -113,6 +115,7 @@ func (h *Handlers) WithPersister(pe *persist.Persister) *Handlers {
 	return h
 }
 
+// Init initializes the handler for a new session.
 func (h *Handlers) Init(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var r resource.Result
 	if h.pe == nil {
@@ -151,7 +154,7 @@ func (h *Handlers) Exit() {
 	h.pe = nil
 }
 
-// SetLanguage sets the language across the menu
+// SetLanguage sets the language across the menu.
 func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 
@@ -175,6 +178,7 @@ func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (r
 	return res, nil
 }
 
+// handles the account creation when no existing account is present for the session and stores associated data in the user data store.
 func (h *Handlers) createAccountNoExist(ctx context.Context, sessionId string, res *resource.Result) error {
 	flag_account_created, _ := h.flagManager.GetFlag("flag_account_created")
 	r, err := h.accountService.CreateAccount(ctx)
@@ -207,9 +211,9 @@ func (h *Handlers) createAccountNoExist(ctx context.Context, sessionId string, r
 	return nil
 }
 
-// CreateAccount checks if any account exists on the JSON data file, and if not
+// CreateAccount checks if any account exists on the JSON data file, and if not,
 // creates an account on the API,
-// sets the default values and flags
+// sets the default values and flags.
 func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	var err error
@@ -233,19 +237,22 @@ func (h *Handlers) CreateAccount(ctx context.Context, sym string, input []byte) 
 	return res, nil
 }
 
-func (h *Handlers) CheckPinMisMatch(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+// CheckBlockedNumPinMisMatch checks if the provided PIN matches a temporary PIN stored for a blocked number.
+func (h *Handlers) CheckBlockedNumPinMisMatch(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	flag_pin_mismatch, _ := h.flagManager.GetFlag("flag_pin_mismatch")
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
+	// Get blocked number from storage.
 	store := h.userdataStore
 	blockedNumber, err := store.ReadEntry(ctx, sessionId, common.DATA_BLOCKED_NUMBER)
 	if err != nil {
 		logg.ErrorCtxf(ctx, "failed to read blockedNumber entry with", "key", common.DATA_BLOCKED_NUMBER, "error", err)
 		return res, err
 	}
+	// Get temporary PIN for the blocked number.
 	temporaryPin, err := store.ReadEntry(ctx, string(blockedNumber), common.DATA_TEMPORARY_VALUE)
 	if err != nil {
 		logg.ErrorCtxf(ctx, "failed to read temporaryPin entry with", "key", common.DATA_TEMPORARY_VALUE, "error", err)
@@ -259,6 +266,7 @@ func (h *Handlers) CheckPinMisMatch(ctx context.Context, sym string, input []byt
 	return res, nil
 }
 
+// VerifyNewPin checks if a new PIN meets the required format criteria.
 func (h *Handlers) VerifyNewPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	res := resource.Result{}
 	_, ok := ctx.Value("SessionId").(string)
@@ -267,7 +275,7 @@ func (h *Handlers) VerifyNewPin(ctx context.Context, sym string, input []byte) (
 	}
 	flag_valid_pin, _ := h.flagManager.GetFlag("flag_valid_pin")
 	pinInput := string(input)
-	// Validate that the PIN is a 4-digit number
+	// Validate that the PIN is a 4-digit number.
 	if isValidPIN(pinInput) {
 		res.FlagSet = append(res.FlagSet, flag_valid_pin)
 	} else {
@@ -277,9 +285,9 @@ func (h *Handlers) VerifyNewPin(ctx context.Context, sym string, input []byte) (
 	return res, nil
 }
 
-// SaveTemporaryPin saves the valid PIN input to the DATA_TEMPORARY_VALUE
+// SaveTemporaryPin saves the valid PIN input to the DATA_TEMPORARY_VALUE,
 // during the account creation process
-// and during the change PIN process
+// and during the change PIN process.
 func (h *Handlers) SaveTemporaryPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	var err error
@@ -292,7 +300,7 @@ func (h *Handlers) SaveTemporaryPin(ctx context.Context, sym string, input []byt
 	flag_incorrect_pin, _ := h.flagManager.GetFlag("flag_incorrect_pin")
 	accountPIN := string(input)
 
-	// Validate that the PIN is a 4-digit number
+	// Validate that the PIN is a 4-digit number.
 	if !isValidPIN(accountPIN) {
 		res.FlagSet = append(res.FlagSet, flag_incorrect_pin)
 		return res, nil
@@ -308,6 +316,7 @@ func (h *Handlers) SaveTemporaryPin(ctx context.Context, sym string, input []byt
 	return res, nil
 }
 
+// SaveOthersTemporaryPin allows authorized users to set temporary PINs for blocked numbers.
 func (h *Handlers) SaveOthersTemporaryPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	var err error
@@ -318,12 +327,14 @@ func (h *Handlers) SaveOthersTemporaryPin(ctx context.Context, sym string, input
 		return res, fmt.Errorf("missing session")
 	}
 	temporaryPin := string(input)
+	// First, we retrieve the blocked number associated with this session
 	blockedNumber, err := store.ReadEntry(ctx, sessionId, common.DATA_BLOCKED_NUMBER)
 	if err != nil {
 		logg.ErrorCtxf(ctx, "failed to read blockedNumber entry with", "key", common.DATA_BLOCKED_NUMBER, "error", err)
 		return res, err
 	}
 
+	// Then we save the temporary PIN for that blocked number
 	err = store.WriteEntry(ctx, string(blockedNumber), common.DATA_TEMPORARY_VALUE, []byte(temporaryPin))
 	if err != nil {
 		logg.ErrorCtxf(ctx, "failed to write temporaryPin entry with", "key", common.DATA_TEMPORARY_VALUE, "value", temporaryPin, "error", err)
@@ -333,6 +344,7 @@ func (h *Handlers) SaveOthersTemporaryPin(ctx context.Context, sym string, input
 	return res, nil
 }
 
+// ConfirmPinChange validates user's new PIN. If input matches the temporary PIN, saves it as the new account PIN.
 func (h *Handlers) ConfirmPinChange(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	sessionId, ok := ctx.Value("SessionId").(string)
@@ -352,6 +364,7 @@ func (h *Handlers) ConfirmPinChange(ctx context.Context, sym string, input []byt
 	} else {
 		res.FlagSet = append(res.FlagSet, flag_pin_mismatch)
 	}
+	// If matched, save the confirmed PIN as the new account PIN
 	err = store.WriteEntry(ctx, sessionId, common.DATA_ACCOUNT_PIN, []byte(temporaryPin))
 	if err != nil {
 		logg.ErrorCtxf(ctx, "failed to write temporaryPin entry with", "key", common.DATA_ACCOUNT_PIN, "value", temporaryPin, "error", err)
@@ -362,7 +375,7 @@ func (h *Handlers) ConfirmPinChange(ctx context.Context, sym string, input []byt
 
 // VerifyCreatePin checks whether the confirmation PIN is similar to the temporary PIN
 // If similar, it sets the USERFLAG_PIN_SET flag and writes the account PIN allowing the user
-// to access the main menu
+// to access the main menu.
 func (h *Handlers) VerifyCreatePin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 
@@ -397,7 +410,7 @@ func (h *Handlers) VerifyCreatePin(ctx context.Context, sym string, input []byte
 	return res, nil
 }
 
-// codeFromCtx retrieves language codes from the context that can be used for handling translations
+// retrieves language codes from the context that can be used for handling translations.
 func codeFromCtx(ctx context.Context) string {
 	var code string
 	if ctx.Value("Language") != nil {
@@ -731,7 +744,7 @@ func (h *Handlers) ResetIncorrectPin(ctx context.Context, sym string, input []by
 	return res, nil
 }
 
-// Setback sets the flag_back_set flag when the navigation is back
+// Setback sets the flag_back_set flag when the navigation is back.
 func (h *Handlers) SetBack(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	//TODO:
@@ -744,7 +757,7 @@ func (h *Handlers) SetBack(ctx context.Context, sym string, input []byte) (resou
 }
 
 // CheckAccountStatus queries the API using the TrackingId and sets flags
-// based on the account status
+// based on the account status.
 func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 
@@ -784,7 +797,7 @@ func (h *Handlers) CheckAccountStatus(ctx context.Context, sym string, input []b
 	return res, nil
 }
 
-// Quit displays the Thank you message and exits the menu
+// Quit displays the Thank you message and exits the menu.
 func (h *Handlers) Quit(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 
@@ -799,7 +812,7 @@ func (h *Handlers) Quit(ctx context.Context, sym string, input []byte) (resource
 	return res, nil
 }
 
-// QuitWithHelp displays helpline information then exits the menu
+// QuitWithHelp displays helpline information then exits the menu.
 func (h *Handlers) QuitWithHelp(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 
@@ -814,7 +827,7 @@ func (h *Handlers) QuitWithHelp(ctx context.Context, sym string, input []byte) (
 	return res, nil
 }
 
-// VerifyYob verifies the length of the given input
+// VerifyYob verifies the length of the given input.
 func (h *Handlers) VerifyYob(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	var err error
@@ -836,7 +849,7 @@ func (h *Handlers) VerifyYob(ctx context.Context, sym string, input []byte) (res
 	return res, nil
 }
 
-// ResetIncorrectYob resets the incorrect date format flag after a new attempt
+// ResetIncorrectYob resets the incorrect date format flag after a new attempt.
 func (h *Handlers) ResetIncorrectYob(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 
@@ -846,7 +859,7 @@ func (h *Handlers) ResetIncorrectYob(ctx context.Context, sym string, input []by
 }
 
 // CheckBalance retrieves the balance of the active voucher and sets
-// the balance as the result content
+// the balance as the result content.
 func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	var err error
@@ -896,9 +909,12 @@ func (h *Handlers) CheckBalance(ctx context.Context, sym string, input []byte) (
 	return res, nil
 }
 
+// FetchCommunityBalance retrieves and displays the balance for community accounts in user's preferred language.
 func (h *Handlers) FetchCommunityBalance(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
+	// retrieve the language code from the context
 	code := codeFromCtx(ctx)
+	// Initialize the localization system with the appropriate translation directory
 	l := gotext.NewLocale(translationDir, code)
 	l.AddDomain("default")
 	//TODO:
@@ -907,6 +923,10 @@ func (h *Handlers) FetchCommunityBalance(ctx context.Context, sym string, input 
 	return res, nil
 }
 
+// ResetOthersPin handles the PIN reset process for other users' accounts by:
+// 1. Retrieving the blocked phone number from the session
+// 2. Fetching the temporary PIN associated with that number
+// 3. Updating the account PIN with the temporary PIN
 func (h *Handlers) ResetOthersPin(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	store := h.userdataStore
@@ -932,6 +952,8 @@ func (h *Handlers) ResetOthersPin(ctx context.Context, sym string, input []byte)
 	return res, nil
 }
 
+// ResetUnregisteredNumber clears the unregistered number flag in the system,
+// indicating that a number's registration status should no longer be marked as unregistered.
 func (h *Handlers) ResetUnregisteredNumber(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	flag_unregistered_number, _ := h.flagManager.GetFlag("flag_unregistered_number")
@@ -939,6 +961,8 @@ func (h *Handlers) ResetUnregisteredNumber(ctx context.Context, sym string, inpu
 	return res, nil
 }
 
+// ValidateBlockedNumber performs validation of phone numbers, specifically for blocked numbers in the system.
+// It checks phone number format and verifies registration status.
 func (h *Handlers) ValidateBlockedNumber(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	var err error
@@ -1067,7 +1091,7 @@ func (h *Handlers) ValidateRecipient(ctx context.Context, sym string, input []by
 }
 
 // TransactionReset resets the previous transaction data (Recipient and Amount)
-// as well as the invalid flags
+// as well as the invalid flags.
 func (h *Handlers) TransactionReset(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	var err error
@@ -1120,7 +1144,7 @@ func (h *Handlers) InviteValidRecipient(ctx context.Context, sym string, input [
 	return res, nil
 }
 
-// ResetTransactionAmount resets the transaction amount and invalid flag
+// ResetTransactionAmount resets the transaction amount and invalid flag.
 func (h *Handlers) ResetTransactionAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	var err error
@@ -1250,7 +1274,7 @@ func (h *Handlers) RetrieveBlockedNumber(ctx context.Context, sym string, input 
 	return res, nil
 }
 
-// GetSender returns the sessionId (phoneNumber)
+// GetSender returns the sessionId (phoneNumber).
 func (h *Handlers) GetSender(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 
@@ -1264,7 +1288,7 @@ func (h *Handlers) GetSender(ctx context.Context, sym string, input []byte) (res
 	return res, nil
 }
 
-// GetAmount retrieves the amount from teh Gdbm Db
+// GetAmount retrieves the amount from teh Gdbm Db.
 func (h *Handlers) GetAmount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 
@@ -1288,7 +1312,7 @@ func (h *Handlers) GetAmount(ctx context.Context, sym string, input []byte) (res
 	return res, nil
 }
 
-// InitiateTransaction calls the TokenTransfer and returns a confirmation based on the result
+// InitiateTransaction calls the TokenTransfer and returns a confirmation based on the result.
 func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	var err error
@@ -1338,6 +1362,8 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 	return res, nil
 }
 
+// GetCurrentProfileInfo retrieves specific profile fields based on the current state of the USSD session.
+// Uses flag management system to track profile field status and handle menu navigation.
 func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	var profileInfo []byte
@@ -1357,6 +1383,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
+	// Extract the field name from the state machine position.
 	sm, _ := h.st.Where()
 	parts := strings.SplitN(sm, "_", 2)
 	filename := parts[1]
@@ -1449,6 +1476,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 	return res, nil
 }
 
+// GetProfileInfo provides a comprehensive view of a user's profile.
 func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	var defaultValue string
@@ -1517,7 +1545,7 @@ func (h *Handlers) GetProfileInfo(ctx context.Context, sym string, input []byte)
 }
 
 // SetDefaultVoucher retrieves the current vouchers
-// and sets the first as the default voucher, if no active voucher is set
+// and sets the first as the default voucher, if no active voucher is set.
 func (h *Handlers) SetDefaultVoucher(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	var err error
@@ -1602,7 +1630,7 @@ func (h *Handlers) SetDefaultVoucher(ctx context.Context, sym string, input []by
 }
 
 // CheckVouchers retrieves the token holdings from the API using the "PublicKey" and stores
-// them to gdbm
+// them to gdbm.
 func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	sessionId, ok := ctx.Value("SessionId").(string)
@@ -1674,7 +1702,7 @@ func (h *Handlers) CheckVouchers(ctx context.Context, sym string, input []byte) 
 	return res, nil
 }
 
-// GetVoucherList fetches the list of vouchers and formats them
+// GetVoucherList fetches the list of vouchers and formats them.
 func (h *Handlers) GetVoucherList(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 
@@ -1693,7 +1721,7 @@ func (h *Handlers) GetVoucherList(ctx context.Context, sym string, input []byte)
 }
 
 // ViewVoucher retrieves the token holding and balance from the subprefixDB
-// and displays it to the user for them to select it
+// and displays it to the user for them to select it.
 func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	sessionId, ok := ctx.Value("SessionId").(string)
@@ -1734,7 +1762,7 @@ func (h *Handlers) ViewVoucher(ctx context.Context, sym string, input []byte) (r
 	return res, nil
 }
 
-// SetVoucher retrieves the temp voucher data and sets it as the active data
+// SetVoucher retrieves the temp voucher data and sets it as the active data.
 func (h *Handlers) SetVoucher(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 
@@ -1760,7 +1788,7 @@ func (h *Handlers) SetVoucher(ctx context.Context, sym string, input []byte) (re
 	return res, nil
 }
 
-// GetVoucherDetails retrieves the voucher details
+// GetVoucherDetails retrieves the voucher details.
 func (h *Handlers) GetVoucherDetails(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	store := h.userdataStore
@@ -1792,7 +1820,7 @@ func (h *Handlers) GetVoucherDetails(ctx context.Context, sym string, input []by
 	return res, nil
 }
 
-// CheckTransactions retrieves the transactions from the API using the "PublicKey" and stores to prefixDb
+// CheckTransactions retrieves the transactions from the API using the "PublicKey" and stores to prefixDb.
 func (h *Handlers) CheckTransactions(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	sessionId, ok := ctx.Value("SessionId").(string)
@@ -1850,7 +1878,7 @@ func (h *Handlers) CheckTransactions(ctx context.Context, sym string, input []by
 	return res, nil
 }
 
-// GetTransactionsList reads the list of transactions from the db and formats them
+// GetTransactionsList fetches the list of transactions and formats them.
 func (h *Handlers) GetTransactionsList(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	sessionId, ok := ctx.Value("SessionId").(string)
@@ -1916,7 +1944,7 @@ func (h *Handlers) GetTransactionsList(ctx context.Context, sym string, input []
 }
 
 // ViewTransactionStatement retrieves the transaction statement
-// and displays it to the user
+// and displays it to the user.
 func (h *Handlers) ViewTransactionStatement(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	sessionId, ok := ctx.Value("SessionId").(string)
@@ -1964,6 +1992,7 @@ func (h *Handlers) ViewTransactionStatement(ctx context.Context, sym string, inp
 	return res, nil
 }
 
+// handles bulk updates of profile information.
 func (h *Handlers) insertProfileItems(ctx context.Context, sessionId string, res *resource.Result) error {
 	var err error
 	store := h.userdataStore
@@ -2001,7 +2030,7 @@ func (h *Handlers) insertProfileItems(ctx context.Context, sessionId string, res
 	return nil
 }
 
-// UpdateAllProfileItems  is used to persist all the  new profile information and setup  the required profile flags
+// UpdateAllProfileItems  is used to persist all the  new profile information and setup  the required profile flags.
 func (h *Handlers) UpdateAllProfileItems(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	sessionId, ok := ctx.Value("SessionId").(string)

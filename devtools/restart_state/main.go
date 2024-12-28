@@ -53,25 +53,24 @@ func main() {
 		os.Exit(1)
 	}
 
-	// initialize the persister
-
-	// get the state
-
-	// restart the state
-
-	// persist the state
-
-	// exit
-
 	st := pe.GetState()
 
 	if st == nil {
 		logg.ErrorCtxf(ctx, "state fail in devtool", "state", st)
-		fmt.Errorf("cannot get state")
+		fmt.Println("cannot get state")
 		os.Exit(1)
 	}
 
-	st.Restart()
+	fmt.Println("The state:", st)
 
-	os.Exit(1)
+	// set empty Code to allow the menu to run from the top
+	st.Code = []byte{}
+
+	err = pe.Save(sessionId)
+	if err != nil {
+		logg.ErrorCtxf(ctx, "failed to persist the state and cache", "error", err)
+		os.Exit(1)
+	}
+
+	os.Exit(0)
 }

@@ -11,6 +11,7 @@ import (
 	"git.grassecon.net/urdt/ussd/initializers"
 	"git.grassecon.net/urdt/ussd/internal/storage"
 	"git.grassecon.net/urdt/ussd/debug"
+	"git.defalsify.org/vise.git/db"
 	"git.defalsify.org/vise.git/logging"
 )
 
@@ -47,13 +48,14 @@ func main() {
 
 	store, err := menuStorageService.GetUserdataDb(ctx)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
+		fmt.Fprintf(os.Stderr, "get userdata db: %v\n", err.Error())
 		os.Exit(1)
 	}
+	store.SetPrefix(db.DATATYPE_USERDATA)
 
 	d, err := store.Dump(ctx, []byte(sessionId))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
+		fmt.Fprintf(os.Stderr, "store dump fail: %v\n", err.Error())
 		os.Exit(1)
 	}
 

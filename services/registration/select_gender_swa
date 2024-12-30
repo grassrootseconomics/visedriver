@@ -1,2 +1,2 @@
-Jinsia ya sasa {{.get_current_profile_info}}
+Jinsia ya sasa: {{.get_current_profile_info}}
 Chagua jinsia

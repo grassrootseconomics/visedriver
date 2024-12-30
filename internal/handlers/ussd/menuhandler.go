@@ -1367,6 +1367,7 @@ func (h *Handlers) InitiateTransaction(ctx context.Context, sym string, input []
 func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
 	var profileInfo []byte
+	var defaultValue string
 	var err error
 
 	flag_firstname_set, _ := h.flagManager.GetFlag("flag_firstname_set")
@@ -1383,7 +1384,18 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
-	// Extract the field name from the state machine position.
+	language, ok := ctx.Value("Language").(lang.Language)
+	if !ok {
+		return res, fmt.Errorf("value for 'Language' is not of type lang.Language")
+	}
+	code := language.Code
+	if code == "swa" {
+		defaultValue = "Haipo"
+	} else {
+		defaultValue = "Not Provided"
+	}
+
+
 	sm, _ := h.st.Where()
 	parts := strings.SplitN(sm, "_", 2)
 	filename := parts[1]
@@ -1400,7 +1412,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_FIRST_NAME)
 		if err != nil {
 			if db.IsNotFound(err) {
-				res.Content = "Not provided"
+				res.Content = defaultValue
 				break
 			}
 			logg.ErrorCtxf(ctx, "Failed to read first name entry with", "key", "error", common.DATA_FIRST_NAME, err)
@@ -1412,7 +1424,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_FAMILY_NAME)
 		if err != nil {
 			if db.IsNotFound(err) {
-				res.Content = "Not provided"
+				res.Content = defaultValue
 				break
 			}
 			logg.ErrorCtxf(ctx, "Failed to read family name entry with", "key", "error", common.DATA_FAMILY_NAME, err)
@@ -1425,7 +1437,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_GENDER)
 		if err != nil {
 			if db.IsNotFound(err) {
-				res.Content = "Not provided"
+				res.Content = defaultValue
 				break
 			}
 			logg.ErrorCtxf(ctx, "Failed to read gender entry with", "key", "error", common.DATA_GENDER, err)
@@ -1437,7 +1449,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_YOB)
 		if err != nil {
 			if db.IsNotFound(err) {
-				res.Content = "Not provided"
+				res.Content = defaultValue
 				break
 			}
 			logg.ErrorCtxf(ctx, "Failed to read year of birth(yob) entry with", "key", "error", common.DATA_YOB, err)
@@ -1449,7 +1461,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_LOCATION)
 		if err != nil {
 			if db.IsNotFound(err) {
-				res.Content = "Not provided"
+				res.Content = defaultValue
 				break
 			}
 			logg.ErrorCtxf(ctx, "Failed to read location entry with", "key", "error", common.DATA_LOCATION, err)
@@ -1461,7 +1473,7 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 		profileInfo, err = store.ReadEntry(ctx, sessionId, common.DATA_OFFERINGS)
 		if err != nil {
 			if db.IsNotFound(err) {
-				res.Content = "Not provided"
+				res.Content = defaultValue
 				break
 			}
 			logg.ErrorCtxf(ctx, "Failed to read offerings entry with", "key", "error", common.DATA_OFFERINGS, err)

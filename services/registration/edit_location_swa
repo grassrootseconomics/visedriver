@@ -1,2 +1,2 @@
-Eneo la sasa {{.get_current_profile_info}}
+Eneo la sasa: {{.get_current_profile_info}}
 Weka eneo:

@@ -298,9 +298,10 @@ func TestMainMenuSend(t *testing.T) {
 	ctx := context.Background()
 	sessions := testData
 	for _, session := range sessions {
-		groups := driver.FilterGroupsByName(session.Groups, "send_with_invalid_inputs")
+		groups := driver.FilterGroupsByName(session.Groups, "send_with_invite")
 		for _, group := range groups {
-			for _, step := range group.Steps {
+			for index, step := range group.Steps {
+				t.Logf("step %v with input %v", index, step.Input)
 				cont, err := en.Exec(ctx, []byte(step.Input))
 				if err != nil {
 					t.Fatalf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)

@@ -11,3 +11,4 @@ INCMP _ 0
 INCMP set_male 1
 INCMP set_female 2
 INCMP set_unspecified 3
+INCMP . *

@@ -69,7 +69,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, err.Error())
 			os.Exit(1)
 		}
-		fmt.Printf("%vValue: %v\n\n", o, v)
+		fmt.Printf("%vValue: %v\n\n", o, string(v))
 	}
 
 	err = store.Close()

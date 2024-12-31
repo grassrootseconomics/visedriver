@@ -141,9 +141,6 @@ func TestInit(t *testing.T) {
 
 	flag_admin_privilege, _ := fm.GetFlag("flag_admin_privilege")
 
-	nonAdminExpectedResult := resource.Result{}
-	nonAdminExpectedResult.FlagReset = []uint32{flag_admin_privilege}
-
 	tests := []struct {
 		name           string
 		setup          func() (*Handlers, context.Context)

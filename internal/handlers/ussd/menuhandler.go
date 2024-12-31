@@ -129,6 +129,11 @@ func (h *Handlers) Init(ctx context.Context, sym string, input []byte) (resource
 	h.st = h.pe.GetState()
 	h.ca = h.pe.GetMemory()
 
+	if len(input) == 0 {
+		// move to the top node
+		h.st.Code = []byte{}
+	}
+
 	sessionId, _ := ctx.Value("SessionId").(string)
 	flag_admin_privilege, _ := h.flagManager.GetFlag("flag_admin_privilege")
 

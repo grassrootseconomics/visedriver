@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"git.defalsify.org/vise.git/cache"
 	"git.defalsify.org/vise.git/lang"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
@@ -15,6 +16,7 @@ import (
 	"git.grassecon.net/urdt/ussd/internal/storage"
 	"git.grassecon.net/urdt/ussd/internal/testutil/mocks"
 	"git.grassecon.net/urdt/ussd/internal/testutil/testservice"
+	"git.grassecon.net/urdt/ussd/internal/utils"
 	"git.grassecon.net/urdt/ussd/models"
 
 	"git.grassecon.net/urdt/ussd/common"
@@ -117,6 +119,102 @@ func TestNewHandlers(t *testing.T) {
 			t.Fatalf("expected error '%s', got '%v'", expectedError, err)
 		}
 	})
+}
+
+func TestInit(t *testing.T) {
+	sessionId := "session123"
+	ctx, store := InitializeTestStore(t)
+	ctx = context.WithValue(ctx, "SessionId", sessionId)
+
+	fm, err := NewFlagManager(flagsPath)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	adminstore, err := utils.NewAdminStore(ctx, "admin_numbers")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	st := state.NewState(128)
+	ca := cache.NewCache()
+
+	flag_admin_privilege, _ := fm.GetFlag("flag_admin_privilege")
+
+	tests := []struct {
+		name           string
+		setup          func() (*Handlers, context.Context)
+		input          []byte
+		expectedResult resource.Result
+	}{
+		{
+			name: "Handler not ready",
+			setup: func() (*Handlers, context.Context) {
+				return &Handlers{}, ctx
+			},
+			input:          []byte("1"),
+			expectedResult: resource.Result{},
+		},
+		{
+			name: "State and memory initialization",
+			setup: func() (*Handlers, context.Context) {
+				pe := persist.NewPersister(store).WithSession(sessionId).WithContent(st, ca)
+				h := &Handlers{
+					flagManager: fm.parser,
+					adminstore:  adminstore,
+					pe:          pe,
+				}
+				return h, context.WithValue(ctx, "SessionId", sessionId)
+			},
+			input: []byte("1"),
+			expectedResult: resource.Result{
+				FlagReset: []uint32{flag_admin_privilege},
+			},
+		},
+		{
+			name: "Non-admin session initialization",
+			setup: func() (*Handlers, context.Context) {
+				pe := persist.NewPersister(store).WithSession("0712345678").WithContent(st, ca)
+				h := &Handlers{
+					flagManager: fm.parser,
+					adminstore:  adminstore,
+					pe:          pe,
+				}
+				return h, context.WithValue(context.Background(), "SessionId", "0712345678")
+			},
+			input: []byte("1"),
+			expectedResult: resource.Result{
+				FlagReset: []uint32{flag_admin_privilege},
+			},
+		},
+		{
+			name: "Move to top node on empty input",
+			setup: func() (*Handlers, context.Context) {
+				pe := persist.NewPersister(store).WithSession(sessionId).WithContent(st, ca)
+				h := &Handlers{
+					flagManager: fm.parser,
+					adminstore:  adminstore,
+					pe:          pe,
+				}
+				st.Code = []byte("some pending bytecode")
+				return h, context.WithValue(ctx, "SessionId", sessionId)
+			},
+			input: []byte(""),
+			expectedResult: resource.Result{
+				FlagReset: []uint32{flag_admin_privilege},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h, testCtx := tt.setup()
+			res, err := h.Init(testCtx, "", tt.input)
+
+			assert.NoError(t, err, "Unexpected error occurred")
+			assert.Equal(t, res, tt.expectedResult, "Expected result should match actual result")
+		})
+	}
 }
 
 func TestCreateAccount(t *testing.T) {

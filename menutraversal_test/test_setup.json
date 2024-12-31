@@ -64,8 +64,8 @@
                         "expectedContent": "Enter recipient's phone number/address/alias:\n0:Back"
                     },
                     {
-                        "input": "000",
-                        "expectedContent": "000 is invalid, please try again:\n1:Retry\n9:Quit"
+                        "input": "0@0",
+                        "expectedContent": "0@0 is invalid, please try again:\n1:Retry\n9:Quit"
                     },
                     {
                         "input": "1",

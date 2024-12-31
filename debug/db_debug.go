@@ -11,13 +11,9 @@ import (
 func init() {
 	DebugCap |= 1
 	dbTypStr[db.DATATYPE_STATE] = "internal state"
-	dbTypStr[db.DATATYPE_USERDATA + 1 + common.DATA_ACCOUNT] = "account"
-	dbTypStr[db.DATATYPE_USERDATA + 1 + common.DATA_ACCOUNT_CREATED] = "account created"
 	dbTypStr[db.DATATYPE_USERDATA + 1 + common.DATA_TRACKING_ID] = "tracking id"
 	dbTypStr[db.DATATYPE_USERDATA + 1 + common.DATA_PUBLIC_KEY] = "public key"
-	dbTypStr[db.DATATYPE_USERDATA + 1 + common.DATA_CUSTODIAL_ID] = "custodial id"
 	dbTypStr[db.DATATYPE_USERDATA + 1 + common.DATA_ACCOUNT_PIN] = "account pin"
-	dbTypStr[db.DATATYPE_USERDATA + 1 + common.DATA_ACCOUNT_STATUS] = "account status"
 	dbTypStr[db.DATATYPE_USERDATA + 1 + common.DATA_FIRST_NAME] = "first name"
 	dbTypStr[db.DATATYPE_USERDATA + 1 + common.DATA_FAMILY_NAME] = "family name"
 	dbTypStr[db.DATATYPE_USERDATA + 1 + common.DATA_YOB] = "year of birth"

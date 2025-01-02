@@ -9,6 +9,7 @@ import (
 	"git.defalsify.org/vise.git/db"
 	fsdb "git.defalsify.org/vise.git/db/fs"
 	"git.defalsify.org/vise.git/db/postgres"
+	"git.defalsify.org/vise.git/lang"
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
@@ -29,6 +30,7 @@ type StorageService interface {
 type MenuStorageService struct {
 	dbDir         string
 	resourceDir   string
+	poResource    resource.Resource
 	resourceStore db.Db
 	stateStore    db.Db
 	userDataStore db.Db
@@ -55,6 +57,22 @@ func NewMenuStorageService(dbDir string, resourceDir string) *MenuStorageService
 		dbDir:       dbDir,
 		resourceDir: resourceDir,
 	}
+}
+
+func (ms *MenuStorageService) WithGettext(path string, lns []lang.Language) *MenuStorageService {
+	ln := lang.Language{
+		Code: "xxx",
+		Name: "Translation key",
+	}
+	rs := resource.NewPoResource(ln, path)
+
+	for _, ln = range(lns) {
+		rs = rs.WithLanguage(ln)
+	}
+
+	ms.poResource = rs
+
+	return ms
 }
 
 func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.Db, fileName string) (db.Db, error) {
@@ -119,6 +137,10 @@ func (ms *MenuStorageService) GetResource(ctx context.Context) (resource.Resourc
 		return nil, err
 	}
 	rfs := resource.NewDbResource(ms.resourceStore)
+	if ms.poResource != nil {
+		rfs.WithMenuGetter(ms.poResource.GetMenu)
+		rfs.WithTemplateGetter(ms.poResource.GetTemplate)
+	}
 	return rfs, nil
 }
 

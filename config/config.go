@@ -19,6 +19,10 @@ const (
 )
 
 var (
+	defaultLanguage		   = "eng"
+)
+
+var (
 	custodialURLBase string
 	dataURLBase      string
 	BearerToken      string
@@ -34,6 +38,7 @@ var (
 	VoucherTransfersURL string
 	VoucherDataURL      string
 	CheckAliasURL       string
+	DefaultLanguage	    string
 )
 
 func setBase() error {
@@ -51,6 +56,8 @@ func setBase() error {
 	if err != nil {
 		return err
 	}
+	
+	defaultLanguage = initializers.GetEnv("DEFAULT_LANGUAGE", defaultLanguage)
 	return nil
 }
 
@@ -69,6 +76,7 @@ func LoadConfig() error {
 	VoucherTransfersURL, _ = url.JoinPath(dataURLBase, voucherTransfersPathPrefix)
 	VoucherDataURL, _ = url.JoinPath(dataURLBase, voucherDataPathPrefix)
 	CheckAliasURL, _ = url.JoinPath(dataURLBase, AliasPrefix)
+	DefaultLanguage = defaultLanguage
 
 	return nil
 }

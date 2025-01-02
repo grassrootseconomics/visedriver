@@ -1745,7 +1745,7 @@ func TestGetProfile(t *testing.T) {
 			result: resource.Result{
 				Content: fmt.Sprintf(
 					"Name: %s\nGender: %s\nAge: %s\nLocation: %s\nYou provide: %s\n",
-					"John Doee", "Male", "48", "Kilifi", "Bananas",
+					"John Doee", "Male", "49", "Kilifi", "Bananas",
 				),
 			},
 		},
@@ -1757,7 +1757,7 @@ func TestGetProfile(t *testing.T) {
 			result: resource.Result{
 				Content: fmt.Sprintf(
 					"Jina: %s\nJinsia: %s\nUmri: %s\nEneo: %s\nUnauza: %s\n",
-					"John Doee", "Male", "48", "Kilifi", "Bananas",
+					"John Doee", "Male", "49", "Kilifi", "Bananas",
 				),
 			},
 		},
@@ -1769,7 +1769,7 @@ func TestGetProfile(t *testing.T) {
 			result: resource.Result{
 				Content: fmt.Sprintf(
 					"Name: %s\nGender: %s\nAge: %s\nLocation: %s\nYou provide: %s\n",
-					"John Doee", "Male", "48", "Kilifi", "Bananas",
+					"John Doee", "Male", "49", "Kilifi", "Bananas",
 				),
 			},
 		},

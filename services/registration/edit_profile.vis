@@ -20,3 +20,4 @@ INCMP edit_yob 4
 INCMP edit_location 5
 INCMP edit_offerings 6
 INCMP view_profile 7
+INCMP . * 

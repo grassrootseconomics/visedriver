@@ -9,3 +9,4 @@ MOUT quit 9
 HALT
 INCMP _ 0
 INCMP quit 9
+INCMP . * 

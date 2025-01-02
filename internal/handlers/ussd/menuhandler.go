@@ -725,7 +725,7 @@ func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (res
 		return res, err
 	}
 	if len(input) == 4 {
-		if bytes.Equal(input, AccountPin) {
+		if common.VerifyPIN(string(AccountPin), string(input)) {
 			if h.st.MatchFlag(flag_account_authorized, false) {
 				res.FlagReset = append(res.FlagReset, flag_incorrect_pin)
 				res.FlagSet = append(res.FlagSet, flag_allow_update, flag_account_authorized)
@@ -1402,7 +1402,6 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 	} else {
 		defaultValue = "Not Provided"
 	}
-
 
 	sm, _ := h.st.Where()
 	parts := strings.SplitN(sm, "_", 2)

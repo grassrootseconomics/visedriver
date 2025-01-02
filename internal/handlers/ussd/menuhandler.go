@@ -356,11 +356,19 @@ func (h *Handlers) ConfirmPinChange(ctx context.Context, sym string, input []byt
 		res.FlagReset = append(res.FlagReset, flag_pin_mismatch)
 	} else {
 		res.FlagSet = append(res.FlagSet, flag_pin_mismatch)
+		return res, nil
 	}
-	// If matched, save the confirmed PIN as the new account PIN
-	err = store.WriteEntry(ctx, sessionId, common.DATA_ACCOUNT_PIN, []byte(temporaryPin))
+
+	// Hash the PIN
+	hashedPIN, err := common.HashPIN(string(temporaryPin))
 	if err != nil {
-		logg.ErrorCtxf(ctx, "failed to write temporaryPin entry with", "key", common.DATA_ACCOUNT_PIN, "value", temporaryPin, "error", err)
+		logg.ErrorCtxf(ctx, "failed to hash temporaryPin", "error", err)
+	}
+
+	// save the hashed PIN as the new account PIN
+	err = store.WriteEntry(ctx, sessionId, common.DATA_ACCOUNT_PIN, []byte(hashedPIN))
+	if err != nil {
+		logg.ErrorCtxf(ctx, "failed to write DATA_ACCOUNT_PIN entry with", "key", common.DATA_ACCOUNT_PIN, "hashedPIN value", hashedPIN, "error", err)
 		return res, err
 	}
 	return res, nil
@@ -392,11 +400,18 @@ func (h *Handlers) VerifyCreatePin(ctx context.Context, sym string, input []byte
 		res.FlagSet = append(res.FlagSet, flag_pin_set)
 	} else {
 		res.FlagSet = []uint32{flag_pin_mismatch}
+		return res, nil
 	}
 
-	err = store.WriteEntry(ctx, sessionId, common.DATA_ACCOUNT_PIN, []byte(temporaryPin))
+	// Hash the PIN
+	hashedPIN, err := common.HashPIN(string(temporaryPin))
 	if err != nil {
-		logg.ErrorCtxf(ctx, "failed to write temporaryPin entry with", "key", common.DATA_ACCOUNT_PIN, "value", temporaryPin, "error", err)
+		logg.ErrorCtxf(ctx, "failed to hash temporaryPin", "error", err)
+	}
+
+	err = store.WriteEntry(ctx, sessionId, common.DATA_ACCOUNT_PIN, []byte(hashedPIN))
+	if err != nil {
+		logg.ErrorCtxf(ctx, "failed to write DATA_ACCOUNT_PIN entry with", "key", common.DATA_ACCOUNT_PIN, "value", hashedPIN, "error", err)
 		return res, err
 	}
 

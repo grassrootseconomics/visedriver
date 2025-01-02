@@ -1047,7 +1047,14 @@ func TestAuthorize(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err = store.WriteEntry(ctx, sessionId, common.DATA_ACCOUNT_PIN, []byte(accountPIN))
+			// Hash the PIN
+			hashedPIN, err := common.HashPIN(accountPIN)
+			if err != nil {
+				logg.ErrorCtxf(ctx, "failed to hash temporaryPin", "error", err)
+				t.Fatal(err)
+			}
+
+			err = store.WriteEntry(ctx, sessionId, common.DATA_ACCOUNT_PIN, []byte(hashedPIN))
 			if err != nil {
 				t.Fatal(err)
 			}

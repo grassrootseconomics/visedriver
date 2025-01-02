@@ -29,6 +29,7 @@ func init() {
 	initializers.LoadEnvVariables()
 }
 
+// TODO: external script automatically generate language handler list from select language vise code OR consider dynamic menu generation script possibility
 func main() {
 	config.LoadConfig()
 

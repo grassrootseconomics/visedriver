@@ -7,3 +7,4 @@ HALT
 INCMP _ 0
 INCMP my_balance 1
 INCMP community_balance 2
+INCMP . * 

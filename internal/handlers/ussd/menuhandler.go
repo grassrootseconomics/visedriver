@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"path"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -33,17 +32,6 @@ var (
 	scriptDir      = path.Join("services", "registration")
 	translationDir = path.Join(scriptDir, "locale")
 )
-
-// Define the regex patterns as constants
-const (
-	pinPattern = `^\d{4}$`
-)
-
-// checks whether the given input is a 4 digit number
-func isValidPIN(pin string) bool {
-	match, _ := regexp.MatchString(pinPattern, pin)
-	return match
-}
 
 // FlagManager handles centralized flag management
 type FlagManager struct {
@@ -281,7 +269,7 @@ func (h *Handlers) VerifyNewPin(ctx context.Context, sym string, input []byte) (
 	flag_valid_pin, _ := h.flagManager.GetFlag("flag_valid_pin")
 	pinInput := string(input)
 	// Validate that the PIN is a 4-digit number.
-	if isValidPIN(pinInput) {
+	if common.IsValidPIN(pinInput) {
 		res.FlagSet = append(res.FlagSet, flag_valid_pin)
 	} else {
 		res.FlagReset = append(res.FlagReset, flag_valid_pin)
@@ -306,7 +294,7 @@ func (h *Handlers) SaveTemporaryPin(ctx context.Context, sym string, input []byt
 	accountPIN := string(input)
 
 	// Validate that the PIN is a 4-digit number.
-	if !isValidPIN(accountPIN) {
+	if !common.IsValidPIN(accountPIN) {
 		res.FlagSet = append(res.FlagSet, flag_incorrect_pin)
 		return res, nil
 	}

@@ -363,6 +363,7 @@ func (h *Handlers) ConfirmPinChange(ctx context.Context, sym string, input []byt
 	hashedPIN, err := common.HashPIN(string(temporaryPin))
 	if err != nil {
 		logg.ErrorCtxf(ctx, "failed to hash temporaryPin", "error", err)
+		return res, err
 	}
 
 	// save the hashed PIN as the new account PIN
@@ -407,6 +408,7 @@ func (h *Handlers) VerifyCreatePin(ctx context.Context, sym string, input []byte
 	hashedPIN, err := common.HashPIN(string(temporaryPin))
 	if err != nil {
 		logg.ErrorCtxf(ctx, "failed to hash temporaryPin", "error", err)
+		return res, err
 	}
 
 	err = store.WriteEntry(ctx, sessionId, common.DATA_ACCOUNT_PIN, []byte(hashedPIN))
@@ -952,7 +954,15 @@ func (h *Handlers) ResetOthersPin(ctx context.Context, sym string, input []byte)
 		logg.ErrorCtxf(ctx, "failed to read temporaryPin entry with", "key", common.DATA_TEMPORARY_VALUE, "error", err)
 		return res, err
 	}
-	err = store.WriteEntry(ctx, string(blockedPhonenumber), common.DATA_ACCOUNT_PIN, []byte(temporaryPin))
+
+	// Hash the PIN
+	hashedPIN, err := common.HashPIN(string(temporaryPin))
+	if err != nil {
+		logg.ErrorCtxf(ctx, "failed to hash temporaryPin", "error", err)
+		return res, err
+	}
+
+	err = store.WriteEntry(ctx, string(blockedPhonenumber), common.DATA_ACCOUNT_PIN, []byte(hashedPIN))
 	if err != nil {
 		return res, nil
 	}

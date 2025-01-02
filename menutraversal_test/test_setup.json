@@ -7,14 +7,14 @@
                 "steps": [
                     {
                         "input": "",
-                        "expectedContent": "Welcome to Sarafu Network\nPlease select a language\n0:English\n1:Kiswahili"
+                        "expectedContent": "Welcome to Sarafu Network\nPlease select a language\n1:English\n2:Kiswahili"
                     },
                     {
-                        "input": "0",
-                        "expectedContent": "Do you agree to terms and conditions?\nhttps://grassecon.org/pages/terms-and-conditions\n\n0:Yes\n1:No"
+                        "input": "1",
+                        "expectedContent": "Do you agree to terms and conditions?\nhttps://grassecon.org/pages/terms-and-conditions\n\n1:Yes\n2:No"
                     },
                     {
-                        "input": "0",
+                        "input": "1",
                         "expectedContent": "Please enter a new four number PIN for your account:\n0:Exit"
                     },
                     {
@@ -40,14 +40,14 @@
                 "steps": [
                     {
                         "input": "",
-                        "expectedContent": "Welcome to Sarafu Network\nPlease select a language\n0:English\n1:Kiswahili"
-                    },
-                    {
-                        "input": "0",
-                        "expectedContent": "Do you agree to terms and conditions?\nhttps://grassecon.org/pages/terms-and-conditions\n\n0:Yes\n1:No"
+                        "expectedContent": "Welcome to Sarafu Network\nPlease select a language\n1:English\n2:Kiswahili"
                     },
                     {
                         "input": "1",
+                        "expectedContent": "Do you agree to terms and conditions?\nhttps://grassecon.org/pages/terms-and-conditions\n\n1:Yes\n2:No"
+                    },
+                    {
+                        "input": "2",
                         "expectedContent": "Thank you for using Sarafu. Goodbye!"
                     }
                 ]

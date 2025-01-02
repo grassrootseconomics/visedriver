@@ -59,14 +59,20 @@ func NewMenuStorageService(dbDir string, resourceDir string) *MenuStorageService
 	}
 }
 
+// WithGettext triggers use of gettext for translation of templates and menus.
+//
+// The first language in `lns` will be used as default language, to resolve node keys to 
+// language strings.
+//
+// If `lns` is an empty array, gettext will not be used.
 func (ms *MenuStorageService) WithGettext(path string, lns []lang.Language) *MenuStorageService {
-	ln := lang.Language{
-		Code: "xxx",
-		Name: "Translation key",
+	if len(lns) == 0 {
+		logg.Warnf("Gettext requested but no languages supplied")
+		return ms
 	}
-	rs := resource.NewPoResource(ln, path)
+	rs := resource.NewPoResource(lns[0], path)
 
-	for _, ln = range(lns) {
+	for _, ln := range(lns) {
 		rs = rs.WithLanguage(ln)
 	}
 
@@ -138,6 +144,7 @@ func (ms *MenuStorageService) GetResource(ctx context.Context) (resource.Resourc
 	}
 	rfs := resource.NewDbResource(ms.resourceStore)
 	if ms.poResource != nil {
+		logg.InfoCtxf(ctx, "using poresource for menu and template")
 		rfs.WithMenuGetter(ms.poResource.GetMenu)
 		rfs.WithTemplateGetter(ms.poResource.GetTemplate)
 	}

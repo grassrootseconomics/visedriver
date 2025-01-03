@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"path"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -33,17 +32,6 @@ var (
 	scriptDir      = path.Join("services", "registration")
 	translationDir = path.Join(scriptDir, "locale")
 )
-
-// Define the regex patterns as constants
-const (
-	pinPattern = `^\d{4}$`
-)
-
-// checks whether the given input is a 4 digit number
-func isValidPIN(pin string) bool {
-	match, _ := regexp.MatchString(pinPattern, pin)
-	return match
-}
 
 // FlagManager handles centralized flag management
 type FlagManager struct {
@@ -281,7 +269,7 @@ func (h *Handlers) VerifyNewPin(ctx context.Context, sym string, input []byte) (
 	flag_valid_pin, _ := h.flagManager.GetFlag("flag_valid_pin")
 	pinInput := string(input)
 	// Validate that the PIN is a 4-digit number.
-	if isValidPIN(pinInput) {
+	if common.IsValidPIN(pinInput) {
 		res.FlagSet = append(res.FlagSet, flag_valid_pin)
 	} else {
 		res.FlagReset = append(res.FlagReset, flag_valid_pin)
@@ -306,7 +294,7 @@ func (h *Handlers) SaveTemporaryPin(ctx context.Context, sym string, input []byt
 	accountPIN := string(input)
 
 	// Validate that the PIN is a 4-digit number.
-	if !isValidPIN(accountPIN) {
+	if !common.IsValidPIN(accountPIN) {
 		res.FlagSet = append(res.FlagSet, flag_incorrect_pin)
 		return res, nil
 	}
@@ -368,11 +356,20 @@ func (h *Handlers) ConfirmPinChange(ctx context.Context, sym string, input []byt
 		res.FlagReset = append(res.FlagReset, flag_pin_mismatch)
 	} else {
 		res.FlagSet = append(res.FlagSet, flag_pin_mismatch)
+		return res, nil
 	}
-	// If matched, save the confirmed PIN as the new account PIN
-	err = store.WriteEntry(ctx, sessionId, common.DATA_ACCOUNT_PIN, []byte(temporaryPin))
+
+	// Hash the PIN
+	hashedPIN, err := common.HashPIN(string(temporaryPin))
 	if err != nil {
-		logg.ErrorCtxf(ctx, "failed to write temporaryPin entry with", "key", common.DATA_ACCOUNT_PIN, "value", temporaryPin, "error", err)
+		logg.ErrorCtxf(ctx, "failed to hash temporaryPin", "error", err)
+		return res, err
+	}
+
+	// save the hashed PIN as the new account PIN
+	err = store.WriteEntry(ctx, sessionId, common.DATA_ACCOUNT_PIN, []byte(hashedPIN))
+	if err != nil {
+		logg.ErrorCtxf(ctx, "failed to write DATA_ACCOUNT_PIN entry with", "key", common.DATA_ACCOUNT_PIN, "hashedPIN value", hashedPIN, "error", err)
 		return res, err
 	}
 	return res, nil
@@ -404,11 +401,19 @@ func (h *Handlers) VerifyCreatePin(ctx context.Context, sym string, input []byte
 		res.FlagSet = append(res.FlagSet, flag_pin_set)
 	} else {
 		res.FlagSet = []uint32{flag_pin_mismatch}
+		return res, nil
 	}
 
-	err = store.WriteEntry(ctx, sessionId, common.DATA_ACCOUNT_PIN, []byte(temporaryPin))
+	// Hash the PIN
+	hashedPIN, err := common.HashPIN(string(temporaryPin))
 	if err != nil {
-		logg.ErrorCtxf(ctx, "failed to write temporaryPin entry with", "key", common.DATA_ACCOUNT_PIN, "value", temporaryPin, "error", err)
+		logg.ErrorCtxf(ctx, "failed to hash temporaryPin", "error", err)
+		return res, err
+	}
+
+	err = store.WriteEntry(ctx, sessionId, common.DATA_ACCOUNT_PIN, []byte(hashedPIN))
+	if err != nil {
+		logg.ErrorCtxf(ctx, "failed to write DATA_ACCOUNT_PIN entry with", "key", common.DATA_ACCOUNT_PIN, "value", hashedPIN, "error", err)
 		return res, err
 	}
 
@@ -722,7 +727,7 @@ func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (res
 		return res, err
 	}
 	if len(input) == 4 {
-		if bytes.Equal(input, AccountPin) {
+		if common.VerifyPIN(string(AccountPin), string(input)) {
 			if h.st.MatchFlag(flag_account_authorized, false) {
 				res.FlagReset = append(res.FlagReset, flag_incorrect_pin)
 				res.FlagSet = append(res.FlagSet, flag_allow_update, flag_account_authorized)
@@ -949,7 +954,15 @@ func (h *Handlers) ResetOthersPin(ctx context.Context, sym string, input []byte)
 		logg.ErrorCtxf(ctx, "failed to read temporaryPin entry with", "key", common.DATA_TEMPORARY_VALUE, "error", err)
 		return res, err
 	}
-	err = store.WriteEntry(ctx, string(blockedPhonenumber), common.DATA_ACCOUNT_PIN, []byte(temporaryPin))
+
+	// Hash the PIN
+	hashedPIN, err := common.HashPIN(string(temporaryPin))
+	if err != nil {
+		logg.ErrorCtxf(ctx, "failed to hash temporaryPin", "error", err)
+		return res, err
+	}
+
+	err = store.WriteEntry(ctx, string(blockedPhonenumber), common.DATA_ACCOUNT_PIN, []byte(hashedPIN))
 	if err != nil {
 		return res, nil
 	}
@@ -1399,7 +1412,6 @@ func (h *Handlers) GetCurrentProfileInfo(ctx context.Context, sym string, input 
 	} else {
 		defaultValue = "Not Provided"
 	}
-
 
 	sm, _ := h.st.Where()
 	parts := strings.SplitN(sm, "_", 2)

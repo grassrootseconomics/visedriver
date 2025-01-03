@@ -25,6 +25,15 @@ func init() {
 }
 
 
+func formatItem(k []byte, v []byte) (string, error) {
+	o, err := debug.FromKey(k)
+	if err != nil {
+		return "", err
+	}
+	s := fmt.Sprintf("%vValue: %v\n\n", o, string(v))
+	return s, nil
+}
+
 func main() {
 	config.LoadConfig()
 
@@ -64,12 +73,12 @@ func main() {
 		if k == nil {
 			break
 		}
-		o, err := debug.FromKey(k)
+		r, err := formatItem(k, v)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, err.Error())
+			fmt.Fprintf(os.Stderr, "format db item error: %v", err)
 			os.Exit(1)
 		}
-		fmt.Printf("%vValue: %v\n\n", o, string(v))
+		fmt.Printf(r)
 	}
 
 	err = store.Close()

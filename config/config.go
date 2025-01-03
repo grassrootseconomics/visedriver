@@ -2,6 +2,7 @@ package config
 
 import (
 	"net/url"
+	"strings"
 
 	"git.grassecon.net/urdt/ussd/initializers"
 )
@@ -20,6 +21,7 @@ const (
 
 var (
 	defaultLanguage		   = "eng"
+	languages []string
 )
 
 var (
@@ -39,7 +41,26 @@ var (
 	VoucherDataURL      string
 	CheckAliasURL       string
 	DefaultLanguage	    string
+	Languages	[]string
 )
+
+func setLanguage() error {
+	defaultLanguage = initializers.GetEnv("DEFAULT_LANGUAGE", defaultLanguage)
+	languages = strings.Split(initializers.GetEnv("LANGUAGES", defaultLanguage), ",")
+	haveDefaultLanguage := false
+	for i, v := range(languages) {
+		languages[i] = strings.ReplaceAll(v, " ", "")
+		if languages[i] == defaultLanguage {
+			haveDefaultLanguage = true
+		}
+	}
+
+	if !haveDefaultLanguage {
+		languages = append([]string{defaultLanguage}, languages...)
+	}
+
+	return nil
+}
 
 func setBase() error {
 	var err error
@@ -56,14 +77,16 @@ func setBase() error {
 	if err != nil {
 		return err
 	}
-	
-	defaultLanguage = initializers.GetEnv("DEFAULT_LANGUAGE", defaultLanguage)
 	return nil
 }
 
 // LoadConfig initializes the configuration values after environment variables are loaded.
 func LoadConfig() error {
 	err := setBase()
+	if err != nil {
+		return err
+	}
+	err = setLanguage()
 	if err != nil {
 		return err
 	}
@@ -77,6 +100,7 @@ func LoadConfig() error {
 	VoucherDataURL, _ = url.JoinPath(dataURLBase, voucherDataPathPrefix)
 	CheckAliasURL, _ = url.JoinPath(dataURLBase, AliasPrefix)
 	DefaultLanguage = defaultLanguage
+	Languages = languages
 
 	return nil
 }

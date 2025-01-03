@@ -43,7 +43,7 @@ func NewLocalHandlerService(ctx context.Context, fp string, debug bool, dbResour
 	if err != nil {
 		return nil, err
 	}
-	adminstore, err := utils.NewAdminStore(ctx, "./devtools/admin_numbers")
+	adminstore, err := utils.NewAdminStore(ctx, "admin_numbers")
 	if err != nil {
 		return nil, err
 	}

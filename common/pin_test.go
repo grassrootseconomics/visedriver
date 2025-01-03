@@ -114,7 +114,7 @@ func TestVerifyMigratedHashPin(t *testing.T) {
 		t.Run(tt.pin, func(t *testing.T) {
 			ok := VerifyPIN(tt.hash, tt.pin)
 			if !ok {
-				t.Errorf("VerifyPIN could not verify migrated PIN: %v", tt.pin, ok)
+				t.Errorf("VerifyPIN could not verify migrated PIN: %v", tt.pin)
 			}
 		})
 	}

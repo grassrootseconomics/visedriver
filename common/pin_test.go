@@ -99,6 +99,27 @@ func TestHashPIN(t *testing.T) {
 	}
 }
 
+func TestVerifyMigratedHashPin(t *testing.T) {
+	tests := []struct {
+		pin  string
+		hash string
+	}{
+		{
+			pin:  "1234",
+			hash: "$2b$08$dTvIGxCCysJtdvrSnaLStuylPoOS/ZLYYkxvTeR5QmTFY3TSvPQC6",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.pin, func(t *testing.T) {
+			ok := VerifyPIN(tt.hash, tt.pin)
+			if !ok {
+				t.Errorf("VerifyPIN could not verify migrated PIN: %v", tt.pin, ok)
+			}
+		})
+	}
+}
+
 func TestVerifyPIN(t *testing.T) {
 	tests := []struct {
 		name       string

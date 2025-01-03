@@ -5,6 +5,6 @@ CATCH pin_entry flag_account_authorized 0
 MOUT english 1
 MOUT kiswahili 2
 HALT
-INCMP set_default 1
+INCMP set_eng 1
 INCMP set_swa 2
 INCMP . *

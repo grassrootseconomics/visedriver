@@ -1,3 +1,4 @@
+// create language files from environment
 package main
 
 import (
@@ -70,27 +71,26 @@ func main() {
 	for i, v := range(config.Languages) {
 		ln, err := lang.LanguageFromCode(v)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error parsing language: %s", v)
+			fmt.Fprintf(os.Stderr, "error parsing language: %s\n", v)
 			os.Exit(1)
 		}
 		n := i + 1
 		s := toLanguageKey(ln)
 		mouts += fmt.Sprintf("MOUT %s %v\n", s, n)
-		//incmp += fmt.Sprintf("INCMP set_%s %u\n", 
 		v = "set_" + ln.Code
 		incmps += fmt.Sprintf("INCMP %s %v\n", v, n)
 
 		p := path.Join(srcDir, v)
-		w, err := os.OpenFile(p, os.O_WRONLY | os.O_CREATE | os.O_TRUNC, 0600)
+		w, err := os.OpenFile(p, os.O_WRONLY | os.O_CREATE | os.O_EXCL, 0600)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed open language set template output: %v", err)
+			fmt.Fprintf(os.Stderr, "failed open language set template output: %v\n", err)
 			os.Exit(1)
 		}
 		s = toLanguageLabel(ln)
 		defer w.Close()
 		_, err = w.Write([]byte(s))
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed write select language vis output: %v", err)
+			fmt.Fprintf(os.Stderr, "failed write select language vis output: %v\n", err)
 			os.Exit(1)
 		}
 	}
@@ -98,29 +98,29 @@ func main() {
 	src += "INCMP . *\n"
 
 	p := path.Join(srcDir, "select_language.vis")
-	w, err := os.OpenFile(p, os.O_WRONLY | os.O_CREATE | os.O_TRUNC, 0600)
+	w, err := os.OpenFile(p, os.O_WRONLY | os.O_CREATE | os.O_EXCL, 0600)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed open select language vis output: %v", err)
+		fmt.Fprintf(os.Stderr, "failed open select language vis output: %v\n", err)
 		os.Exit(1)
 	}
 	defer w.Close()
 	_, err = w.Write([]byte(src))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed write select language vis output: %v", err)
+		fmt.Fprintf(os.Stderr, "failed write select language vis output: %v\n", err)
 		os.Exit(1)
 	}
 
 	src = changeHeadSrc + src
 	p = path.Join(srcDir, "change_language.vis")
-	w, err = os.OpenFile(p, os.O_WRONLY | os.O_CREATE | os.O_TRUNC, 0600)
+	w, err = os.OpenFile(p, os.O_WRONLY | os.O_CREATE | os.O_EXCL, 0600)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed open select language vis output: %v", err)
+		fmt.Fprintf(os.Stderr, "failed open select language vis output: %v\n", err)
 		os.Exit(1)
 	}
 	defer w.Close()
 	_, err = w.Write([]byte(src))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed write select language vis output: %v", err)
+		fmt.Fprintf(os.Stderr, "failed write select language vis output: %v\n", err)
 		os.Exit(1)
 	}
 }

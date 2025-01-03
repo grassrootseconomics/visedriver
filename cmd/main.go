@@ -34,11 +34,11 @@ func main() {
 	config.LoadConfig()
 
 	var dbDir string
-	var gettextDir string
 	var size uint
 	var sessionId string
 	var database string
 	var engineDebug bool
+	var gettextDir string
 	var langs args.LangVar
 	flag.StringVar(&sessionId, "session-id", "075xx2123", "session id")
 	flag.StringVar(&database, "db", "gdbm", "database to be used")

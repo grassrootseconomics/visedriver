@@ -39,13 +39,13 @@ func main() {
 	var err error
 
 	flag.StringVar(&sessionId, "session-id", "075xx2123", "session id")
-	flag.StringVar(&connStr, "c", ".", "connection string")
+	flag.StringVar(&connStr, "c", ".state", "connection string")
 	flag.BoolVar(&engineDebug, "d", false, "use engine debug output")
 	flag.UintVar(&size, "s", 160, "max size of output")
 	flag.Parse()
 
-	if connStr == "." {
-		connStr, err = filepath.Abs(".state/state.gdbm")
+	if connStr == ".state" {
+		connStr, err = filepath.Abs(connStr)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "auto connstr generate error: %v", err)
 			os.Exit(1)

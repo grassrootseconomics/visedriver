@@ -40,9 +40,6 @@ func probeGdbm(s string) (string, bool) {
 	if !path.IsAbs(s) {
 		return "", false
 	}
-	if path.Ext(s) != ".gdbm" {
-		return "", false
-	}
 	s = path.Clean(s)
 	return s, true
 }

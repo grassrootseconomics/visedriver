@@ -28,7 +28,6 @@ type StorageService interface {
 }
 
 type MenuStorageService struct {
-	//dbDir         string
 	conn connData
 	resourceDir   string
 	resourceStore db.Db

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"path"
@@ -29,7 +30,7 @@ import (
 )
 
 var (
-	logg          = logging.NewVanilla()
+	logg          = logging.NewVanilla().WithDomain("AfricasTalking").WithContextKey("at-session-id")
 	scriptDir     = path.Join("services", "registration")
 	build         = "dev"
 	menuSeparator = ": "
@@ -39,7 +40,43 @@ func init() {
 	initializers.LoadEnvVariables()
 }
 
-type atRequestParser struct{}
+type atRequestParser struct {
+	context context.Context
+}
+
+func parseQueryParams(query string) map[string]string {
+	params := make(map[string]string)
+
+	queryParams := strings.Split(query, "&")
+	for _, param := range queryParams {
+		// Split each key-value pair by '='
+		parts := strings.SplitN(param, "=", 2)
+		if len(parts) == 2 {
+			params[parts[0]] = parts[1]
+		}
+	}
+	return params
+}
+
+func extractATSessionId(decodedStr string) (string, error) {
+	var data map[string]string
+	err := json.Unmarshal([]byte(decodedStr), &data)
+
+	if err != nil {
+		logg.Errorf("Error unmarshalling JSON: %v", err)
+		return "", nil
+	}
+	decodedBody, err := url.QueryUnescape(data["body"])
+	if err != nil {
+		logg.Errorf("Error URL-decoding body: %v", err)
+		return "", nil
+	}
+	params := parseQueryParams(decodedBody)
+
+	sessionId := params["sessionId"]
+	return sessionId, nil
+
+}
 
 func (arp *atRequestParser) GetSessionId(rq any) (string, error) {
 	rqv, ok := rq.(*http.Request)
@@ -63,7 +100,12 @@ func (arp *atRequestParser) GetSessionId(rq any) (string, error) {
 	if err != nil {
 		logg.Warnf("failed to marshal request body", "err", err)
 	} else {
-		logg.Debugf("received request", "bytes", logBytes)
+		decodedStr := string(logBytes)
+		sessionId, err := extractATSessionId(decodedStr)
+		if err != nil {
+			context.WithValue(arp.context, "at-session-id", sessionId)
+		}
+		logg.Debugf("Received request:", decodedStr)
 	}
 
 	if err := rqv.ParseForm(); err != nil {
@@ -191,7 +233,9 @@ func main() {
 	}
 	defer stateStore.Close()
 
-	rp := &atRequestParser{}
+	rp := &atRequestParser{
+		context: ctx,
+	}
 	bsh := handlers.NewBaseSessionHandler(cfg, rs, stateStore, userdataStore, rp, hl)
 	sh := httpserver.NewATSessionHandler(bsh)
 

@@ -6,7 +6,7 @@ import (
 	"math/big"
 	"strings"
 
-	"git.grassecon.net/urdt/ussd/internal/storage"
+	dbstorage "git.grassecon.net/urdt/ussd/internal/storage/db"
 	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 )
 
@@ -63,7 +63,7 @@ func ScaleDownBalance(balance, decimals string) string {
 }
 
 // GetVoucherData retrieves and matches voucher data
-func GetVoucherData(ctx context.Context, db storage.PrefixDb, input string) (*dataserviceapi.TokenHoldings, error) {
+func GetVoucherData(ctx context.Context, db dbstorage.PrefixDb, input string) (*dataserviceapi.TokenHoldings, error) {
 	keys := []DataTyp{DATA_VOUCHER_SYMBOLS, DATA_VOUCHER_BALANCES, DATA_VOUCHER_DECIMALS, DATA_VOUCHER_ADDRESSES}
 	data := make(map[DataTyp]string)
 

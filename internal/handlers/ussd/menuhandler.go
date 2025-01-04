@@ -23,12 +23,12 @@ import (
 	"git.grassecon.net/urdt/ussd/remote"
 	"gopkg.in/leonelquinteros/gotext.v1"
 
-	"git.grassecon.net/urdt/ussd/internal/storage"
+	dbstorage "git.grassecon.net/urdt/ussd/internal/storage/db"
 	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 )
 
 var (
-	logg           = logging.NewVanilla().WithDomain("ussdmenuhandler")
+	logg           = logging.NewVanilla().WithDomain("ussdmenuhandler").WithContextKey("session-id")
 	scriptDir      = path.Join("services", "registration")
 	translationDir = path.Join(scriptDir, "locale")
 )
@@ -64,7 +64,7 @@ type Handlers struct {
 	adminstore           *utils.AdminStore
 	flagManager          *asm.FlagParser
 	accountService       remote.AccountServiceInterface
-	prefixDb             storage.PrefixDb
+	prefixDb             dbstorage.PrefixDb
 	profile              *models.Profile
 	ReplaceSeparatorFunc func(string) string
 }
@@ -80,7 +80,7 @@ func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, adminstore *util
 
 	// Instantiate the SubPrefixDb with "DATATYPE_USERDATA" prefix
 	prefix := common.ToBytes(db.DATATYPE_USERDATA)
-	prefixDb := storage.NewSubPrefixDb(userdataStore, prefix)
+	prefixDb := dbstorage.NewSubPrefixDb(userdataStore, prefix)
 
 	h := &Handlers{
 		userdataStore:        userDb,
@@ -122,9 +122,12 @@ func (h *Handlers) Init(ctx context.Context, sym string, input []byte) (resource
 		h.st.Code = []byte{}
 	}
 
-	sessionId, _ := ctx.Value("SessionId").(string)
-	flag_admin_privilege, _ := h.flagManager.GetFlag("flag_admin_privilege")
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if ok {
+		context.WithValue(ctx, "session-id", sessionId)
+	}
 
+	flag_admin_privilege, _ := h.flagManager.GetFlag("flag_admin_privilege")
 	isAdmin, _ := h.adminstore.IsAdmin(sessionId)
 
 	if isAdmin {

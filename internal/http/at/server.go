@@ -1,19 +1,25 @@
-package http
+package at
 
 import (
 	"io"
 	"net/http"
 
+	"git.defalsify.org/vise.git/logging"
 	"git.grassecon.net/urdt/ussd/internal/handlers"
+	httpserver "git.grassecon.net/urdt/ussd/internal/http"
+)
+
+var (
+	logg = logging.NewVanilla().WithDomain("atserver")
 )
 
 type ATSessionHandler struct {
-	*SessionHandler
+	*httpserver.SessionHandler
 }
 
 func NewATSessionHandler(h handlers.RequestHandler) *ATSessionHandler {
 	return &ATSessionHandler{
-		SessionHandler: ToSessionHandler(h),
+		SessionHandler: httpserver.ToSessionHandler(h),
 	}
 }
 
@@ -31,14 +37,14 @@ func (ash *ATSessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	cfg.SessionId, err = rp.GetSessionId(req)
 	if err != nil {
 		logg.ErrorCtxf(rqs.Ctx, "", "header processing error", err)
-		ash.writeError(w, 400, err)
+		ash.WriteError(w, 400, err)
 		return
 	}
 	rqs.Config = cfg
 	rqs.Input, err = rp.GetInput(req)
 	if err != nil {
 		logg.ErrorCtxf(rqs.Ctx, "", "header processing error", err)
-		ash.writeError(w, 400, err)
+		ash.WriteError(w, 400, err)
 		return
 	}
 
@@ -53,7 +59,7 @@ func (ash *ATSessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	}
 
 	if code != 200 {
-		ash.writeError(w, 500, err)
+		ash.WriteError(w, 500, err)
 		return
 	}
 
@@ -61,13 +67,13 @@ func (ash *ATSessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	w.Header().Set("Content-Type", "text/plain")
 	rqs, err = ash.Output(rqs)
 	if err != nil {
-		ash.writeError(w, 500, err)
+		ash.WriteError(w, 500, err)
 		return
 	}
 
 	rqs, err = ash.Reset(rqs)
 	if err != nil {
-		ash.writeError(w, 500, err)
+		ash.WriteError(w, 500, err)
 		return
 	}
 }

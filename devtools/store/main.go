@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"path/filepath"
 
 	"git.grassecon.net/urdt/ussd/config"
 	"git.grassecon.net/urdt/ussd/initializers"
@@ -40,12 +39,13 @@ func main() {
 	flag.BoolVar(&engineDebug, "d", false, "use engine debug output")
 	flag.Parse()
 
-	if connStr == "." {
-		connStr, err = filepath.Abs(".state/state.gdbm")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "auto connstr generate error: %v", err)
-			os.Exit(1)
-		}
+	if connStr != "" {
+		connStr = config.DbConn
+	}
+	connData, err := storage.ToConnData(config.DbConn)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "connstr err: %v", err)
+		os.Exit(1)
 	}
 
 	ctx := context.Background()
@@ -54,7 +54,7 @@ func main() {
 
 	resourceDir := scriptDir
 	menuStorageService := storage.NewMenuStorageService(resourceDir)
-	err = menuStorageService.SetConn(connStr)
+	menuStorageService = menuStorageService.WithConn(connData)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "connection string error: %v", err)
 		os.Exit(1)

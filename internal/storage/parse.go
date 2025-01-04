@@ -12,16 +12,16 @@ const (
 	DBTYPE_POSTGRES
 )
 
-type connData struct {
+type ConnData struct {
 	typ int
 	str string
 }
 
-func (cd *connData) DbType() int {
+func (cd *ConnData) DbType() int {
 	return cd.typ
 }
 
-func (cd *connData) String() string {
+func (cd *ConnData) String() string {
 	return cd.str
 }
 
@@ -44,8 +44,8 @@ func probeGdbm(s string) (string, bool) {
 	return s, true
 }
 
-func toConnData(connStr string) (connData, error) {
-	var o connData
+func ToConnData(connStr string) (ConnData, error) {
+	var o ConnData
 
 	if connStr == "" {
 		return o, nil

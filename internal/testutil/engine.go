@@ -44,10 +44,15 @@ func TestEngine(sessionId string) (engine.Engine, func(), chan bool) {
 		fmt.Fprintf(os.Stderr, "connstr err: %v", err)
 		os.Exit(1)
 	}
+	conn, err := storage.ToConnData(connStr)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "connstr parse err: %v", err)
+		os.Exit(1)
+	}
 	resourceDir := scriptDir
 	menuStorageService := storage.NewMenuStorageService(resourceDir)
 
-	err = menuStorageService.SetConn(connStr)
+	menuStorageService.WithConn(conn)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "conn error: %v", err)
 		os.Exit(1)

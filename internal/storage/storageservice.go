@@ -12,7 +12,6 @@ import (
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
-	"git.grassecon.net/urdt/ussd/initializers"
 	gdbmstorage "git.grassecon.net/urdt/ussd/internal/storage/db/gdbm"
 )
 
@@ -28,27 +27,11 @@ type StorageService interface {
 }
 
 type MenuStorageService struct {
-	conn connData
+	conn ConnData
 	resourceDir   string
 	resourceStore db.Db
 	stateStore    db.Db
 	userDataStore db.Db
-}
-
-func buildConnStr() string {
-	host := initializers.GetEnv("DB_HOST", "localhost")
-	user := initializers.GetEnv("DB_USER", "postgres")
-	password := initializers.GetEnv("DB_PASSWORD", "")
-	dbName := initializers.GetEnv("DB_NAME", "")
-	port := initializers.GetEnv("DB_PORT", "5432")
-
-	connString := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s",
-		user, password, host, port, dbName,
-	)
-	logg.Debugf("pg conn string", "conn", connString)
-
-	return connString
 }
 
 func NewMenuStorageService(resourceDir string) *MenuStorageService {
@@ -57,13 +40,9 @@ func NewMenuStorageService(resourceDir string) *MenuStorageService {
 	}
 }
 
-func (ms *MenuStorageService) SetConn(connStr string) error {
-	o, err := toConnData(connStr)
-	if err != nil {
-		return err
-	}
-	ms.conn = o
-	return nil
+func (ms *MenuStorageService) WithConn(conn ConnData) *MenuStorageService {
+	ms.conn = conn
+	return ms
 }
 
 func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.Db, section string) (db.Db, error) {

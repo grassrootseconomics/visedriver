@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/signal"
 	"path"
-	"path/filepath"
 	"syscall"
 
 	"git.defalsify.org/vise.git/engine"
@@ -47,8 +46,8 @@ func (p *asyncRequestParser) GetInput(r any) ([]byte, error) {
 func main() {
 	config.LoadConfig()
 
-	var sessionId string
 	var connStr string
+	var sessionId string
 	var resourceDir string
 	var size uint
 	var database string
@@ -59,19 +58,20 @@ func main() {
 
 	flag.StringVar(&sessionId, "session-id", "075xx2123", "session id")
 	flag.StringVar(&resourceDir, "resourcedir", path.Join("services", "registration"), "resource dir")
-	flag.StringVar(&connStr, "c", ".state", "connection string")
+	flag.StringVar(&connStr, "c", "", "connection string")
 	flag.BoolVar(&engineDebug, "d", false, "use engine debug output")
 	flag.UintVar(&size, "s", 160, "max size of output")
 	flag.StringVar(&host, "h", initializers.GetEnv("HOST", "127.0.0.1"), "http host")
 	flag.UintVar(&port, "p", initializers.GetEnvUint("PORT", 7123), "http port")
 	flag.Parse()
 
-	if connStr == ".state" {
-		connStr, err = filepath.Abs(connStr)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "auto connstr generate error: %v", err)
-			os.Exit(1)
-		}
+	if connStr != "" {
+		connStr = config.DbConn
+	}
+	connData, err := storage.ToConnData(config.DbConn)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "connstr err: %v", err)
+		os.Exit(1)
 	}
 
 	logg.Infof("start command", "connstr", connStr, "resourcedir", resourceDir, "outputsize", size, "sessionId", sessionId)
@@ -92,7 +92,7 @@ func main() {
 	}
 
 	menuStorageService := storage.NewMenuStorageService(resourceDir)
-	err = menuStorageService.SetConn(connStr)
+	menuStorageService = menuStorageService.WithConn(connData)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)

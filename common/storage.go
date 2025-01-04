@@ -23,19 +23,19 @@ type StorageServices interface {
 	GetPersister(ctx context.Context) (*persist.Persister, error)
 	GetUserdataDb(ctx context.Context) (db.Db, error)
 	GetResource(ctx context.Context) (resource.Resource, error)
-	SetConn(connStr string) error
+	SetConn(conn storage.ConnData)
 }
 
 type StorageService struct {
 	svc *storage.MenuStorageService
 }
 
-func NewStorageService(connStr string) (*StorageService, error) {
+func NewStorageService(conn storage.ConnData) (*StorageService, error) {
 	svc := &StorageService{
 		svc: storage.NewMenuStorageService(""),
 	}
-	err := svc.SetConn(connStr)
-	return svc, err
+	svc.SetConn(conn)
+	return svc, nil
 }
 
 func(ss *StorageService) GetPersister(ctx context.Context) (*persist.Persister, error) {
@@ -50,6 +50,6 @@ func(ss *StorageService) GetResource(ctx context.Context) (resource.Resource, er
 	return nil, errors.New("not implemented")
 }
 
-func(ss *StorageService) SetConn(connStr string) error {
-	return ss.svc.SetConn(connStr)
+func(ss *StorageService) SetConn(conn storage.ConnData) {
+	ss.svc = ss.svc.WithConn(conn)
 }

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"path/filepath"
 
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/logging"
@@ -39,17 +38,18 @@ func main() {
 	var err error
 
 	flag.StringVar(&sessionId, "session-id", "075xx2123", "session id")
-	flag.StringVar(&connStr, "c", ".state", "connection string")
+	flag.StringVar(&connStr, "c", "", "connection string")
 	flag.BoolVar(&engineDebug, "d", false, "use engine debug output")
 	flag.UintVar(&size, "s", 160, "max size of output")
 	flag.Parse()
 
-	if connStr == ".state" {
-		connStr, err = filepath.Abs(connStr)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "auto connstr generate error: %v", err)
-			os.Exit(1)
-		}
+	if connStr != "" {
+		connStr = config.DbConn
+	}
+	connData, err := storage.ToConnData(config.DbConn)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "connstr err: %v", err)
+		os.Exit(1)
 	}
 
 	logg.Infof("start command", "connstr", connStr, "outputsize", size)
@@ -69,12 +69,7 @@ func main() {
 
 	resourceDir := scriptDir
 	menuStorageService := storage.NewMenuStorageService(resourceDir)
-
-	err = menuStorageService.SetConn(connStr)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
-		os.Exit(1)
-	}
+	menuStorageService = menuStorageService.WithConn(connData)
 
 	rs, err := menuStorageService.GetResource(ctx)
 	if err != nil {

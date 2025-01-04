@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/signal"
 	"path"
-	"path/filepath"
 	"strconv"
 	"syscall"
 
@@ -55,12 +54,13 @@ func main() {
 	flag.UintVar(&port, "p", initializers.GetEnvUint("PORT", 7123), "http port")
 	flag.Parse()
 
-	if connStr == ".state" {
-		connStr, err = filepath.Abs(connStr)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "auto connstr generate error: %v", err)
-			os.Exit(1)
-		}
+	if connStr != "" {
+		connStr = config.DbConn
+	}
+	connData, err := storage.ToConnData(config.DbConn)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "connstr err: %v", err)
+		os.Exit(1)
 	}
 
 	logg.Infof("start command", "build", build, "dbdir", connStr, "resourcedir", resourceDir, "outputsize", size)
@@ -81,7 +81,7 @@ func main() {
 	}
 
 	menuStorageService := storage.NewMenuStorageService(resourceDir)
-	err = menuStorageService.SetConn(connStr)
+	menuStorageService = menuStorageService.WithConn(connData)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)

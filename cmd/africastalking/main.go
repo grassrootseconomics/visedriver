@@ -1,19 +1,14 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
 	"path"
 	"strconv"
-	"strings"
 	"syscall"
 
 	"git.defalsify.org/vise.git/engine"

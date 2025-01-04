@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path"
 
 	"git.defalsify.org/vise.git/db"
 	fsdb "git.defalsify.org/vise.git/db/fs"
@@ -66,7 +67,7 @@ func (ms *MenuStorageService) SetConn(connStr string) error {
 	return nil
 }
 
-func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.Db, fileName string) (db.Db, error) {
+func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.Db, section string) (db.Db, error) {
 	var newDb db.Db
 	var err error
 //	database, ok := ctx.Value("Database").(string)
@@ -79,6 +80,7 @@ func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.D
 	}
 
 
+	connStr := ms.conn.String()
 	dbTyp := ms.conn.DbType()
 	if dbTyp == DBTYPE_POSTGRES {
 		newDb = postgres.NewPgDb()
@@ -87,11 +89,13 @@ func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.D
 		if err != nil {
 			return nil, err
 		}
+		connStr = path.Join(connStr, section)
 		newDb = gdbmstorage.NewThreadGdbmDb()
 	} else {
 		return nil, fmt.Errorf("unsupported connection string: %s", ms.conn.String())
 	}
-	err = newDb.Connect(ctx, ms.conn.String())
+	logg.DebugCtxf(ctx, "connecting to db", "conn", connStr)
+	err = newDb.Connect(ctx, connStr)
 	if err != nil {
 		return nil, err
 	}

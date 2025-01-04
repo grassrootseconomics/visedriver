@@ -13,7 +13,7 @@ import (
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
 	"git.grassecon.net/urdt/ussd/initializers"
-	gdbmstorage "git.grassecon.net/urdt/ussd/internal/storage/gdbm"
+	gdbmstorage "git.grassecon.net/urdt/ussd/internal/storage/db/gdbm"
 )
 
 var (

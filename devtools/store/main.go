@@ -53,12 +53,7 @@ func main() {
 	ctx = context.WithValue(ctx, "Database", database)
 
 	resourceDir := scriptDir
-	menuStorageService := storage.NewMenuStorageService(resourceDir)
-	menuStorageService = menuStorageService.WithConn(connData)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "connection string error: %v", err)
-		os.Exit(1)
-	}
+	menuStorageService := storage.NewMenuStorageService(connData, resourceDir)
 
 	store, err := menuStorageService.GetUserdataDb(ctx)
 	if err != nil {

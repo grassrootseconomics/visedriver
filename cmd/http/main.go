@@ -79,8 +79,7 @@ func main() {
 		cfg.EngineDebug = true
 	}
 
-	menuStorageService := storage.NewMenuStorageService(resourceDir)
-	menuStorageService = menuStorageService.WithConn(connData)
+	menuStorageService := storage.NewMenuStorageService(connData, resourceDir)
 	
 	rs, err := menuStorageService.GetResource(ctx)
 	if err != nil {

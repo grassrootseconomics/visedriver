@@ -55,8 +55,7 @@ func main() {
 	ctx = context.WithValue(ctx, "Database", database)
 
 	resourceDir := scriptDir
-	menuStorageService := storage.NewMenuStorageService(resourceDir)
-	menuStorageService = menuStorageService.WithConn(connData)
+	menuStorageService := storage.NewMenuStorageService(connData, resourceDir)
 	
 	store, err := menuStorageService.GetUserdataDb(ctx)
 	if err != nil {

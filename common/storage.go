@@ -32,9 +32,8 @@ type StorageService struct {
 
 func NewStorageService(conn storage.ConnData) (*StorageService, error) {
 	svc := &StorageService{
-		svc: storage.NewMenuStorageService(""),
+		svc: storage.NewMenuStorageService(conn, ""),
 	}
-	svc.SetConn(conn)
 	return svc, nil
 }
 
@@ -48,8 +47,4 @@ func(ss *StorageService) GetUserdataDb(ctx context.Context) (db.Db, error) {
 
 func(ss *StorageService) GetResource(ctx context.Context) (resource.Resource, error) {
 	return nil, errors.New("not implemented")
-}
-
-func(ss *StorageService) SetConn(conn storage.ConnData) {
-	ss.svc = ss.svc.WithConn(conn)
 }

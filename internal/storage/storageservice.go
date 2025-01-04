@@ -34,15 +34,11 @@ type MenuStorageService struct {
 	userDataStore db.Db
 }
 
-func NewMenuStorageService(resourceDir string) *MenuStorageService {
+func NewMenuStorageService(conn ConnData, resourceDir string) *MenuStorageService {
 	return &MenuStorageService{
+		conn: conn,
 		resourceDir: resourceDir,
 	}
-}
-
-func (ms *MenuStorageService) WithConn(conn ConnData) *MenuStorageService {
-	ms.conn = conn
-	return ms
 }
 
 func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.Db, section string) (db.Db, error) {

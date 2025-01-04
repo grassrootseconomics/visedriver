@@ -23,7 +23,7 @@ import (
 	"git.grassecon.net/urdt/ussd/remote"
 	"gopkg.in/leonelquinteros/gotext.v1"
 
-	"git.grassecon.net/urdt/ussd/internal/storage"
+	dbstorage "git.grassecon.net/urdt/ussd/internal/storage/db"
 	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 )
 
@@ -64,7 +64,7 @@ type Handlers struct {
 	adminstore           *utils.AdminStore
 	flagManager          *asm.FlagParser
 	accountService       remote.AccountServiceInterface
-	prefixDb             storage.PrefixDb
+	prefixDb             dbstorage.PrefixDb
 	profile              *models.Profile
 	ReplaceSeparatorFunc func(string) string
 }
@@ -80,7 +80,7 @@ func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, adminstore *util
 
 	// Instantiate the SubPrefixDb with "DATATYPE_USERDATA" prefix
 	prefix := common.ToBytes(db.DATATYPE_USERDATA)
-	prefixDb := storage.NewSubPrefixDb(userdataStore, prefix)
+	prefixDb := dbstorage.NewSubPrefixDb(userdataStore, prefix)
 
 	h := &Handlers{
 		userdataStore:        userDb,

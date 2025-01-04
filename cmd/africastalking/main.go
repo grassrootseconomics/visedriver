@@ -1,30 +1,25 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
 	"path"
 	"strconv"
-	"strings"
 	"syscall"
 
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/resource"
 
-	"git.grassecon.net/urdt/ussd/common"
 	"git.grassecon.net/urdt/ussd/config"
 	"git.grassecon.net/urdt/ussd/initializers"
 	"git.grassecon.net/urdt/ussd/internal/handlers"
-	httpserver "git.grassecon.net/urdt/ussd/internal/http"
+	"git.grassecon.net/urdt/ussd/internal/http/at"
+	httpserver "git.grassecon.net/urdt/ussd/internal/http/at"
 	"git.grassecon.net/urdt/ussd/internal/storage"
 	"git.grassecon.net/urdt/ussd/remote"
 )
@@ -39,113 +34,6 @@ var (
 func init() {
 	initializers.LoadEnvVariables()
 }
-
-type atRequestParser struct {
-	context context.Context
-}
-
-func parseQueryParams(query string) map[string]string {
-	params := make(map[string]string)
-
-	queryParams := strings.Split(query, "&")
-	for _, param := range queryParams {
-		// Split each key-value pair by '='
-		parts := strings.SplitN(param, "=", 2)
-		if len(parts) == 2 {
-			params[parts[0]] = parts[1]
-		}
-	}
-	return params
-}
-
-func extractATSessionId(decodedStr string) (string, error) {
-	var data map[string]string
-	err := json.Unmarshal([]byte(decodedStr), &data)
-
-	if err != nil {
-		logg.Errorf("Error unmarshalling JSON: %v", err)
-		return "", nil
-	}
-	decodedBody, err := url.QueryUnescape(data["body"])
-	if err != nil {
-		logg.Errorf("Error URL-decoding body: %v", err)
-		return "", nil
-	}
-	params := parseQueryParams(decodedBody)
-
-	sessionId := params["sessionId"]
-	return sessionId, nil
-
-}
-
-func (arp *atRequestParser) GetSessionId(rq any) (string, error) {
-	rqv, ok := rq.(*http.Request)
-	if !ok {
-		logg.Warnf("got an invalid request", "req", rq)
-		return "", handlers.ErrInvalidRequest
-	}
-
-	// Capture body (if any) for logging
-	body, err := io.ReadAll(rqv.Body)
-	if err != nil {
-		logg.Warnf("failed to read request body", "err", err)
-		return "", fmt.Errorf("failed to read request body: %v", err)
-	}
-	// Reset the body for further reading
-	rqv.Body = io.NopCloser(bytes.NewReader(body))
-
-	// Log the body as JSON
-	bodyLog := map[string]string{"body": string(body)}
-	logBytes, err := json.Marshal(bodyLog)
-	if err != nil {
-		logg.Warnf("failed to marshal request body", "err", err)
-	} else {
-		decodedStr := string(logBytes)
-		sessionId, err := extractATSessionId(decodedStr)
-		if err != nil {
-			context.WithValue(arp.context, "at-session-id", sessionId)
-		}
-		logg.Debugf("Received request:", decodedStr)
-	}
-
-	if err := rqv.ParseForm(); err != nil {
-		logg.Warnf("failed to parse form data", "err", err)
-		return "", fmt.Errorf("failed to parse form data: %v", err)
-	}
-
-	phoneNumber := rqv.FormValue("phoneNumber")
-	if phoneNumber == "" {
-		return "", fmt.Errorf("no phone number found")
-	}
-
-	formattedNumber, err := common.FormatPhoneNumber(phoneNumber)
-	if err != nil {
-		logg.Warnf("failed to format phone number", "err", err)
-		return "", fmt.Errorf("failed to format number")
-	}
-
-	return formattedNumber, nil
-}
-
-func (arp *atRequestParser) GetInput(rq any) ([]byte, error) {
-	rqv, ok := rq.(*http.Request)
-	if !ok {
-		return nil, handlers.ErrInvalidRequest
-	}
-	if err := rqv.ParseForm(); err != nil {
-		return nil, fmt.Errorf("failed to parse form data: %v", err)
-	}
-
-	text := rqv.FormValue("text")
-
-	parts := strings.Split(text, "*")
-	if len(parts) == 0 {
-		return nil, fmt.Errorf("no input found")
-	}
-
-	return []byte(parts[len(parts)-1]), nil
-}
-
 func main() {
 	config.LoadConfig()
 
@@ -233,8 +121,8 @@ func main() {
 	}
 	defer stateStore.Close()
 
-	rp := &atRequestParser{
-		context: ctx,
+	rp := &at.ATRequestParser{
+		Context: ctx,
 	}
 	bsh := handlers.NewBaseSessionHandler(cfg, rs, stateStore, userdataStore, rp, hl)
 	sh := httpserver.NewATSessionHandler(bsh)

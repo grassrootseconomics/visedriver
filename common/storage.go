@@ -8,14 +8,15 @@ import (
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/persist"
 	"git.grassecon.net/urdt/ussd/internal/storage"
+	dbstorage "git.grassecon.net/urdt/ussd/internal/storage/db"
 )
 
 func StoreToDb(store *UserDataStore) db.Db {
 	return store.Db
 }
 
-func StoreToPrefixDb(store *UserDataStore, pfx []byte) storage.PrefixDb {
-	return storage.NewSubPrefixDb(store.Db, pfx)	
+func StoreToPrefixDb(store *UserDataStore, pfx []byte) dbstorage.PrefixDb {
+	return dbstorage.NewSubPrefixDb(store.Db, pfx)	
 }
 
 type StorageServices interface {

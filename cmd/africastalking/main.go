@@ -23,7 +23,7 @@ import (
 	"git.grassecon.net/urdt/ussd/config"
 	"git.grassecon.net/urdt/ussd/initializers"
 	"git.grassecon.net/urdt/ussd/internal/handlers"
-	httpserver "git.grassecon.net/urdt/ussd/internal/http"
+	httpserver "git.grassecon.net/urdt/ussd/internal/http/at"
 	"git.grassecon.net/urdt/ussd/internal/storage"
 	"git.grassecon.net/urdt/ussd/remote"
 )

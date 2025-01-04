@@ -66,7 +66,7 @@ func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.D
 		connStr = path.Join(connStr, section)
 		newDb = gdbmstorage.NewThreadGdbmDb()
 	} else {
-		return nil, fmt.Errorf("unsupported connection string: %s", ms.conn.String())
+		return nil, fmt.Errorf("unsupported connection string: '%s'\n", ms.conn.String())
 	}
 	logg.DebugCtxf(ctx, "connecting to db", "conn", connStr)
 	err = newDb.Connect(ctx, connStr)

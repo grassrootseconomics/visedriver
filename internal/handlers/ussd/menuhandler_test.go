@@ -5,15 +5,18 @@ import (
 	"fmt"
 	"log"
 	"path"
+	"strings"
 	"testing"
 
+	"git.defalsify.org/vise.git/cache"
 	"git.defalsify.org/vise.git/lang"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/state"
-	"git.grassecon.net/urdt/ussd/internal/storage"
+	dbstorage "git.grassecon.net/urdt/ussd/internal/storage/db"
 	"git.grassecon.net/urdt/ussd/internal/testutil/mocks"
 	"git.grassecon.net/urdt/ussd/internal/testutil/testservice"
+	"git.grassecon.net/urdt/ussd/internal/utils"
 	"git.grassecon.net/urdt/ussd/models"
 
 	"git.grassecon.net/urdt/ussd/common"
@@ -31,6 +34,11 @@ var (
 	baseDir   = testdataloader.GetBasePath()
 	flagsPath = path.Join(baseDir, "services", "registration", "pp.csv")
 )
+
+// mockReplaceSeparator function
+var mockReplaceSeparator = func(input string) string {
+	return strings.ReplaceAll(input, ":", ": ")
+}
 
 // InitializeTestStore sets up and returns an in-memory database and store.
 func InitializeTestStore(t *testing.T) (context.Context, *common.UserDataStore) {
@@ -51,14 +59,14 @@ func InitializeTestStore(t *testing.T) (context.Context, *common.UserDataStore) 
 	return ctx, store
 }
 
-func InitializeTestSubPrefixDb(t *testing.T, ctx context.Context) *storage.SubPrefixDb {
+func InitializeTestSubPrefixDb(t *testing.T, ctx context.Context) *dbstorage.SubPrefixDb {
 	db := memdb.NewMemDb()
 	err := db.Connect(ctx, "")
 	if err != nil {
 		t.Fatal(err)
 	}
 	prefix := common.ToBytes(visedb.DATATYPE_USERDATA)
-	spdb := storage.NewSubPrefixDb(db, prefix)
+	spdb := dbstorage.NewSubPrefixDb(db, prefix)
 
 	return spdb
 }
@@ -67,12 +75,15 @@ func TestNewHandlers(t *testing.T) {
 	_, store := InitializeTestStore(t)
 
 	fm, err := NewFlagManager(flagsPath)
-	accountService := testservice.TestAccountService{}
 	if err != nil {
-		t.Logf(err.Error())
+		log.Fatal(err)
 	}
+
+	accountService := testservice.TestAccountService{}
+
+	// Test case for valid UserDataStore
 	t.Run("Valid UserDataStore", func(t *testing.T) {
-		handlers, err := NewHandlers(fm.parser, store, nil, &accountService)
+		handlers, err := NewHandlers(fm.parser, store, nil, &accountService, mockReplaceSeparator)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -82,21 +93,128 @@ func TestNewHandlers(t *testing.T) {
 		if handlers.userdataStore == nil {
 			t.Fatal("expected userdataStore to be set in handlers")
 		}
+		if handlers.ReplaceSeparatorFunc == nil {
+			t.Fatal("expected ReplaceSeparatorFunc to be set in handlers")
+		}
+
+		// Test ReplaceSeparatorFunc functionality
+		input := "1:Menu item"
+		expectedOutput := "1: Menu item"
+		if handlers.ReplaceSeparatorFunc(input) != expectedOutput {
+			t.Fatalf("ReplaceSeparatorFunc function did not return expected output: got %v, want %v", handlers.ReplaceSeparatorFunc(input), expectedOutput)
+		}
 	})
 
-	// Test case for nil userdataStore
+	// Test case for nil UserDataStore
 	t.Run("Nil UserDataStore", func(t *testing.T) {
-		handlers, err := NewHandlers(fm.parser, nil, nil, &accountService)
+		handlers, err := NewHandlers(fm.parser, nil, nil, &accountService, mockReplaceSeparator)
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}
 		if handlers != nil {
 			t.Fatal("expected handlers to be nil")
 		}
-		if err.Error() != "cannot create handler with nil userdata store" {
-			t.Fatalf("expected specific error, got %v", err)
+		expectedError := "cannot create handler with nil userdata store"
+		if err.Error() != expectedError {
+			t.Fatalf("expected error '%s', got '%v'", expectedError, err)
 		}
 	})
+}
+
+func TestInit(t *testing.T) {
+	sessionId := "session123"
+	ctx, store := InitializeTestStore(t)
+	ctx = context.WithValue(ctx, "SessionId", sessionId)
+
+	fm, err := NewFlagManager(flagsPath)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	adminstore, err := utils.NewAdminStore(ctx, "admin_numbers")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	st := state.NewState(128)
+	ca := cache.NewCache()
+
+	flag_admin_privilege, _ := fm.GetFlag("flag_admin_privilege")
+
+	tests := []struct {
+		name           string
+		setup          func() (*Handlers, context.Context)
+		input          []byte
+		expectedResult resource.Result
+	}{
+		{
+			name: "Handler not ready",
+			setup: func() (*Handlers, context.Context) {
+				return &Handlers{}, ctx
+			},
+			input:          []byte("1"),
+			expectedResult: resource.Result{},
+		},
+		{
+			name: "State and memory initialization",
+			setup: func() (*Handlers, context.Context) {
+				pe := persist.NewPersister(store).WithSession(sessionId).WithContent(st, ca)
+				h := &Handlers{
+					flagManager: fm.parser,
+					adminstore:  adminstore,
+					pe:          pe,
+				}
+				return h, context.WithValue(ctx, "SessionId", sessionId)
+			},
+			input: []byte("1"),
+			expectedResult: resource.Result{
+				FlagReset: []uint32{flag_admin_privilege},
+			},
+		},
+		{
+			name: "Non-admin session initialization",
+			setup: func() (*Handlers, context.Context) {
+				pe := persist.NewPersister(store).WithSession("0712345678").WithContent(st, ca)
+				h := &Handlers{
+					flagManager: fm.parser,
+					adminstore:  adminstore,
+					pe:          pe,
+				}
+				return h, context.WithValue(context.Background(), "SessionId", "0712345678")
+			},
+			input: []byte("1"),
+			expectedResult: resource.Result{
+				FlagReset: []uint32{flag_admin_privilege},
+			},
+		},
+		{
+			name: "Move to top node on empty input",
+			setup: func() (*Handlers, context.Context) {
+				pe := persist.NewPersister(store).WithSession(sessionId).WithContent(st, ca)
+				h := &Handlers{
+					flagManager: fm.parser,
+					adminstore:  adminstore,
+					pe:          pe,
+				}
+				st.Code = []byte("some pending bytecode")
+				return h, context.WithValue(ctx, "SessionId", sessionId)
+			},
+			input: []byte(""),
+			expectedResult: resource.Result{
+				FlagReset: []uint32{flag_admin_privilege},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h, testCtx := tt.setup()
+			res, err := h.Init(testCtx, "", tt.input)
+
+			assert.NoError(t, err, "Unexpected error occurred")
+			assert.Equal(t, res, tt.expectedResult, "Expected result should match actual result")
+		})
+	}
 }
 
 func TestCreateAccount(t *testing.T) {
@@ -929,7 +1047,14 @@ func TestAuthorize(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err = store.WriteEntry(ctx, sessionId, common.DATA_ACCOUNT_PIN, []byte(accountPIN))
+			// Hash the PIN
+			hashedPIN, err := common.HashPIN(accountPIN)
+			if err != nil {
+				logg.ErrorCtxf(ctx, "failed to hash temporaryPin", "error", err)
+				t.Fatal(err)
+			}
+
+			err = store.WriteEntry(ctx, sessionId, common.DATA_ACCOUNT_PIN, []byte(hashedPIN))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1381,59 +1506,6 @@ func TestQuit(t *testing.T) {
 	}
 }
 
-func TestIsValidPIN(t *testing.T) {
-	tests := []struct {
-		name     string
-		pin      string
-		expected bool
-	}{
-		{
-			name:     "Valid PIN with 4 digits",
-			pin:      "1234",
-			expected: true,
-		},
-		{
-			name:     "Valid PIN with leading zeros",
-			pin:      "0001",
-			expected: true,
-		},
-		{
-			name:     "Invalid PIN with less than 4 digits",
-			pin:      "123",
-			expected: false,
-		},
-		{
-			name:     "Invalid PIN with more than 4 digits",
-			pin:      "12345",
-			expected: false,
-		},
-		{
-			name:     "Invalid PIN with letters",
-			pin:      "abcd",
-			expected: false,
-		},
-		{
-			name:     "Invalid PIN with special characters",
-			pin:      "12@#",
-			expected: false,
-		},
-		{
-			name:     "Empty PIN",
-			pin:      "",
-			expected: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			actual := isValidPIN(tt.pin)
-			if actual != tt.expected {
-				t.Errorf("isValidPIN(%q) = %v; expected %v", tt.pin, actual, tt.expected)
-			}
-		})
-	}
-}
-
 func TestValidateAmount(t *testing.T) {
 	fm, err := NewFlagManager(flagsPath)
 	if err != nil {
@@ -1680,7 +1752,7 @@ func TestGetProfile(t *testing.T) {
 			result: resource.Result{
 				Content: fmt.Sprintf(
 					"Name: %s\nGender: %s\nAge: %s\nLocation: %s\nYou provide: %s\n",
-					"John Doee", "Male", "48", "Kilifi", "Bananas",
+					"John Doee", "Male", "49", "Kilifi", "Bananas",
 				),
 			},
 		},
@@ -1692,7 +1764,7 @@ func TestGetProfile(t *testing.T) {
 			result: resource.Result{
 				Content: fmt.Sprintf(
 					"Jina: %s\nJinsia: %s\nUmri: %s\nEneo: %s\nUnauza: %s\n",
-					"John Doee", "Male", "48", "Kilifi", "Bananas",
+					"John Doee", "Male", "49", "Kilifi", "Bananas",
 				),
 			},
 		},
@@ -1704,7 +1776,7 @@ func TestGetProfile(t *testing.T) {
 			result: resource.Result{
 				Content: fmt.Sprintf(
 					"Name: %s\nGender: %s\nAge: %s\nLocation: %s\nYou provide: %s\n",
-					"John Doee", "Male", "48", "Kilifi", "Bananas",
+					"John Doee", "Male", "49", "Kilifi", "Bananas",
 				),
 			},
 		},
@@ -1982,26 +2054,31 @@ func TestCheckVouchers(t *testing.T) {
 
 func TestGetVoucherList(t *testing.T) {
 	sessionId := "session123"
+
 	ctx := context.WithValue(context.Background(), "SessionId", sessionId)
 
 	spdb := InitializeTestSubPrefixDb(t, ctx)
 
+	// Initialize Handlers
 	h := &Handlers{
-		prefixDb: spdb,
+		prefixDb:             spdb,
+		ReplaceSeparatorFunc: mockReplaceSeparator,
 	}
 
-	expectedSym := []byte("1:SRF\n2:MILO")
+	mockSyms := []byte("1:SRF\n2:MILO")
 
 	// Put voucher sym data from the store
-	err := spdb.Put(ctx, common.ToBytes(common.DATA_VOUCHER_SYMBOLS), expectedSym)
+	err := spdb.Put(ctx, common.ToBytes(common.DATA_VOUCHER_SYMBOLS), mockSyms)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	expectedSyms := []byte("1: SRF\n2: MILO")
+
 	res, err := h.GetVoucherList(ctx, "", []byte(""))
 
 	assert.NoError(t, err)
-	assert.Equal(t, res.Content, string(expectedSym))
+	assert.Equal(t, res.Content, string(expectedSyms))
 }
 
 func TestViewVoucher(t *testing.T) {

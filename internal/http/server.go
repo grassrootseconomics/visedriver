@@ -1,7 +1,6 @@
 package http
 
 import (
-	"io/ioutil"
 	"net/http"
 	"strconv"
 
@@ -14,35 +13,6 @@ var (
 	logg = logging.NewVanilla().WithDomain("httpserver")
 )
 
-type DefaultRequestParser struct {
-}
-
-
-func(rp *DefaultRequestParser) GetSessionId(rq any) (string, error) {
-	rqv, ok := rq.(*http.Request)
-	if !ok {
-		return "", handlers.ErrInvalidRequest
-	}
-	v := rqv.Header.Get("X-Vise-Session")
-	if v == "" {
-		return "", handlers.ErrSessionMissing
-	}
-	return v, nil
-}
-
-func(rp *DefaultRequestParser) GetInput(rq any) ([]byte, error) {
-	rqv, ok := rq.(*http.Request)
-	if !ok {
-		return nil, handlers.ErrInvalidRequest
-	}
-	defer rqv.Body.Close()
-	v, err := ioutil.ReadAll(rqv.Body)
-	if err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
 type SessionHandler struct {
 	handlers.RequestHandler
 }
@@ -53,25 +23,24 @@ func ToSessionHandler(h handlers.RequestHandler) *SessionHandler {
 	}
 }
 
-func(f *SessionHandler) writeError(w http.ResponseWriter, code int, err error) {
+func (f *SessionHandler) WriteError(w http.ResponseWriter, code int, err error) {
 	s := err.Error()
 	w.Header().Set("Content-Length", strconv.Itoa(len(s)))
 	w.WriteHeader(code)
-	_, err = w.Write([]byte{})
+	_, err = w.Write([]byte(s))
 	if err != nil {
 		logg.Errorf("error writing error!!", "err", err, "olderr", s)
 		w.WriteHeader(500)
 	}
-	return 
 }
 
-func(f *SessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (f *SessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	var code int
 	var err error
 	var perr error
 
 	rqs := handlers.RequestSession{
-		Ctx: req.Context(),
+		Ctx:    req.Context(),
 		Writer: w,
 	}
 
@@ -80,13 +49,13 @@ func(f *SessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	cfg.SessionId, err = rp.GetSessionId(req)
 	if err != nil {
 		logg.ErrorCtxf(rqs.Ctx, "", "header processing error", err)
-		f.writeError(w, 400, err)
+		f.WriteError(w, 400, err)
 	}
 	rqs.Config = cfg
 	rqs.Input, err = rp.GetInput(req)
 	if err != nil {
 		logg.ErrorCtxf(rqs.Ctx, "", "header processing error", err)
-		f.writeError(w, 400, err)
+		f.WriteError(w, 400, err)
 		return
 	}
 
@@ -103,7 +72,7 @@ func(f *SessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if code != 200 {
-		f.writeError(w, 500, err)
+		f.WriteError(w, 500, err)
 		return
 	}
 
@@ -112,11 +81,11 @@ func(f *SessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	rqs, err = f.Output(rqs)
 	rqs, perr = f.Reset(rqs)
 	if err != nil {
-		f.writeError(w, 500, err)
+		f.WriteError(w, 500, err)
 		return
 	}
 	if perr != nil {
-		f.writeError(w, 500, perr)
+		f.WriteError(w, 500, perr)
 		return
 	}
 }

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"git.grassecon.net/urdt/ussd/internal/storage"
+	dbstorage "git.grassecon.net/urdt/ussd/internal/storage/db"
 	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 )
 
@@ -56,7 +56,7 @@ func ProcessTransfers(transfers []dataserviceapi.Last10TxResponse) TransferMetad
 
 // GetTransferData retrieves and matches transfer data
 // returns a formatted string of the full transaction/statement
-func GetTransferData(ctx context.Context, db storage.PrefixDb, publicKey string, index int) (string, error) {
+func GetTransferData(ctx context.Context, db dbstorage.PrefixDb, publicKey string, index int) (string, error) {
 	keys := []DataTyp{DATA_TX_SENDERS, DATA_TX_RECIPIENTS, DATA_TX_VALUES, DATA_TX_ADDRESSES, DATA_TX_HASHES, DATA_TX_DATES, DATA_TX_SYMBOLS}
 	data := make(map[DataTyp]string)
 
@@ -84,18 +84,18 @@ func GetTransferData(ctx context.Context, db storage.PrefixDb, publicKey string,
 
 	// Adjust for 0-based indexing
 	i := index - 1
-	transactionType := "received"
-	party := fmt.Sprintf("from: %s", strings.TrimSpace(senders[i]))
+	transactionType := "Received"
+	party := fmt.Sprintf("From: %s", strings.TrimSpace(senders[i]))
 	if strings.TrimSpace(senders[i]) == publicKey {
-		transactionType = "sent"
-		party = fmt.Sprintf("to: %s", strings.TrimSpace(recipients[i]))
+		transactionType = "Sent"
+		party = fmt.Sprintf("To: %s", strings.TrimSpace(recipients[i]))
 	}
 
 	formattedDate := formatDate(strings.TrimSpace(dates[i]))
 
 	// Build the full transaction detail
 	detail := fmt.Sprintf(
-		"%s %s %s\n%s\ncontract address: %s\ntxhash: %s\ndate: %s",
+		"%s %s %s\n%s\nContract address: %s\nTxhash: %s\nDate: %s",
 		transactionType,
 		strings.TrimSpace(values[i]),
 		strings.TrimSpace(syms[i]),

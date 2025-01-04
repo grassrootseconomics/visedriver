@@ -26,6 +26,7 @@ import (
 var (
 	logg      = logging.NewVanilla()
 	scriptDir = path.Join("services", "registration")
+	menuSeparator = ": "
 )
 
 func init() {
@@ -58,9 +59,10 @@ func main() {
 	pfp := path.Join(scriptDir, "pp.csv")
 
 	cfg := engine.Config{
-		Root:       "root",
-		OutputSize: uint32(size),
-		FlagCount:  uint32(128),
+		Root:          "root",
+		OutputSize:    uint32(size),
+		FlagCount:     uint32(128),
+		MenuSeparator: menuSeparator,
 	}
 
 	if engineDebug {

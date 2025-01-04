@@ -3,7 +3,7 @@ module git.grassecon.net/urdt/ussd
 go 1.23.0
 
 require (
-	git.defalsify.org/vise.git v0.2.1-0.20241212145627-683015d4df80
+	git.defalsify.org/vise.git v0.2.3-0.20250103172917-3e190a44568d
 	github.com/alecthomas/assert/v2 v2.2.2
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/grassrootseconomics/eth-custodial v1.3.0-beta
@@ -11,6 +11,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/peteole/testdata-loader v0.3.0
 	github.com/stretchr/testify v1.9.0
+	golang.org/x/crypto v0.27.0
 	gopkg.in/leonelquinteros/gotext.v1 v1.3.1
 )
 
@@ -32,7 +33,6 @@ require (
 	github.com/rogpeppe/go-internal v1.13.1 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	golang.org/x/crypto v0.27.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/text v0.18.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

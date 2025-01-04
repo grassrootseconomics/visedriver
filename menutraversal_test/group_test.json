@@ -62,10 +62,10 @@
                 },
                 {
                     "input": "1234",
-                    "expectedContent": "Select language:\n0:English\n1:Kiswahili"
+                    "expectedContent": "Select language:\n1:English\n2:Kiswahili"
                 },
                 {
-                    "input": "0",
+                    "input": "1",
                     "expectedContent": "Your language change request was successful.\n0:Back\n9:Quit"
                 },
                 {
@@ -430,7 +430,7 @@
                 },
                 {
                     "input": "1234",
-                    "expectedContent": "My profile:\nName: foo bar\nGender: male\nAge: 84\nLocation: Kilifi\nYou provide: Bananas\n\n0:Back"
+                    "expectedContent": "My profile:\nName: foo bar\nGender: male\nAge: 80\nLocation: Kilifi\nYou provide: Bananas\n\n0:Back\n9:Quit"
                 },
                 {
                     "input": "0",

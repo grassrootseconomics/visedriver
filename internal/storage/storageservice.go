@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path"
 
 	"git.defalsify.org/vise.git/db"
 	fsdb "git.defalsify.org/vise.git/db/fs"
@@ -24,11 +23,12 @@ type StorageService interface {
 	GetPersister(ctx context.Context) (*persist.Persister, error)
 	GetUserdataDb(ctx context.Context) db.Db
 	GetResource(ctx context.Context) (resource.Resource, error)
-	EnsureDbDir() error
+	SetConn(connStr string) error
 }
 
 type MenuStorageService struct {
-	dbDir         string
+	//dbDir         string
+	conn connData
 	resourceDir   string
 	resourceStore db.Db
 	stateStore    db.Db
@@ -51,36 +51,47 @@ func buildConnStr() string {
 	return connString
 }
 
-func NewMenuStorageService(dbDir string, resourceDir string) *MenuStorageService {
+func NewMenuStorageService(resourceDir string) *MenuStorageService {
 	return &MenuStorageService{
-		dbDir:       dbDir,
 		resourceDir: resourceDir,
 	}
 }
 
-func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.Db, fileName string) (db.Db, error) {
-	database, ok := ctx.Value("Database").(string)
-	if !ok {
-		return nil, fmt.Errorf("failed to select the database")
+func (ms *MenuStorageService) SetConn(connStr string) error {
+	o, err := toConnData(connStr)
+	if err != nil {
+		return err
 	}
+	ms.conn = o
+	return nil
+}
+
+func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.Db, fileName string) (db.Db, error) {
+	var newDb db.Db
+	var err error
+//	database, ok := ctx.Value("Database").(string)
+//	if !ok {
+//		return nil, fmt.Errorf("failed to select the database")
+//	}
 
 	if existingDb != nil {
 		return existingDb, nil
 	}
 
-	var newDb db.Db
-	var err error
 
-	if database == "postgres" {
+	dbTyp := ms.conn.DbType()
+	if dbTyp == DBTYPE_POSTGRES {
 		newDb = postgres.NewPgDb()
-		connStr := buildConnStr()
-		err = newDb.Connect(ctx, connStr)
-	} else {
+	} else if dbTyp == DBTYPE_GDBM {
+		err = ms.ensureDbDir()
+		if err != nil {
+			return nil, err
+		}
 		newDb = gdbmstorage.NewThreadGdbmDb()
-		storeFile := path.Join(ms.dbDir, fileName)
-		err = newDb.Connect(ctx, storeFile)
+	} else {
+		return nil, fmt.Errorf("unsupported connection string: %s", ms.conn.String())
 	}
-
+	err = newDb.Connect(ctx, ms.conn.String())
 	if err != nil {
 		return nil, err
 	}
@@ -137,8 +148,8 @@ func (ms *MenuStorageService) GetStateStore(ctx context.Context) (db.Db, error) 
 	return ms.stateStore, nil
 }
 
-func (ms *MenuStorageService) EnsureDbDir() error {
-	err := os.MkdirAll(ms.dbDir, 0700)
+func (ms *MenuStorageService) ensureDbDir() error {
+	err := os.MkdirAll(ms.conn.String(), 0700)
 	if err != nil {
 		return fmt.Errorf("state dir create exited with error: %v\n", err)
 	}

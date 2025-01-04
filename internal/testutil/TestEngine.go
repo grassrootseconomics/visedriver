@@ -41,9 +41,11 @@ func TestEngine(sessionId string) (engine.Engine, func(), chan bool) {
 
 	dbDir := ".test_state"
 	resourceDir := scriptDir
-	menuStorageService := storage.NewMenuStorageService(dbDir, resourceDir)
+	//menuStorageService := storage.NewMenuStorageService(dbDir, resourceDir)
+	menuStorageService := storage.NewMenuStorageService(resourceDir)
 
-	err := menuStorageService.EnsureDbDir()
+	//err := menuStorageService.EnsureDbDir()
+	err := menuStorageService.SetConn(dbDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)

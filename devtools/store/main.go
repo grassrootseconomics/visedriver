@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 
 	"git.grassecon.net/urdt/ussd/config"
 	"git.grassecon.net/urdt/ussd/initializers"
@@ -28,23 +29,36 @@ func init() {
 func main() {
 	config.LoadConfig()
 
-	var dbDir string
+	var connStr string
 	var sessionId string
 	var database string
 	var engineDebug bool
+	var err error
 
 	flag.StringVar(&sessionId, "session-id", "075xx2123", "session id")
-	flag.StringVar(&database, "db", "gdbm", "database to be used")
-	flag.StringVar(&dbDir, "dbdir", ".state", "database dir to read from")
+	flag.StringVar(&connStr, "c", ".state", "connection string")
 	flag.BoolVar(&engineDebug, "d", false, "use engine debug output")
 	flag.Parse()
+
+	if connStr == "." {
+		connStr, err = filepath.Abs(".state/state.gdbm")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "auto connstr generate error: %v", err)
+			os.Exit(1)
+		}
+	}
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
 	ctx = context.WithValue(ctx, "Database", database)
 
 	resourceDir := scriptDir
-	menuStorageService := storage.NewMenuStorageService(dbDir, resourceDir)
+	menuStorageService := storage.NewMenuStorageService(resourceDir)
+	err = menuStorageService.SetConn(connStr)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "connection string error: %v", err)
+		os.Exit(1)
+	}
 
 	store, err := menuStorageService.GetUserdataDb(ctx)
 	if err != nil {

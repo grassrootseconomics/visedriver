@@ -15,11 +15,10 @@ import (
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/resource"
 
-	"git.grassecon.net/urdt/ussd/common"
 	"git.grassecon.net/urdt/ussd/config"
 	"git.grassecon.net/urdt/ussd/initializers"
 	"git.grassecon.net/urdt/ussd/internal/handlers"
-	httpserver "git.grassecon.net/urdt/ussd/internal/http/at"
+	at "git.grassecon.net/urdt/ussd/internal/http/at"
 	"git.grassecon.net/urdt/ussd/internal/storage"
 	"git.grassecon.net/urdt/ussd/remote"
 )

@@ -23,7 +23,6 @@ type StorageService interface {
 	GetPersister(ctx context.Context) (*persist.Persister, error)
 	GetUserdataDb(ctx context.Context) db.Db
 	GetResource(ctx context.Context) (resource.Resource, error)
-	SetConn(connStr string) error
 }
 
 type MenuStorageService struct {

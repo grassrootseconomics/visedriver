@@ -74,7 +74,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	logg.Infof("start command", "connstr", connStr, "resourcedir", resourceDir, "outputsize", size, "sessionId", sessionId)
+	logg.Infof("start command", "conn", connData, "resourcedir", resourceDir, "outputsize", size, "sessionId", sessionId)
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "Database", database)

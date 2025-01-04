@@ -52,7 +52,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	logg.Infof("start command", "connstr", connStr, "outputsize", size)
+	logg.Infof("start command", "conn", connData, "outputsize", size)
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "SessionId", sessionId)

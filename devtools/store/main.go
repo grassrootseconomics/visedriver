@@ -48,6 +48,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	logg.Infof("start command", "conn", connData)
+
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
 	ctx = context.WithValue(ctx, "Database", database)

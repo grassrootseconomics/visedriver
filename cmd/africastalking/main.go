@@ -47,7 +47,7 @@ func main() {
 	var err error
 
 	flag.StringVar(&resourceDir, "resourcedir", path.Join("services", "registration"), "resource dir")
-	flag.StringVar(&connStr, "c", ".state", "connection string")
+	flag.StringVar(&connStr, "c", "", "connection string")
 	flag.BoolVar(&engineDebug, "d", false, "use engine debug output")
 	flag.UintVar(&size, "s", 160, "max size of output")
 	flag.StringVar(&host, "h", initializers.GetEnv("HOST", "127.0.0.1"), "http host")
@@ -63,7 +63,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	logg.Infof("start command", "build", build, "dbdir", connStr, "resourcedir", resourceDir, "outputsize", size)
+	logg.Infof("start command", "build", build, "conn", connData, "resourcedir", resourceDir, "outputsize", size)
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "Database", database)

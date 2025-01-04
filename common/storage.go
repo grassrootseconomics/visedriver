@@ -23,7 +23,6 @@ type StorageServices interface {
 	GetPersister(ctx context.Context) (*persist.Persister, error)
 	GetUserdataDb(ctx context.Context) (db.Db, error)
 	GetResource(ctx context.Context) (resource.Resource, error)
-	SetConn(conn storage.ConnData)
 }
 
 type StorageService struct {

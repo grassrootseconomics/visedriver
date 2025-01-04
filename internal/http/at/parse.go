@@ -15,7 +15,7 @@ import (
 )
 
 type ATRequestParser struct {
-	context context.Context
+	Context context.Context
 }
 
 func (arp *ATRequestParser) GetSessionId(rq any) (string, error) {
@@ -43,7 +43,7 @@ func (arp *ATRequestParser) GetSessionId(rq any) (string, error) {
 		decodedStr := string(logBytes)
 		sessionId, err := extractATSessionId(decodedStr)
 		if err != nil {
-			context.WithValue(arp.context, "at-session-id", sessionId)
+			context.WithValue(arp.Context, "at-session-id", sessionId)
 		}
 		logg.Debugf("Received request:", decodedStr)
 	}

@@ -18,7 +18,7 @@ import (
 	"git.grassecon.net/urdt/ussd/config"
 	"git.grassecon.net/urdt/ussd/initializers"
 	"git.grassecon.net/urdt/ussd/internal/handlers"
-	at "git.grassecon.net/urdt/ussd/internal/http/at"
+	"git.grassecon.net/urdt/ussd/internal/http/at"
 	"git.grassecon.net/urdt/ussd/internal/storage"
 	"git.grassecon.net/urdt/ussd/remote"
 )
@@ -121,10 +121,10 @@ func main() {
 	defer stateStore.Close()
 
 	rp := &at.ATRequestParser{
-		context: ctx,
+		Context: ctx,
 	}
 	bsh := handlers.NewBaseSessionHandler(cfg, rs, stateStore, userdataStore, rp, hl)
-	sh := httpserver.NewATSessionHandler(bsh)
+	sh := at.NewATSessionHandler(bsh)
 
 	mux := http.NewServeMux()
 	mux.Handle(initializers.GetEnv("AT_ENDPOINT", "/"), sh)

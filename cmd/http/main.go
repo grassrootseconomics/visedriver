@@ -47,6 +47,7 @@ func main() {
 	var err error
 
 	flag.StringVar(&resourceDir, "resourcedir", path.Join("services", "registration"), "resource dir")
+	flag.StringVar(&connStr, "c", ".", "connection string")
 	flag.BoolVar(&engineDebug, "d", false, "use engine debug output")
 	flag.UintVar(&size, "s", 160, "max size of output")
 	flag.StringVar(&host, "h", initializers.GetEnv("HOST", "127.0.0.1"), "http host")

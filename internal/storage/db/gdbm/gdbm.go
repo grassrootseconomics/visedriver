@@ -6,6 +6,11 @@ import (
 	"git.defalsify.org/vise.git/db"
 	gdbmdb "git.defalsify.org/vise.git/db/gdbm"
 	"git.defalsify.org/vise.git/lang"
+	"git.defalsify.org/vise.git/logging"
+)
+
+var (
+	logg = logging.NewVanilla().WithDomain("gdbmstorage")
 )
 
 var (

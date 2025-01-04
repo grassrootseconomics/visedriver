@@ -1,18 +1,14 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"os/signal"
 	"path"
 	"strconv"
-	"strings"
 	"syscall"
 
 	"git.defalsify.org/vise.git/engine"
@@ -20,18 +16,18 @@ import (
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/lang"
 
-	"git.grassecon.net/urdt/ussd/common"
 	"git.grassecon.net/urdt/ussd/config"
 	"git.grassecon.net/urdt/ussd/initializers"
 	"git.grassecon.net/urdt/ussd/internal/handlers"
-	httpserver "git.grassecon.net/urdt/ussd/internal/http"
+	"git.grassecon.net/urdt/ussd/internal/http/at"
+	httpserver "git.grassecon.net/urdt/ussd/internal/http/at"
 	"git.grassecon.net/urdt/ussd/internal/storage"
 	"git.grassecon.net/urdt/ussd/remote"
 	"git.grassecon.net/urdt/ussd/internal/args"
 )
 
 var (
-	logg          = logging.NewVanilla()
+	logg          = logging.NewVanilla().WithDomain("AfricasTalking").WithContextKey("at-session-id")
 	scriptDir     = path.Join("services", "registration")
 	build         = "dev"
 	menuSeparator = ": "
@@ -40,72 +36,6 @@ var (
 func init() {
 	initializers.LoadEnvVariables()
 }
-
-type atRequestParser struct{}
-
-func (arp *atRequestParser) GetSessionId(rq any) (string, error) {
-	rqv, ok := rq.(*http.Request)
-	if !ok {
-		logg.Warnf("got an invalid request", "req", rq)
-		return "", handlers.ErrInvalidRequest
-	}
-
-	// Capture body (if any) for logging
-	body, err := io.ReadAll(rqv.Body)
-	if err != nil {
-		logg.Warnf("failed to read request body", "err", err)
-		return "", fmt.Errorf("failed to read request body: %v", err)
-	}
-	// Reset the body for further reading
-	rqv.Body = io.NopCloser(bytes.NewReader(body))
-
-	// Log the body as JSON
-	bodyLog := map[string]string{"body": string(body)}
-	logBytes, err := json.Marshal(bodyLog)
-	if err != nil {
-		logg.Warnf("failed to marshal request body", "err", err)
-	} else {
-		logg.Debugf("received request", "bytes", logBytes)
-	}
-
-	if err := rqv.ParseForm(); err != nil {
-		logg.Warnf("failed to parse form data", "err", err)
-		return "", fmt.Errorf("failed to parse form data: %v", err)
-	}
-
-	phoneNumber := rqv.FormValue("phoneNumber")
-	if phoneNumber == "" {
-		return "", fmt.Errorf("no phone number found")
-	}
-
-	formattedNumber, err := common.FormatPhoneNumber(phoneNumber)
-	if err != nil {
-		logg.Warnf("failed to format phone number", "err", err)
-		return "", fmt.Errorf("failed to format number")
-	}
-
-	return formattedNumber, nil
-}
-
-func (arp *atRequestParser) GetInput(rq any) ([]byte, error) {
-	rqv, ok := rq.(*http.Request)
-	if !ok {
-		return nil, handlers.ErrInvalidRequest
-	}
-	if err := rqv.ParseForm(); err != nil {
-		return nil, fmt.Errorf("failed to parse form data: %v", err)
-	}
-
-	text := rqv.FormValue("text")
-
-	parts := strings.Split(text, "*")
-	if len(parts) == 0 {
-		return nil, fmt.Errorf("no input found")
-	}
-
-	return []byte(parts[len(parts)-1]), nil
-}
-
 func main() {
 	config.LoadConfig()
 
@@ -204,7 +134,9 @@ func main() {
 	}
 	defer stateStore.Close()
 
-	rp := &atRequestParser{}
+	rp := &at.ATRequestParser{
+		Context: ctx,
+	}
 	bsh := handlers.NewBaseSessionHandler(cfg, rs, stateStore, userdataStore, rp, hl)
 	sh := httpserver.NewATSessionHandler(bsh)
 

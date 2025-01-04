@@ -13,7 +13,7 @@ import (
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/state"
-	"git.grassecon.net/urdt/ussd/internal/storage"
+	dbstorage "git.grassecon.net/urdt/ussd/internal/storage/db"
 	"git.grassecon.net/urdt/ussd/internal/testutil/mocks"
 	"git.grassecon.net/urdt/ussd/internal/testutil/testservice"
 	"git.grassecon.net/urdt/ussd/internal/utils"
@@ -59,14 +59,14 @@ func InitializeTestStore(t *testing.T) (context.Context, *common.UserDataStore) 
 	return ctx, store
 }
 
-func InitializeTestSubPrefixDb(t *testing.T, ctx context.Context) *storage.SubPrefixDb {
+func InitializeTestSubPrefixDb(t *testing.T, ctx context.Context) *dbstorage.SubPrefixDb {
 	db := memdb.NewMemDb()
 	err := db.Connect(ctx, "")
 	if err != nil {
 		t.Fatal(err)
 	}
 	prefix := common.ToBytes(visedb.DATATYPE_USERDATA)
-	spdb := storage.NewSubPrefixDb(db, prefix)
+	spdb := dbstorage.NewSubPrefixDb(db, prefix)
 
 	return spdb
 }

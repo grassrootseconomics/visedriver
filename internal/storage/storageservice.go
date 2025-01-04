@@ -69,10 +69,6 @@ func (ms *MenuStorageService) SetConn(connStr string) error {
 func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.Db, section string) (db.Db, error) {
 	var newDb db.Db
 	var err error
-//	database, ok := ctx.Value("Database").(string)
-//	if !ok {
-//		return nil, fmt.Errorf("failed to select the database")
-//	}
 
 	if existingDb != nil {
 		return existingDb, nil

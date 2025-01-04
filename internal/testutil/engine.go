@@ -45,10 +45,8 @@ func TestEngine(sessionId string) (engine.Engine, func(), chan bool) {
 		os.Exit(1)
 	}
 	resourceDir := scriptDir
-	//menuStorageService := storage.NewMenuStorageService(connStr, resourceDir)
 	menuStorageService := storage.NewMenuStorageService(resourceDir)
 
-	//err := menuStorageService.EnsureDbDir()
 	err = menuStorageService.SetConn(connStr)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "conn error: %v", err)

@@ -21,6 +21,7 @@ import (
 	httpserver "git.grassecon.net/urdt/ussd/internal/http"
 	"git.grassecon.net/urdt/ussd/internal/storage"
 	"git.grassecon.net/urdt/ussd/remote"
+	"git.grassecon.net/urdt/ussd/request"
 )
 
 var (
@@ -123,7 +124,7 @@ func main() {
 
 	rp := &httpserver.DefaultRequestParser{}
 	bsh := handlers.NewBaseSessionHandler(cfg, rs, stateStore, userdataStore, rp, hl)
-	sh := httpserver.ToSessionHandler(bsh)
+	sh := request.ToSessionHandler(bsh)
 	s := &http.Server{
 		Addr:    fmt.Sprintf("%s:%s", host, strconv.Itoa(int(port))),
 		Handler: sh,

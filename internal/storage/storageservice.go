@@ -40,6 +40,11 @@ func NewMenuStorageService(conn ConnData, resourceDir string) *MenuStorageServic
 	}
 }
 
+func (ms *MenuStorageService) WithResourceDir(resourceDir string) *MenuStorageService {
+	ms.resourceDir = resourceDir
+	return ms
+}
+
 func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.Db, section string) (db.Db, error) {
 	var newDb db.Db
 	var err error

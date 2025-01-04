@@ -11,6 +11,10 @@ import (
 	dbstorage "git.grassecon.net/urdt/ussd/internal/storage/db"
 )
 
+var (
+	ToConnData = storage.ToConnData
+)
+
 func StoreToDb(store *UserDataStore) db.Db {
 	return store.Db
 }
@@ -34,6 +38,12 @@ func NewStorageService(conn storage.ConnData) (*StorageService, error) {
 		svc: storage.NewMenuStorageService(conn, ""),
 	}
 	return svc, nil
+}
+
+// TODO: simplify enable poresource, conndata instead
+func(ss *StorageService) SetResourceDir(resourceDir string) error {
+	ss.svc = ss.svc.WithResourceDir(resourceDir)
+	return nil
 }
 
 func(ss *StorageService) GetPersister(ctx context.Context) (*persist.Persister, error) {

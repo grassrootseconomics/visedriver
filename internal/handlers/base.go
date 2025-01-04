@@ -6,19 +6,20 @@ import (
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
 
+	"git.grassecon.net/urdt/ussd/request"
 	"git.grassecon.net/urdt/ussd/internal/handlers/ussd"
 	"git.grassecon.net/urdt/ussd/internal/storage"
 )
 
 type BaseSessionHandler struct {
 	cfgTemplate engine.Config
-	rp RequestParser
+	rp request.RequestParser
 	rs resource.Resource
 	hn *ussd.Handlers
 	provider storage.StorageProvider
 }
 
-func NewBaseSessionHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp RequestParser, hn *ussd.Handlers) *BaseSessionHandler {
+func NewBaseSessionHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp request.RequestParser, hn *ussd.Handlers) *BaseSessionHandler {
 	return &BaseSessionHandler{
 		cfgTemplate: cfg,
 		rs: rs,
@@ -41,7 +42,7 @@ func(f *BaseSessionHandler) GetEngine(cfg engine.Config, rs resource.Resource, p
 	return en
 }
 
-func(f *BaseSessionHandler) Process(rqs RequestSession) (RequestSession, error) {
+func(f *BaseSessionHandler) Process(rqs request.RequestSession) (request.RequestSession, error) {
 	var r bool
 	var err error
 	var ok bool
@@ -88,13 +89,13 @@ func(f *BaseSessionHandler) Process(rqs RequestSession) (RequestSession, error) 
 	return rqs, nil
 }
 
-func(f *BaseSessionHandler) Output(rqs RequestSession) (RequestSession,  error) {
+func(f *BaseSessionHandler) Output(rqs request.RequestSession) (request.RequestSession,  error) {
 	var err error
 	_, err = rqs.Engine.Flush(rqs.Ctx, rqs.Writer)
 	return rqs, err
 }
 
-func(f *BaseSessionHandler) Reset(rqs RequestSession) (RequestSession, error) {
+func(f *BaseSessionHandler) Reset(rqs request.RequestSession) (request.RequestSession, error) {
 	defer f.provider.Put(rqs.Config.SessionId, rqs.Storage)
 	return rqs, rqs.Engine.Finish()
 }
@@ -103,6 +104,6 @@ func(f *BaseSessionHandler) GetConfig() engine.Config {
 	return f.cfgTemplate
 }
 
-func(f *BaseSessionHandler) GetRequestParser() RequestParser {
+func(f *BaseSessionHandler) GetRequestParser() request.RequestParser {
 	return f.rp
 }

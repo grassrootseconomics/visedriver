@@ -7,22 +7,16 @@ import (
 	"git.defalsify.org/vise.git/logging"
 
 	"git.grassecon.net/urdt/ussd/internal/handlers"
+	"git.grassecon.net/urdt/ussd/request"
 )
 
 var (
 	logg = logging.NewVanilla().WithDomain("httpserver")
 )
 
-type SessionHandler struct {
-	handlers.RequestHandler
-}
+type SessionHandler request.SessionHandler
 
-func ToSessionHandler(h handlers.RequestHandler) *SessionHandler {
-	return &SessionHandler{
-		RequestHandler: h,
-	}
-}
-
+// TODO: duplicated
 func (f *SessionHandler) WriteError(w http.ResponseWriter, code int, err error) {
 	s := err.Error()
 	w.Header().Set("Content-Length", strconv.Itoa(len(s)))
@@ -39,7 +33,7 @@ func (f *SessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	var err error
 	var perr error
 
-	rqs := handlers.RequestSession{
+	rqs := request.RequestSession{
 		Ctx:    req.Context(),
 		Writer: w,
 	}

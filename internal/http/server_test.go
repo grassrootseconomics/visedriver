@@ -10,6 +10,7 @@ import (
 	"git.defalsify.org/vise.git/engine"
 	"git.grassecon.net/urdt/ussd/internal/handlers"
 	"git.grassecon.net/urdt/ussd/internal/testutil/mocks/httpmocks"
+	"git.grassecon.net/urdt/ussd/request"
 )
 
 // invalidRequestType is a custom type to test invalid request scenarios
@@ -80,16 +81,16 @@ func TestSessionHandler_ServeHTTP(t *testing.T) {
 			}
 
 			mockRequestHandler := &httpmocks.MockRequestHandler{
-				ProcessFunc: func(rs handlers.RequestSession) (handlers.RequestSession, error) {
+				ProcessFunc: func(rs request.RequestSession) (request.RequestSession, error) {
 					return rs, tt.processErr
 				},
-				OutputFunc: func(rs handlers.RequestSession) (handlers.RequestSession, error) {
+				OutputFunc: func(rs request.RequestSession) (request.RequestSession, error) {
 					return rs, tt.outputErr
 				},
-				ResetFunc: func(rs handlers.RequestSession) (handlers.RequestSession, error) {
+				ResetFunc: func(rs request.RequestSession) (request.RequestSession, error) {
 					return rs, tt.resetErr
 				},
-				GetRequestParserFunc: func() handlers.RequestParser {
+				GetRequestParserFunc: func() request.RequestParser {
 					return mockRequestParser
 				},
 				GetConfigFunc: func() engine.Config {
@@ -97,7 +98,7 @@ func TestSessionHandler_ServeHTTP(t *testing.T) {
 				},
 			}
 
-			sessionHandler := ToSessionHandler(mockRequestHandler)
+			sessionHandler := request.ToSessionHandler(mockRequestHandler)
 
 			req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer(tt.input))
 			req.Header.Set("X-Vise-Session", tt.sessionID)

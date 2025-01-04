@@ -18,6 +18,7 @@ import (
 	"git.grassecon.net/urdt/ussd/internal/handlers"
 	"git.grassecon.net/urdt/ussd/internal/storage"
 	"git.grassecon.net/urdt/ussd/remote"
+	"git.grassecon.net/urdt/ussd/request"
 )
 
 var (
@@ -138,7 +139,7 @@ func main() {
 	}
 	sh := handlers.NewBaseSessionHandler(cfg, rs, stateStore, userdataStore, rp, hl)
 	cfg.SessionId = sessionId
-	rqs := handlers.RequestSession{
+	rqs := request.RequestSession{
 		Ctx:    ctx,
 		Writer: os.Stdout,
 		Config: cfg,

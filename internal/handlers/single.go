@@ -19,4 +19,3 @@ var (
 var (
 	logg = logging.NewVanilla().WithDomain("handlers")
 )
-

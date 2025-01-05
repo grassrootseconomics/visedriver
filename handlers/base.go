@@ -5,10 +5,16 @@ import (
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
+	"git.defalsify.org/vise.git/logging"
 
 	"git.grassecon.net/urdt/ussd/request"
+	"git.grassecon.net/urdt/ussd/errors"
 	"git.grassecon.net/urdt/ussd/internal/handlers/ussd"
 	"git.grassecon.net/urdt/ussd/internal/storage"
+)
+
+var (
+	logg = logging.NewVanilla().WithDomain("handlers")
 )
 
 type BaseSessionHandler struct {
@@ -52,7 +58,7 @@ func(f *BaseSessionHandler) Process(rqs request.RequestSession) (request.Request
 	rqs.Storage, err = f.provider.Get(rqs.Config.SessionId)
 	if err != nil {
 		logg.ErrorCtxf(rqs.Ctx, "", "storage get error", err)
-		return rqs, ErrStorage
+		return rqs, errors.ErrStorage
 	}
 
 	f.hn = f.hn.WithPersister(rqs.Storage.Persister)
@@ -67,7 +73,7 @@ func(f *BaseSessionHandler) Process(rqs request.RequestSession) (request.Request
 		if perr != nil {
 			logg.ErrorCtxf(rqs.Ctx, "", "storage put error", perr)
 		}
-		return rqs, ErrEngineType
+		return rqs, errors.ErrEngineType
 	}
 	en = en.WithFirst(f.hn.Init)
 	if rqs.Config.EngineDebug {

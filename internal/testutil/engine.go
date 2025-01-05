@@ -11,7 +11,7 @@ import (
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/resource"
-	"git.grassecon.net/urdt/ussd/internal/handlers"
+	"git.grassecon.net/urdt/ussd/handlers"
 	"git.grassecon.net/urdt/ussd/internal/storage"
 	"git.grassecon.net/urdt/ussd/internal/testutil/testservice"
 	"git.grassecon.net/urdt/ussd/internal/testutil/testtag"

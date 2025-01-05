@@ -98,7 +98,10 @@ func TestSessionHandler_ServeHTTP(t *testing.T) {
 				},
 			}
 
-			sessionHandler := request.ToSessionHandler(mockRequestHandler)
+			sessionHandler := &SessionHandler{
+				RequestHandler: mockRequestHandler,
+			}
+			//sessionHandler := request.ToSessionHandler(mockRequestHandler)
 
 			req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer(tt.input))
 			req.Header.Set("X-Vise-Session", tt.sessionID)

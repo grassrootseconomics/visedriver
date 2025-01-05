@@ -2,7 +2,6 @@ package request
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -57,10 +56,6 @@ func (f *SessionHandler) WriteError(w http.ResponseWriter, code int, err error) 
 		logg.Errorf("error writing error!!", "err", err, "olderr", s)
 		w.WriteHeader(500)
 	}
-}
-
-func (f *SessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	f.WriteError(w, 500, fmt.Errorf("not implemented"))
 }
 
 func ToSessionHandler(h RequestHandler) *SessionHandler {

@@ -1,4 +1,4 @@
-package common
+package errors
 
 import (
 	"git.grassecon.net/urdt/ussd/internal/handlers"

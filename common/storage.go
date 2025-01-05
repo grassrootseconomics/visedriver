@@ -57,3 +57,7 @@ func(ss *StorageService) GetUserdataDb(ctx context.Context) (db.Db, error) {
 func(ss *StorageService) GetResource(ctx context.Context) (resource.Resource, error) {
 	return nil, errors.New("not implemented")
 }
+
+func(ss *StorageService) GetStateStore(ctx context.Context) (db.Db, error) {
+	return ss.svc.GetStateStore(ctx)
+}

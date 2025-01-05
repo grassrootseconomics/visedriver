@@ -9,7 +9,7 @@ import (
 
 	"git.defalsify.org/vise.git/engine"
 	"git.grassecon.net/urdt/ussd/internal/handlers"
-	"git.grassecon.net/urdt/ussd/internal/testutil/mocks/httpmocks"
+	"git.grassecon.net/urdt/ussd/testutil/mocks/httpmocks"
 	"git.grassecon.net/urdt/ussd/request"
 )
 

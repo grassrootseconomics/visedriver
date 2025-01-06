@@ -2,6 +2,7 @@ package config
 
 import (
 	"net/url"
+	"strings"
 
 	"git.grassecon.net/urdt/ussd/initializers"
 )
@@ -16,6 +17,11 @@ const (
 	voucherTransfersPathPrefix = "/api/v1/transfers/last10"
 	voucherDataPathPrefix      = "/api/v1/token"
 	AliasPrefix                = "api/v1/alias"
+)
+
+var (
+	defaultLanguage		   = "eng"
+	languages []string
 )
 
 var (
@@ -35,7 +41,27 @@ var (
 	VoucherDataURL      string
 	CheckAliasURL       string
 	DbConn		string
+	DefaultLanguage	    string
+	Languages	[]string
 )
+
+func setLanguage() error {
+	defaultLanguage = initializers.GetEnv("DEFAULT_LANGUAGE", defaultLanguage)
+	languages = strings.Split(initializers.GetEnv("LANGUAGES", defaultLanguage), ",")
+	haveDefaultLanguage := false
+	for i, v := range(languages) {
+		languages[i] = strings.ReplaceAll(v, " ", "")
+		if languages[i] == defaultLanguage {
+			haveDefaultLanguage = true
+		}
+	}
+
+	if !haveDefaultLanguage {
+		languages = append([]string{defaultLanguage}, languages...)
+	}
+
+	return nil
+}
 
 func setBase() error {
 	var err error
@@ -71,6 +97,10 @@ func LoadConfig() error {
 	if err != nil {
 		return err
 	}
+	err = setLanguage()
+	if err != nil {
+		return err
+	}
 	CreateAccountURL, _ = url.JoinPath(custodialURLBase, createAccountPath)
 	TrackStatusURL, _ = url.JoinPath(custodialURLBase, trackStatusPath)
 	BalanceURL, _ = url.JoinPath(custodialURLBase, balancePathPrefix)
@@ -80,6 +110,8 @@ func LoadConfig() error {
 	VoucherTransfersURL, _ = url.JoinPath(dataURLBase, voucherTransfersPathPrefix)
 	VoucherDataURL, _ = url.JoinPath(dataURLBase, voucherDataPathPrefix)
 	CheckAliasURL, _ = url.JoinPath(dataURLBase, AliasPrefix)
+	DefaultLanguage = defaultLanguage
+	Languages = languages
 
 	return nil
 }

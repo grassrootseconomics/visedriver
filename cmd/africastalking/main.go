@@ -134,9 +134,7 @@ func main() {
 	}
 	defer stateStore.Close()
 
-	rp := &at.ATRequestParser{
-		Context: ctx,
-	}
+	rp := &at.ATRequestParser{}
 	bsh := handlers.NewBaseSessionHandler(cfg, rs, stateStore, userdataStore, rp, hl)
 	sh := httpserver.NewATSessionHandler(bsh)
 

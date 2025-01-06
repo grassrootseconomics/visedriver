@@ -7,23 +7,24 @@ import (
 	"os"
 	"path"
 
-	"git.grassecon.net/urdt/ussd/config"
-	"git.grassecon.net/urdt/ussd/initializers"
-	"git.grassecon.net/urdt/ussd/internal/storage"
-	"git.grassecon.net/urdt/ussd/debug"
 	"git.defalsify.org/vise.git/db"
 	"git.defalsify.org/vise.git/logging"
+	"git.grassecon.net/urdt/ussd/config"
+	"git.grassecon.net/urdt/ussd/debug"
+	"git.grassecon.net/urdt/ussd/initializers"
+	"git.grassecon.net/urdt/ussd/internal/storage"
+	testdataloader "github.com/peteole/testdata-loader"
 )
 
 var (
 	logg      = logging.NewVanilla()
+	baseDir   = testdataloader.GetBasePath()
 	scriptDir = path.Join("services", "registration")
 )
 
 func init() {
-	initializers.LoadEnvVariables()
+	initializers.LoadEnvVariables(baseDir)
 }
-
 
 func main() {
 	config.LoadConfig()

@@ -15,16 +15,18 @@ import (
 	"git.grassecon.net/urdt/ussd/internal/handlers"
 	"git.grassecon.net/urdt/ussd/internal/storage"
 	"git.grassecon.net/urdt/ussd/remote"
+	testdataloader "github.com/peteole/testdata-loader"
 )
 
 var (
 	logg          = logging.NewVanilla()
+	baseDir       = testdataloader.GetBasePath()
 	scriptDir     = path.Join("services", "registration")
 	menuSeparator = ": "
 )
 
 func init() {
-	initializers.LoadEnvVariables()
+	initializers.LoadEnvVariables(baseDir)
 }
 
 func main() {

@@ -14,6 +14,7 @@ import (
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/resource"
+	testdataloader "github.com/peteole/testdata-loader"
 
 	"git.grassecon.net/urdt/ussd/config"
 	"git.grassecon.net/urdt/ussd/initializers"
@@ -26,13 +27,14 @@ import (
 
 var (
 	logg          = logging.NewVanilla().WithDomain("AfricasTalking").WithContextKey("at-session-id")
+	baseDir       = testdataloader.GetBasePath()
 	scriptDir     = path.Join("services", "registration")
 	build         = "dev"
 	menuSeparator = ": "
 )
 
 func init() {
-	initializers.LoadEnvVariables()
+	initializers.LoadEnvVariables(baseDir)
 }
 func main() {
 	config.LoadConfig()

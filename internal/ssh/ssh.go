@@ -71,6 +71,20 @@ func(a *auther) Get(k []byte) (string, error) {
 	return v, nil
 }
 
+type SshRunner struct {
+	Ctx context.Context
+	Cfg engine.Config
+	FlagFile string
+	Conn storage.ConnData
+	ResourceDir string
+	Debug bool
+	SrvKeyFile string
+	Host string
+	Port uint
+	wg sync.WaitGroup
+	lst net.Listener
+}
+
 func(s *SshRunner) serve(ctx context.Context, sessionId string, ch ssh.NewChannel, en engine.Engine) error {
 	if ch == nil {
 		return errors.New("nil channel")
@@ -128,32 +142,13 @@ func(s *SshRunner) serve(ctx context.Context, sessionId string, ch ssh.NewChanne
 	return nil
 }
 
-type SshRunner struct {
-	Ctx context.Context
-	Cfg engine.Config
-	FlagFile string
-	DbDir string
-	ResourceDir string
-	Debug bool
-	SrvKeyFile string
-	Host string
-	Port uint
-	wg sync.WaitGroup
-	lst net.Listener
-}
-
 func(s *SshRunner) Stop() error {
 	return s.lst.Close()
 }
 
 func(s *SshRunner) GetEngine(sessionId string) (engine.Engine, func(), error) {
 	ctx := s.Ctx
-	menuStorageService := storage.NewMenuStorageService(s.DbDir, s.ResourceDir)
-
-	err := menuStorageService.EnsureDbDir()
-	if err != nil {
-		return nil, nil, err
-	}
+	menuStorageService := storage.NewMenuStorageService(s.Conn, s.ResourceDir)
 
 	rs, err := menuStorageService.GetResource(ctx)
 	if err != nil {

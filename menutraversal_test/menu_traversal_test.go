@@ -3,6 +3,7 @@ package menutraversaltest
 import (
 	"bytes"
 	"context"
+	"flag"
 	"log"
 	"math/rand"
 	"os"
@@ -15,13 +16,14 @@ import (
 )
 
 var (
-	testData      = driver.ReadData()
-	testStore     = ".test_state"
-	groupTestFile = "group_test.json"
-	sessionID     string
-	src           = rand.NewSource(42)
-	g             = rand.New(src)
+	testData  = driver.ReadData()
+	testStore = ".test_state"
+	sessionID string
+	src       = rand.NewSource(42)
+	g         = rand.New(src)
 )
+
+var groupTestFile = flag.String("test-file", "group_test.json", "The test file to use for running the group tests")
 
 func GenerateSessionId() string {
 	uu := uuid.NewGenWithOptions(uuid.WithRandomReader(g))
@@ -296,9 +298,10 @@ func TestMainMenuSend(t *testing.T) {
 	ctx := context.Background()
 	sessions := testData
 	for _, session := range sessions {
-		groups := driver.FilterGroupsByName(session.Groups, "send_with_invalid_inputs")
+		groups := driver.FilterGroupsByName(session.Groups, "send_with_invite")
 		for _, group := range groups {
-			for _, step := range group.Steps {
+			for index, step := range group.Steps {
+				t.Logf("step %v with input %v", index, step.Input)
 				cont, err := en.Exec(ctx, []byte(step.Input))
 				if err != nil {
 					t.Fatalf("Test case '%s' failed at input '%s': %v", group.Name, step.Input, err)
@@ -337,7 +340,7 @@ func TestMainMenuSend(t *testing.T) {
 }
 
 func TestGroups(t *testing.T) {
-	groups, err := driver.LoadTestGroups(groupTestFile)
+	groups, err := driver.LoadTestGroups(*groupTestFile)
 	if err != nil {
 		log.Fatalf("Failed to load test groups: %v", err)
 	}

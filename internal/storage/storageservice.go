@@ -13,6 +13,7 @@ import (
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
 	"git.grassecon.net/urdt/ussd/initializers"
+	gdbmstorage "git.grassecon.net/urdt/ussd/internal/storage/db/gdbm"
 )
 
 var (
@@ -41,10 +42,13 @@ func buildConnStr() string {
 	dbName := initializers.GetEnv("DB_NAME", "")
 	port := initializers.GetEnv("DB_PORT", "5432")
 
-	return fmt.Sprintf(
+	connString := fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s",
 		user, password, host, port, dbName,
 	)
+	logg.Debugf("pg conn string", "conn", connString)
+
+	return connString
 }
 
 func NewMenuStorageService(dbDir string, resourceDir string) *MenuStorageService {
@@ -72,7 +76,7 @@ func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.D
 		connStr := buildConnStr()
 		err = newDb.Connect(ctx, connStr)
 	} else {
-		newDb = NewThreadGdbmDb()
+		newDb = gdbmstorage.NewThreadGdbmDb()
 		storeFile := path.Join(ms.dbDir, fileName)
 		err = newDb.Connect(ctx, storeFile)
 	}

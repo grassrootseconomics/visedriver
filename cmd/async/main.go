@@ -16,13 +16,14 @@ import (
 	"git.grassecon.net/urdt/ussd/config"
 	"git.grassecon.net/urdt/ussd/initializers"
 	"git.grassecon.net/urdt/ussd/internal/handlers"
-	"git.grassecon.net/urdt/ussd/internal/handlers/server"
 	"git.grassecon.net/urdt/ussd/internal/storage"
+	"git.grassecon.net/urdt/ussd/remote"
 )
 
 var (
-	logg      = logging.NewVanilla()
-	scriptDir = path.Join("services", "registration")
+	logg          = logging.NewVanilla()
+	scriptDir     = path.Join("services", "registration")
+	menuSeparator = ": "
 )
 
 func init() {
@@ -34,7 +35,7 @@ type asyncRequestParser struct {
 	input     []byte
 }
 
-func (p *asyncRequestParser) GetSessionId(r any) (string, error) {
+func (p *asyncRequestParser) GetSessionId(ctx context.Context, r any) (string, error) {
 	return p.sessionId, nil
 }
 
@@ -70,9 +71,10 @@ func main() {
 	pfp := path.Join(scriptDir, "pp.csv")
 
 	cfg := engine.Config{
-		Root:       "root",
-		OutputSize: uint32(size),
-		FlagCount:  uint32(128),
+		Root:          "root",
+		OutputSize:    uint32(size),
+		FlagCount:     uint32(128),
+		MenuSeparator: menuSeparator,
 	}
 
 	if engineDebug {
@@ -104,9 +106,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	lhs, err := handlers.NewLocalHandlerService(pfp, true, dbResource, cfg, rs)
+	lhs, err := handlers.NewLocalHandlerService(ctx, pfp, true, dbResource, cfg, rs)
 	lhs.SetDataStore(&userdataStore)
-	accountService := server.AccountService{}
+	accountService := remote.AccountService{}
 
 	hl, err := lhs.GetHandler(&accountService)
 	if err != nil {

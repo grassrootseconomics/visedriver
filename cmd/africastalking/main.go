@@ -9,7 +9,6 @@ import (
 	"os/signal"
 	"path"
 	"strconv"
-	"strings"
 	"syscall"
 
 	"git.defalsify.org/vise.git/engine"
@@ -19,58 +18,22 @@ import (
 	"git.grassecon.net/urdt/ussd/config"
 	"git.grassecon.net/urdt/ussd/initializers"
 	"git.grassecon.net/urdt/ussd/internal/handlers"
-	"git.grassecon.net/urdt/ussd/internal/handlers/server"
-	httpserver "git.grassecon.net/urdt/ussd/internal/http"
+	"git.grassecon.net/urdt/ussd/internal/http/at"
+	httpserver "git.grassecon.net/urdt/ussd/internal/http/at"
 	"git.grassecon.net/urdt/ussd/internal/storage"
+	"git.grassecon.net/urdt/ussd/remote"
 )
 
 var (
-	logg      = logging.NewVanilla()
-	scriptDir = path.Join("services", "registration")
+	logg          = logging.NewVanilla().WithDomain("AfricasTalking").WithContextKey("at-session-id")
+	scriptDir     = path.Join("services", "registration")
+	build         = "dev"
+	menuSeparator = ": "
 )
 
 func init() {
 	initializers.LoadEnvVariables()
 }
-
-type atRequestParser struct{}
-
-func (arp *atRequestParser) GetSessionId(rq any) (string, error) {
-	rqv, ok := rq.(*http.Request)
-	if !ok {
-		return "", handlers.ErrInvalidRequest
-	}
-	if err := rqv.ParseForm(); err != nil {
-		return "", fmt.Errorf("failed to parse form data: %v", err)
-	}
-
-	phoneNumber := rqv.FormValue("phoneNumber")
-	if phoneNumber == "" {
-		return "", fmt.Errorf("no phone number found")
-	}
-
-	return phoneNumber, nil
-}
-
-func (arp *atRequestParser) GetInput(rq any) ([]byte, error) {
-	rqv, ok := rq.(*http.Request)
-	if !ok {
-		return nil, handlers.ErrInvalidRequest
-	}
-	if err := rqv.ParseForm(); err != nil {
-		return nil, fmt.Errorf("failed to parse form data: %v", err)
-	}
-
-	text := rqv.FormValue("text")
-
-	parts := strings.Split(text, "*")
-	if len(parts) == 0 {
-		return nil, fmt.Errorf("no input found")
-	}
-
-	return []byte(parts[len(parts)-1]), nil
-}
-
 func main() {
 	config.LoadConfig()
 
@@ -90,16 +53,17 @@ func main() {
 	flag.UintVar(&port, "p", initializers.GetEnvUint("PORT", 7123), "http port")
 	flag.Parse()
 
-	logg.Infof("start command", "dbdir", dbDir, "resourcedir", resourceDir, "outputsize", size)
+	logg.Infof("start command", "build", build, "dbdir", dbDir, "resourcedir", resourceDir, "outputsize", size)
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "Database", database)
 	pfp := path.Join(scriptDir, "pp.csv")
 
 	cfg := engine.Config{
-		Root:       "root",
-		OutputSize: uint32(size),
-		FlagCount:  uint32(128),
+		Root:          "root",
+		OutputSize:    uint32(size),
+		FlagCount:     uint32(128),
+		MenuSeparator: menuSeparator,
 	}
 
 	if engineDebug {
@@ -131,7 +95,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	lhs, err := handlers.NewLocalHandlerService(pfp, true, dbResource, cfg, rs)
+	lhs, err := handlers.NewLocalHandlerService(ctx, pfp, true, dbResource, cfg, rs)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
+	}
 	lhs.SetDataStore(&userdataStore)
 
 	if err != nil {
@@ -139,7 +107,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	accountService := server.AccountService{}
+	accountService := remote.AccountService{}
 	hl, err := lhs.GetHandler(&accountService)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
@@ -153,12 +121,16 @@ func main() {
 	}
 	defer stateStore.Close()
 
-	rp := &atRequestParser{}
+	rp := &at.ATRequestParser{}
 	bsh := handlers.NewBaseSessionHandler(cfg, rs, stateStore, userdataStore, rp, hl)
 	sh := httpserver.NewATSessionHandler(bsh)
+
+	mux := http.NewServeMux()
+	mux.Handle(initializers.GetEnv("AT_ENDPOINT", "/"), sh)
+
 	s := &http.Server{
 		Addr:    fmt.Sprintf("%s:%s", host, strconv.Itoa(int(port))),
-		Handler: sh,
+		Handler: mux,
 	}
 	s.RegisterOnShutdown(sh.Shutdown)
 

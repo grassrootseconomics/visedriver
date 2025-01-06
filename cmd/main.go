@@ -35,8 +35,10 @@ func main() {
 	var sessionId string
 	var database string
 	var engineDebug bool
+	var resourceDir string
 	var err error
 
+	flag.StringVar(&resourceDir, "resourcedir", scriptDir, "resource dir")
 	flag.StringVar(&sessionId, "session-id", "075xx2123", "session id")
 	flag.StringVar(&connStr, "c", "", "connection string")
 	flag.BoolVar(&engineDebug, "d", false, "use engine debug output")
@@ -67,7 +69,6 @@ func main() {
 		MenuSeparator: menuSeparator,
 	}
 
-	resourceDir := scriptDir
 	menuStorageService := storage.NewMenuStorageService(connData, resourceDir)
 
 	rs, err := menuStorageService.GetResource(ctx)

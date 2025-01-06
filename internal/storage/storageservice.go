@@ -9,6 +9,7 @@ import (
 	"git.defalsify.org/vise.git/db"
 	fsdb "git.defalsify.org/vise.git/db/fs"
 	"git.defalsify.org/vise.git/db/postgres"
+	"git.defalsify.org/vise.git/lang"
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
@@ -28,6 +29,7 @@ type StorageService interface {
 type MenuStorageService struct {
 	conn ConnData
 	resourceDir   string
+	poResource    resource.Resource
 	resourceStore db.Db
 	stateStore    db.Db
 	userDataStore db.Db
@@ -72,6 +74,28 @@ func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.D
 	return newDb, nil
 }
 
+// WithGettext triggers use of gettext for translation of templates and menus.
+//
+// The first language in `lns` will be used as default language, to resolve node keys to 
+// language strings.
+//
+// If `lns` is an empty array, gettext will not be used.
+func (ms *MenuStorageService) WithGettext(path string, lns []lang.Language) *MenuStorageService {
+	if len(lns) == 0 {
+		logg.Warnf("Gettext requested but no languages supplied")
+		return ms
+	}
+	rs := resource.NewPoResource(lns[0], path)
+
+	for _, ln := range(lns) {
+		rs = rs.WithLanguage(ln)
+	}
+
+	ms.poResource = rs
+
+	return ms
+}
+
 func (ms *MenuStorageService) GetPersister(ctx context.Context) (*persist.Persister, error) {
 	stateStore, err := ms.GetStateStore(ctx)
 	if err != nil {
@@ -104,6 +128,11 @@ func (ms *MenuStorageService) GetResource(ctx context.Context) (resource.Resourc
 		return nil, err
 	}
 	rfs := resource.NewDbResource(ms.resourceStore)
+	if ms.poResource != nil {
+		logg.InfoCtxf(ctx, "using poresource for menu and template")
+		rfs.WithMenuGetter(ms.poResource.GetMenu)
+		rfs.WithTemplateGetter(ms.poResource.GetTemplate)
+	}
 	return rfs, nil
 }
 

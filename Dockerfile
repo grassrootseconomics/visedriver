@@ -39,5 +39,6 @@ COPY --from=build /build/.env.example .
 RUN mv .env.example .env
 
 EXPOSE 7123
+EXPOSE 7122
 
 CMD ["./ussd-africastalking"]

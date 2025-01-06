@@ -10,24 +10,35 @@ import (
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/resource"
+	"git.grassecon.net/urdt/ussd/initializers"
 	"git.grassecon.net/urdt/ussd/internal/handlers"
 	"git.grassecon.net/urdt/ussd/internal/storage"
 	"git.grassecon.net/urdt/ussd/internal/testutil/testservice"
 	"git.grassecon.net/urdt/ussd/internal/testutil/testtag"
-	testdataloader "github.com/peteole/testdata-loader"
 	"git.grassecon.net/urdt/ussd/remote"
+	testdataloader "github.com/peteole/testdata-loader"
 )
 
 var (
-	baseDir   = testdataloader.GetBasePath()
-	logg      = logging.NewVanilla()
-	scriptDir = path.Join(baseDir, "services", "registration")
+	baseDir          = testdataloader.GetBasePath()
+	logg             = logging.NewVanilla()
+	scriptDir        = path.Join(baseDir, "services", "registration")
+	selectedDatabase = ""
 )
+
+func init() {
+	initializers.LoadEnvVariables(baseDir)
+}
+
+// SetDatabase updates the database used by TestEngine
+func SetDatabase(dbType string) {
+	selectedDatabase = dbType
+}
 
 func TestEngine(sessionId string) (engine.Engine, func(), chan bool) {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
-	ctx = context.WithValue(ctx, "Database", "gdbm")
+	ctx = context.WithValue(ctx, "Database", selectedDatabase)
 	pfp := path.Join(scriptDir, "pp.csv")
 
 	var eventChannel = make(chan bool)

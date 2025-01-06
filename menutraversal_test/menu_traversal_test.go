@@ -24,6 +24,7 @@ var (
 )
 
 var groupTestFile = flag.String("test-file", "group_test.json", "The test file to use for running the group tests")
+var database = flag.String("db", "gdbm", "Specify the database (gdbm or postgres)")
 
 func GenerateSessionId() string {
 	uu := uuid.NewGenWithOptions(uuid.WithRandomReader(g))
@@ -79,12 +80,18 @@ func extractSendAmount(response []byte) string {
 }
 
 func TestMain(m *testing.M) {
+	// Parse the flags
+	flag.Parse()
+
 	sessionID = GenerateSessionId()
 	defer func() {
 		if err := os.RemoveAll(testStore); err != nil {
 			log.Fatalf("Failed to delete state store %s: %v", testStore, err)
 		}
 	}()
+
+	// Set the selected database
+	testutil.SetDatabase(*database)
 	m.Run()
 }
 
@@ -121,7 +128,6 @@ func TestAccountCreationSuccessful(t *testing.T) {
 		}
 	}
 	<-eventChannel
-
 }
 
 func TestAccountRegistrationRejectTerms(t *testing.T) {

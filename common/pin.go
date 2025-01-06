@@ -8,7 +8,8 @@ import (
 
 // Define the regex pattern as a constant
 const (
-	pinPattern = `^\d{4}$`
+	pinPattern         = `^\d{4}$`
+	AllowedPINAttempts = uint8(3)
 )
 
 // checks whether the given input is a 4 digit number

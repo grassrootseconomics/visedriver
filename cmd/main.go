@@ -88,21 +88,11 @@ func main() {
 		MenuSeparator: menuSeparator,
 	}
 
-<<<<<<< HEAD
 	menuStorageService := storage.NewMenuStorageService(connData, resourceDir)
-=======
-	resourceDir := scriptDir
-	menuStorageService := storage.NewMenuStorageService(dbDir, resourceDir)
+	
 	if gettextDir != "" {
 		menuStorageService = menuStorageService.WithGettext(gettextDir, langs.Langs())
 	}
-
-	err = menuStorageService.EnsureDbDir()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
-		os.Exit(1)
-	}
->>>>>>> master
 
 	rs, err := menuStorageService.GetResource(ctx)
 	if err != nil {

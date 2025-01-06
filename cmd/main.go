@@ -30,19 +30,29 @@ func init() {
 func main() {
 	config.LoadConfig()
 
-	var dbDir string
+	var connStr string
 	var size uint
 	var sessionId string
 	var database string
 	var engineDebug bool
+	var err error
+
 	flag.StringVar(&sessionId, "session-id", "075xx2123", "session id")
-	flag.StringVar(&database, "db", "gdbm", "database to be used")
-	flag.StringVar(&dbDir, "dbdir", ".state", "database dir to read from")
+	flag.StringVar(&connStr, "c", "", "connection string")
 	flag.BoolVar(&engineDebug, "d", false, "use engine debug output")
 	flag.UintVar(&size, "s", 160, "max size of output")
 	flag.Parse()
 
-	logg.Infof("start command", "dbdir", dbDir, "outputsize", size)
+	if connStr != "" {
+		connStr = config.DbConn
+	}
+	connData, err := storage.ToConnData(config.DbConn)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "connstr err: %v", err)
+		os.Exit(1)
+	}
+
+	logg.Infof("start command", "conn", connData, "outputsize", size)
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
@@ -58,13 +68,7 @@ func main() {
 	}
 
 	resourceDir := scriptDir
-	menuStorageService := storage.NewMenuStorageService(dbDir, resourceDir)
-
-	err := menuStorageService.EnsureDbDir()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
-		os.Exit(1)
-	}
+	menuStorageService := storage.NewMenuStorageService(connData, resourceDir)
 
 	rs, err := menuStorageService.GetResource(ctx)
 	if err != nil {

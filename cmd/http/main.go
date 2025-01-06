@@ -36,23 +36,33 @@ func init() {
 func main() {
 	config.LoadConfig()
 
-	var dbDir string
+	var connStr string
 	var resourceDir string
 	var size uint
 	var database string
 	var engineDebug bool
 	var host string
 	var port uint
-	flag.StringVar(&dbDir, "dbdir", ".state", "database dir to read from")
+	var err error
+
 	flag.StringVar(&resourceDir, "resourcedir", path.Join("services", "registration"), "resource dir")
-	flag.StringVar(&database, "db", "gdbm", "database to be used")
+	flag.StringVar(&connStr, "c", "", "connection string")
 	flag.BoolVar(&engineDebug, "d", false, "use engine debug output")
 	flag.UintVar(&size, "s", 160, "max size of output")
 	flag.StringVar(&host, "h", initializers.GetEnv("HOST", "127.0.0.1"), "http host")
 	flag.UintVar(&port, "p", initializers.GetEnvUint("PORT", 7123), "http port")
 	flag.Parse()
 
-	logg.Infof("start command", "dbdir", dbDir, "resourcedir", resourceDir, "outputsize", size)
+	if connStr != "" {
+		connStr = config.DbConn
+	}
+	connData, err := storage.ToConnData(config.DbConn)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "connstr err: %v", err)
+		os.Exit(1)
+	}
+
+	logg.Infof("start command", "conn", connData, "resourcedir", resourceDir, "outputsize", size)
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "Database", database)
@@ -69,14 +79,9 @@ func main() {
 		cfg.EngineDebug = true
 	}
 
-	menuStorageService := storage.NewMenuStorageService(dbDir, resourceDir)
+	menuStorageService := storage.NewMenuStorageService(connData, resourceDir)
+	
 	rs, err := menuStorageService.GetResource(ctx)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
-		os.Exit(1)
-	}
-
-	err = menuStorageService.EnsureDbDir()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)

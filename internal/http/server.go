@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	logg = logging.NewVanilla().WithDomain("httpserver").WithContextKey("at-session-id")
+	logg = logging.NewVanilla().WithDomain("httpserver")
 )
 
 type SessionHandler struct {

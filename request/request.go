@@ -30,7 +30,7 @@ type RequestSession struct {
 
 // TODO: seems like can remove this.
 type RequestParser interface {
-	GetSessionId(rq any) (string, error)
+	GetSessionId(ctx context.Context, rq any) (string, error)
 	GetInput(rq any) ([]byte, error)
 }
 

@@ -19,6 +19,7 @@ import (
 
 	"git.grassecon.net/urdt/ussd/internal/handlers"
 	"git.grassecon.net/urdt/ussd/internal/storage"
+	"git.grassecon.net/urdt/ussd/remote"
 )
 
 var (
@@ -174,7 +175,7 @@ func(s *SshRunner) GetEngine(sessionId string) (engine.Engine, func(), error) {
 		return nil, nil, err
 	}
 
-	lhs, err := handlers.NewLocalHandlerService(s.FlagFile, true, dbResource, s.Cfg, rs)
+	lhs, err := handlers.NewLocalHandlerService(ctx, s.FlagFile, true, dbResource, s.Cfg, rs)
 	lhs.SetDataStore(&userdatastore)
 	lhs.SetPersister(pe)
 	lhs.Cfg.SessionId = sessionId
@@ -183,7 +184,9 @@ func(s *SshRunner) GetEngine(sessionId string) (engine.Engine, func(), error) {
 		return nil, nil, err
 	}
 
-	hl, err := lhs.GetHandler()
+	// TODO: clear up why pointer here and by-value other cmds
+	accountService := &remote.AccountService{}
+	hl, err := lhs.GetHandler(accountService)
 	if err != nil {
 		return nil, nil, err
 	}

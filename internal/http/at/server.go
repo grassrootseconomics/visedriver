@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	logg = logging.NewVanilla().WithDomain("atserver").WithContextKey("AT-SessionId")
+	logg = logging.NewVanilla().WithDomain("atserver").WithContextKey("SessionId").WithContextKey("AT-SessionId")
 )
 
 type ATSessionHandler struct {

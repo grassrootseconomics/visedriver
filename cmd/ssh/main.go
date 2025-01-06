@@ -37,8 +37,8 @@ func main() {
 	flag.BoolVar(&engineDebug, "engine-debug", false, "use engine debug output")
 	flag.BoolVar(&stateDebug, "state-debug", false, "use engine debug output")
 	flag.UintVar(&size, "s", 160, "max size of output")
-	flag.StringVar(&host, "h", "127.0.0.1", "http host")
-	flag.UintVar(&port, "p", 7122, "http port")
+	flag.StringVar(&host, "h", "127.0.0.1", "socket host")
+	flag.UintVar(&port, "p", 7122, "socket port")
 	flag.Parse()
 
 	sshKeyFile := flag.Arg(0)

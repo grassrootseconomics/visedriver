@@ -28,7 +28,7 @@ import (
 )
 
 var (
-	logg           = logging.NewVanilla().WithDomain("ussdmenuhandler").WithContextKey("session-id")
+	logg           = logging.NewVanilla().WithDomain("ussdmenuhandler").WithContextKey("SessionId")
 	scriptDir      = path.Join("services", "registration")
 	translationDir = path.Join(scriptDir, "locale")
 )
@@ -124,7 +124,7 @@ func (h *Handlers) Init(ctx context.Context, sym string, input []byte) (resource
 
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if ok {
-		context.WithValue(ctx, "session-id", sessionId)
+		ctx = context.WithValue(ctx, "SessionId", sessionId)
 	}
 
 	flag_admin_privilege, _ := h.flagManager.GetFlag("flag_admin_privilege")

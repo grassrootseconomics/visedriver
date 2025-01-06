@@ -22,8 +22,8 @@ import (
 )
 
 var (
-	logg      = logging.NewVanilla()
-	scriptDir = path.Join("services", "registration")
+	logg          = logging.NewVanilla()
+	scriptDir     = path.Join("services", "registration")
 	menuSeparator = ": "
 )
 
@@ -36,7 +36,7 @@ type asyncRequestParser struct {
 	input     []byte
 }
 
-func (p *asyncRequestParser) GetSessionId(r any) (string, error) {
+func (p *asyncRequestParser) GetSessionId(ctx context.Context, r any) (string, error) {
 	return p.sessionId, nil
 }
 

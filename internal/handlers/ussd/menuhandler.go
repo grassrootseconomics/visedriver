@@ -734,12 +734,23 @@ func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (res
 			if h.st.MatchFlag(flag_account_authorized, false) {
 				res.FlagReset = append(res.FlagReset, flag_incorrect_pin)
 				res.FlagSet = append(res.FlagSet, flag_allow_update, flag_account_authorized)
+				err := h.resetIncorrectPINAttempts(ctx, sessionId)
+				if err != nil {
+					return res, err
+				}
 			} else {
 				res.FlagSet = append(res.FlagSet, flag_allow_update)
 				res.FlagReset = append(res.FlagReset, flag_account_authorized)
+				err := h.resetIncorrectPINAttempts(ctx, sessionId)
+				if err != nil {
+					return res, err
+				}
 			}
 		} else {
-			h.countIncorrectPINAttempts(ctx, sessionId)
+			err := h.countIncorrectPINAttempts(ctx, sessionId)
+			if err != nil {
+				return res, err
+			}
 			res.FlagSet = append(res.FlagSet, flag_incorrect_pin)
 			res.FlagReset = append(res.FlagReset, flag_account_authorized)
 			return res, nil
@@ -755,10 +766,16 @@ func (h *Handlers) ResetIncorrectPin(ctx context.Context, sym string, input []by
 	var res resource.Result
 	store := h.userdataStore
 
+	flag_incorrect_pin, _ := h.flagManager.GetFlag("flag_incorrect_pin")
+	flag_account_blocked, _ := h.flagManager.GetFlag("flag_account_blocked")
+
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
 		return res, fmt.Errorf("missing session")
 	}
+
+	res.FlagReset = append(res.FlagReset, flag_incorrect_pin)
+
 	currentWrongPinAttempts, err := store.ReadEntry(ctx, sessionId, common.DATA_INCORRECT_PIN_ATTEMPTS)
 	if err != nil {
 		if !db.IsNotFound(err) {
@@ -767,12 +784,14 @@ func (h *Handlers) ResetIncorrectPin(ctx context.Context, sym string, input []by
 	}
 	pinAttemptsValue, _ := strconv.ParseUint(string(currentWrongPinAttempts), 0, 64)
 	remainingPINAttempts := common.AllowedPINAttempts - uint8(pinAttemptsValue)
+	if remainingPINAttempts == 0 {
+		res.FlagSet = append(res.FlagSet, flag_account_blocked)
+		return res, nil
+	}
 	if remainingPINAttempts < common.AllowedPINAttempts {
-		res.Content = string(remainingPINAttempts)
+		res.Content = strconv.Itoa(int(remainingPINAttempts))
 	}
 
-	flag_incorrect_pin, _ := h.flagManager.GetFlag("flag_incorrect_pin")
-	res.FlagReset = append(res.FlagReset, flag_incorrect_pin)
 	return res, nil
 }
 
@@ -2095,7 +2114,7 @@ func (h *Handlers) UpdateAllProfileItems(ctx context.Context, sym string, input 
 	return res, nil
 }
 
-func (h *Handlers) countIncorrectPINAttempts(ctx context.Context, sessionId string) {
+func (h *Handlers) countIncorrectPINAttempts(ctx context.Context, sessionId string) error {
 	var pinAttemptsCount uint8
 	store := h.userdataStore
 
@@ -2107,8 +2126,9 @@ func (h *Handlers) countIncorrectPINAttempts(ctx context.Context, sessionId stri
 			err = store.WriteEntry(ctx, sessionId, common.DATA_INCORRECT_PIN_ATTEMPTS, []byte(strconv.Itoa(int(pinAttemptsCount))))
 			if err != nil {
 				logg.ErrorCtxf(ctx, "failed to write incorrect PIN attempts ", "key", common.DATA_INCORRECT_PIN_ATTEMPTS, "value", currentWrongPinAttempts, "error", err)
+				return err
 			}
-			return
+			return nil
 		}
 	}
 	pinAttemptsValue, _ := strconv.ParseUint(string(currentWrongPinAttempts), 0, 64)
@@ -2117,5 +2137,27 @@ func (h *Handlers) countIncorrectPINAttempts(ctx context.Context, sessionId stri
 	err = store.WriteEntry(ctx, sessionId, common.DATA_INCORRECT_PIN_ATTEMPTS, []byte(strconv.Itoa(int(pinAttemptsCount))))
 	if err != nil {
 		logg.ErrorCtxf(ctx, "failed to write incorrect PIN attempts ", "key", common.DATA_INCORRECT_PIN_ATTEMPTS, "value", pinAttemptsCount, "error", err)
+		return err
 	}
+	return nil
+}
+
+func (h *Handlers) resetIncorrectPINAttempts(ctx context.Context, sessionId string) error {
+	store := h.userdataStore
+	currentWrongPinAttempts, err := store.ReadEntry(ctx, sessionId, common.DATA_INCORRECT_PIN_ATTEMPTS)
+	if err != nil {
+		if db.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	remainingPINAttempts, _ := strconv.ParseUint(string(currentWrongPinAttempts), 0, 64)
+	if remainingPINAttempts <= uint64(common.AllowedPINAttempts) {
+		err = store.WriteEntry(ctx, sessionId, common.DATA_INCORRECT_PIN_ATTEMPTS, []byte(string("0")))
+		if err != nil {
+			logg.ErrorCtxf(ctx, "failed to reset incorrect PIN attempts ", "key", common.DATA_INCORRECT_PIN_ATTEMPTS, "value", common.AllowedPINAttempts, "error", err)
+			return err
+		}
+	}
+	return nil
 }

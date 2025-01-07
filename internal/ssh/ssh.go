@@ -41,6 +41,7 @@ func NewAuther(ctx context.Context, keyStore *SshKeyStore) *auther {
 }
 
 func(a *auther) Check(conn ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.Permissions, error) {
+	logg.TraceCtxf(a.Ctx, "looking for publickey", "pubkey", fmt.Sprintf("%x", pubKey))
 	va, err := a.keyStore.Get(a.Ctx, pubKey)
 	if err != nil {
 		return nil, err

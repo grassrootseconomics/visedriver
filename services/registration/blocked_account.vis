@@ -1,3 +1,2 @@
-MOUT quit 9
+LOAD show_blocked_account 0
 HALT 
-INCMP quit 9

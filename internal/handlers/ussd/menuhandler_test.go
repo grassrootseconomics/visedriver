@@ -2247,7 +2247,7 @@ func TestCountIncorrectPINAttempts(t *testing.T) {
 	if err != nil {
 		t.Logf(err.Error())
 	}
-	err = h.countIncorrectPINAttempts(ctx, sessionId)
+	err = h.incrementIncorrectPINAttempts(ctx, sessionId)
 	if err != nil {
 		t.Logf(err.Error())
 	}

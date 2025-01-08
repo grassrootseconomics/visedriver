@@ -747,7 +747,7 @@ func (h *Handlers) Authorize(ctx context.Context, sym string, input []byte) (res
 				}
 			}
 		} else {
-			err := h.countIncorrectPINAttempts(ctx, sessionId)
+			err := h.incrementIncorrectPINAttempts(ctx, sessionId)
 			if err != nil {
 				return res, err
 			}
@@ -884,7 +884,7 @@ func (h *Handlers) ShowBlockedAccount(ctx context.Context, sym string, input []b
 	code := codeFromCtx(ctx)
 	l := gotext.NewLocale(translationDir, code)
 	l.AddDomain("default")
-	res.Content = l.Get("Your account has been locked.For help on how to unblock your account,contact support at: 0757628885")
+	res.Content = l.Get("Your account has been locked.For help on how to unblock your account, contact support at: 0757628885")
 	return res, nil
 }
 
@@ -2124,8 +2124,8 @@ func (h *Handlers) UpdateAllProfileItems(ctx context.Context, sym string, input 
 	return res, nil
 }
 
-// countIncorrectPINAttempts keeps track of the number of incorrect PIN attempts
-func (h *Handlers) countIncorrectPINAttempts(ctx context.Context, sessionId string) error {
+// incrementIncorrectPINAttempts keeps track of the number of incorrect PIN attempts
+func (h *Handlers) incrementIncorrectPINAttempts(ctx context.Context, sessionId string) error {
 	var pinAttemptsCount uint8
 	store := h.userdataStore
 

@@ -8,6 +8,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"regexp"
 	"testing"
 
@@ -20,7 +21,6 @@ import (
 
 var (
 	testData  = driver.ReadData()
-	testStore = ".test_state"
 	sessionID string
 	src       = rand.NewSource(42)
 	g         = rand.New(src)
@@ -29,6 +29,11 @@ var (
 var groupTestFile = flag.String("test-file", "group_test.json", "The test file to use for running the group tests")
 var database = flag.String("db", "gdbm", "Specify the database (gdbm or postgres)")
 var dbSchema = flag.String("schema", "test", "Specify the database schema (default test)")
+
+func testStore() string {
+	v, _ :=  filepath.Abs(".test_state/state.gdbm")
+	return v
+}
 
 func GenerateSessionId() string {
 	uu := uuid.NewGenWithOptions(uuid.WithRandomReader(g))
@@ -89,8 +94,8 @@ func TestMain(m *testing.M) {
 
 	sessionID = GenerateSessionId()
 	defer func() {
-		if err := os.RemoveAll(testStore); err != nil {
-			log.Fatalf("Failed to delete state store %s: %v", testStore, err)
+		if err := os.RemoveAll(testStore()); err != nil {
+			log.Fatalf("Failed to delete state store %s: %v", testStore(), err)
 		}
 	}()
 

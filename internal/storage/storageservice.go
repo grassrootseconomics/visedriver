@@ -13,7 +13,6 @@ import (
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
-	"git.grassecon.net/urdt/ussd/initializers"
 	gdbmstorage "git.grassecon.net/urdt/ussd/internal/storage/db/gdbm"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -26,11 +25,10 @@ type StorageService interface {
 	GetPersister(ctx context.Context) (*persist.Persister, error)
 	GetUserdataDb(ctx context.Context) db.Db
 	GetResource(ctx context.Context) (resource.Resource, error)
-	EnsureDbDir() error
 }
 
 type MenuStorageService struct {
-	dbDir         string
+	conn ConnData
 	resourceDir   string
 	poResource    resource.Resource
 	resourceStore db.Db
@@ -38,27 +36,51 @@ type MenuStorageService struct {
 	userDataStore db.Db
 }
 
-func BuildConnStr() string {
-	host := initializers.GetEnv("DB_HOST", "localhost")
-	user := initializers.GetEnv("DB_USER", "postgres")
-	password := initializers.GetEnv("DB_PASSWORD", "")
-	dbName := initializers.GetEnv("DB_NAME", "")
-	port := initializers.GetEnv("DB_PORT", "5432")
-
-	connString := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s",
-		user, password, host, port, dbName,
-	)
-	logg.Debugf("pg conn string", "conn", connString)
-
-	return connString
-}
-
-func NewMenuStorageService(dbDir string, resourceDir string) *MenuStorageService {
+func NewMenuStorageService(conn ConnData, resourceDir string) *MenuStorageService {
 	return &MenuStorageService{
-		dbDir:       dbDir,
+		conn: conn,
 		resourceDir: resourceDir,
 	}
+}
+
+func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.Db, section string) (db.Db, error) {
+	var newDb db.Db
+	var err error
+
+	if existingDb != nil {
+		return existingDb, nil
+	}
+
+
+	connStr := ms.conn.String()
+	dbTyp := ms.conn.DbType()
+	if dbTyp == DBTYPE_POSTGRES {
+//		// Ensure the schema exists
+//		err = ensureSchemaExists(ctx, connStr, schema)
+//		if err != nil {
+//			return nil, fmt.Errorf("failed to ensure schema exists: %w", err)
+//		}
+//
+//		newDb = postgres.NewPgDb().WithSchema(schema)
+
+		newDb = postgres.NewPgDb()
+	} else if dbTyp == DBTYPE_GDBM {
+		err = ms.ensureDbDir()
+		if err != nil {
+			return nil, err
+		}
+		connStr = path.Join(connStr, section)
+		newDb = gdbmstorage.NewThreadGdbmDb()
+	} else {
+		return nil, fmt.Errorf("unsupported connection string: '%s'\n", ms.conn.String())
+	}
+	logg.DebugCtxf(ctx, "connecting to db", "conn", connStr)
+	err = newDb.Connect(ctx, connStr)
+	if err != nil {
+		return nil, err
+	}
+
+	return newDb, nil
 }
 
 // WithGettext triggers use of gettext for translation of templates and menus.
@@ -81,48 +103,6 @@ func (ms *MenuStorageService) WithGettext(path string, lns []lang.Language) *Men
 	ms.poResource = rs
 
 	return ms
-}
-
-func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.Db, fileName string) (db.Db, error) {
-	database, ok := ctx.Value("Database").(string)
-	if !ok {
-		return nil, fmt.Errorf("failed to select the database")
-	}
-
-	schema, ok := ctx.Value("Schema").(string)
-	if !ok {
-		return nil, fmt.Errorf("failed to select the schema")
-	}
-
-	if existingDb != nil {
-		return existingDb, nil
-	}
-
-	var newDb db.Db
-	var err error
-
-	if database == "postgres" {
-		connStr := BuildConnStr()
-
-		// Ensure the schema exists
-		err = ensureSchemaExists(ctx, connStr, schema)
-		if err != nil {
-			return nil, fmt.Errorf("failed to ensure schema exists: %w", err)
-		}
-
-		newDb = postgres.NewPgDb().WithSchema(schema)
-		err = newDb.Connect(ctx, connStr)
-	} else {
-		newDb = gdbmstorage.NewThreadGdbmDb()
-		storeFile := path.Join(ms.dbDir, fileName)
-		err = newDb.Connect(ctx, storeFile)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	return newDb, nil
 }
 
 // ensureSchemaExists creates a new schema if it does not exist
@@ -196,8 +176,8 @@ func (ms *MenuStorageService) GetStateStore(ctx context.Context) (db.Db, error) 
 	return ms.stateStore, nil
 }
 
-func (ms *MenuStorageService) EnsureDbDir() error {
-	err := os.MkdirAll(ms.dbDir, 0700)
+func (ms *MenuStorageService) ensureDbDir() error {
+	err := os.MkdirAll(ms.conn.String(), 0700)
 	if err != nil {
 		return fmt.Errorf("state dir create exited with error: %v\n", err)
 	}

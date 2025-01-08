@@ -37,23 +37,34 @@ func formatItem(k []byte, v []byte) (string, error) {
 func main() {
 	config.LoadConfig()
 
-	var dbDir string
+	var connStr string
 	var sessionId string
 	var database string
 	var engineDebug bool
+	var err error
 
 	flag.StringVar(&sessionId, "session-id", "075xx2123", "session id")
-	flag.StringVar(&database, "db", "gdbm", "database to be used")
-	flag.StringVar(&dbDir, "dbdir", ".state", "database dir to read from")
+	flag.StringVar(&connStr, "c", ".state", "connection string")
 	flag.BoolVar(&engineDebug, "d", false, "use engine debug output")
 	flag.Parse()
+
+	if connStr != "" {
+		connStr = config.DbConn
+	}
+	connData, err := storage.ToConnData(config.DbConn)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "connstr err: %v", err)
+		os.Exit(1)
+	}
+
+	logg.Infof("start command", "conn", connData)
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
 	ctx = context.WithValue(ctx, "Database", database)
 
 	resourceDir := scriptDir
-	menuStorageService := storage.NewMenuStorageService(dbDir, resourceDir)
+	menuStorageService := storage.NewMenuStorageService(connData, resourceDir)
 
 	store, err := menuStorageService.GetUserdataDb(ctx)
 	if err != nil {

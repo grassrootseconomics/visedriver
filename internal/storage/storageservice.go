@@ -36,7 +36,7 @@ type MenuStorageService struct {
 	userDataStore db.Db
 }
 
-func buildConnStr() string {
+func BuildConnStr() string {
 	host := initializers.GetEnv("DB_HOST", "localhost")
 	user := initializers.GetEnv("DB_USER", "postgres")
 	password := initializers.GetEnv("DB_PASSWORD", "")
@@ -78,7 +78,7 @@ func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.D
 	var err error
 
 	if database == "postgres" {
-		connStr := buildConnStr()
+		connStr := BuildConnStr()
 
 		// Ensure the schema exists
 		err = ensureSchemaExists(ctx, connStr, schema)

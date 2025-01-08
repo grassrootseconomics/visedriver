@@ -6,10 +6,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Define the regex pattern as a constant
 const (
-	pinPattern         = `^\d{4}$`
+	// Define the regex pattern as a constant
+	pinPattern = `^\d{4}$`
+
+	//Allowed incorrect  PIN attempts
 	AllowedPINAttempts = uint8(3)
+	
 )
 
 // checks whether the given input is a 4 digit number

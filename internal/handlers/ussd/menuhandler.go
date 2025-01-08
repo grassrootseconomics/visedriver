@@ -2163,8 +2163,8 @@ func (h *Handlers) resetIncorrectPINAttempts(ctx context.Context, sessionId stri
 		}
 		return err
 	}
-	remainingPINAttempts, _ := strconv.ParseUint(string(currentWrongPinAttempts), 0, 64)
-	if remainingPINAttempts <= uint64(common.AllowedPINAttempts) {
+	currentWrongPinAttemptsCount, _ := strconv.ParseUint(string(currentWrongPinAttempts), 0, 64)
+	if currentWrongPinAttemptsCount <= uint64(common.AllowedPINAttempts) {
 		err = store.WriteEntry(ctx, sessionId, common.DATA_INCORRECT_PIN_ATTEMPTS, []byte(string("0")))
 		if err != nil {
 			logg.ErrorCtxf(ctx, "failed to reset incorrect PIN attempts ", "key", common.DATA_INCORRECT_PIN_ATTEMPTS, "value", common.AllowedPINAttempts, "error", err)

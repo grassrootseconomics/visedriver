@@ -23,7 +23,7 @@ var (
 )
 
 func init() {
-	initializers.LoadEnvVariables(baseDir)
+	initializers.LoadEnvVariables()
 }
 
 func main() {

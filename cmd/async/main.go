@@ -13,7 +13,6 @@ import (
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/lang"
-	testdataloader "github.com/peteole/testdata-loader"
 
 	"git.grassecon.net/urdt/ussd/config"
 	"git.grassecon.net/urdt/ussd/initializers"
@@ -25,13 +24,12 @@ import (
 
 var (
 	logg          = logging.NewVanilla()
-	baseDir       = testdataloader.GetBasePath()
 	scriptDir     = path.Join("services", "registration")
 	menuSeparator = ": "
 )
 
 func init() {
-	initializers.LoadEnvVariables(baseDir)
+	initializers.LoadEnvVariables()
 }
 
 type asyncRequestParser struct {
@@ -54,8 +52,6 @@ func main() {
 	var sessionId string
 	var resourceDir string
 	var size uint
-	var database string
-	var dbSchema string
 	var engineDebug bool
 	var host string
 	var port uint
@@ -86,8 +82,6 @@ func main() {
 	logg.Infof("start command", "conn", connData, "resourcedir", resourceDir, "outputsize", size, "sessionId", sessionId)
 
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, "Database", database)
-	ctx = context.WithValue(ctx, "Schema", dbSchema)
 
 	ln, err := lang.LanguageFromCode(config.DefaultLanguage)
 	if err != nil {

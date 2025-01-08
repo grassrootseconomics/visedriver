@@ -17,18 +17,16 @@ import (
 	"git.grassecon.net/urdt/ussd/internal/storage"
 	"git.grassecon.net/urdt/ussd/internal/args"
 	"git.grassecon.net/urdt/ussd/remote"
-	testdataloader "github.com/peteole/testdata-loader"
 )
 
 var (
 	logg          = logging.NewVanilla()
-	baseDir       = testdataloader.GetBasePath()
 	scriptDir     = path.Join("services", "registration")
 	menuSeparator = ": "
 )
 
 func init() {
-	initializers.LoadEnvVariables(baseDir)
+	initializers.LoadEnvVariables()
 }
 
 // TODO: external script automatically generate language handler list from select language vise code OR consider dynamic menu generation script possibility
@@ -38,8 +36,6 @@ func main() {
 	var connStr string
 	var size uint
 	var sessionId string
-	var database string
-	var dbSchema string
 	var engineDebug bool
 	var resourceDir string
 	var err error
@@ -72,8 +68,6 @@ func main() {
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
-	ctx = context.WithValue(ctx, "Database", database)
-	ctx = context.WithValue(ctx, "Schema", dbSchema)
 
 	ln, err := lang.LanguageFromCode(config.DefaultLanguage)
 	if err != nil {

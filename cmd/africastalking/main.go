@@ -15,7 +15,6 @@ import (
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/lang"
-	testdataloader "github.com/peteole/testdata-loader"
 
 	"git.grassecon.net/urdt/ussd/config"
 	"git.grassecon.net/urdt/ussd/initializers"
@@ -28,14 +27,13 @@ import (
 
 var (
 	logg          = logging.NewVanilla().WithDomain("AfricasTalking").WithContextKey("at-session-id")
-	baseDir       = testdataloader.GetBasePath()
 	scriptDir     = path.Join("services", "registration")
 	build         = "dev"
 	menuSeparator = ": "
 )
 
 func init() {
-	initializers.LoadEnvVariables(baseDir)
+	initializers.LoadEnvVariables()
 }
 
 func main() {
@@ -44,8 +42,6 @@ func main() {
 	var connStr string
 	var resourceDir string
 	var size uint
-	var database string
-	var dbSchema string
 	var engineDebug bool
 	var host string
 	var port uint
@@ -75,8 +71,6 @@ func main() {
 	logg.Infof("start command", "build", build, "conn", connData, "resourcedir", resourceDir, "outputsize", size)
 
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, "Database", database)
-	ctx = context.WithValue(ctx, "Schema", dbSchema)
 	ln, err := lang.LanguageFromCode(config.DefaultLanguage)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "default language set error: %v", err)

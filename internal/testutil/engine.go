@@ -17,17 +17,19 @@ import (
 	"git.grassecon.net/urdt/ussd/internal/testutil/testservice"
 	"git.grassecon.net/urdt/ussd/internal/testutil/testtag"
 	"git.grassecon.net/urdt/ussd/remote"
+	testdataloader "github.com/peteole/testdata-loader"
 )
 
 var (
 	logg             = logging.NewVanilla()
+	baseDir   = testdataloader.GetBasePath()
 	scriptDir        = path.Join(baseDir, "services", "registration")
 	selectedDatabase = ""
 	selectedDbSchema = ""
 )
 
 func init() {
-	initializers.LoadEnvVariables()
+	initializers.LoadEnvVariablesPath(baseDir)
 }
 
 // SetDatabase updates the database used by TestEngine

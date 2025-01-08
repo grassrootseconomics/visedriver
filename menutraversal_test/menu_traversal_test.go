@@ -12,7 +12,6 @@ import (
 	"regexp"
 	"testing"
 
-	"git.grassecon.net/urdt/ussd/internal/storage"
 	"git.grassecon.net/urdt/ussd/internal/testutil"
 	"git.grassecon.net/urdt/ussd/internal/testutil/driver"
 	"github.com/gofrs/uuid"
@@ -106,7 +105,7 @@ func TestMain(m *testing.M) {
 	defer func() {
 		if *database == "postgres" {
 			ctx := context.Background()
-			connStr := storage.BuildConnStr()
+			connStr := "postgres://" //storage.BuildConnStr()
 			dbConn, err := pgxpool.New(ctx, connStr)
 			if err != nil {
 				log.Fatalf("Failed to connect to database for cleanup: %v", err)

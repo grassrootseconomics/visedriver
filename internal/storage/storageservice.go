@@ -55,14 +55,6 @@ func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.D
 	connStr := ms.conn.String()
 	dbTyp := ms.conn.DbType()
 	if dbTyp == DBTYPE_POSTGRES {
-//		// Ensure the schema exists
-//		err = ensureSchemaExists(ctx, connStr, schema)
-//		if err != nil {
-//			return nil, fmt.Errorf("failed to ensure schema exists: %w", err)
-//		}
-//
-//		newDb = postgres.NewPgDb().WithSchema(schema)
-
 		newDb = postgres.NewPgDb()
 	} else if dbTyp == DBTYPE_GDBM {
 		err = ms.ensureDbDir()

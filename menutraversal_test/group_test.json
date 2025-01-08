@@ -54,7 +54,7 @@
                 },
                 {
                     "input": "1235",
-                    "expectedContent": "Incorrect PIN.You have: 2 remaining attempt(s).\n1:Retry\n9:Quit"
+                    "expectedContent": "Incorrect PIN. You have: 2 remaining attempt(s).\n1:Retry\n9:Quit"
                 },
                 {
                     "input": "1",
@@ -95,7 +95,7 @@
                 },
                 {
                     "input": "1235",
-                    "expectedContent": "Incorrect PIN.You have: 2 remaining attempt(s).\n1:Retry\n9:Quit"
+                    "expectedContent": "Incorrect PIN. You have: 2 remaining attempt(s).\n1:Retry\n9:Quit"
                 },
                 {
                     "input": "1",
@@ -140,7 +140,7 @@
                 },
                 {
                     "input": "1235",
-                    "expectedContent": "Incorrect PIN.You have: 2 remaining attempt(s).\n1:Retry\n9:Quit"
+                    "expectedContent": "Incorrect PIN. You have: 2 remaining attempt(s).\n1:Retry\n9:Quit"
                 },
                 {
                     "input": "1",

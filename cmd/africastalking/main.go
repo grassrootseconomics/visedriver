@@ -43,12 +43,14 @@ func main() {
 	var resourceDir string
 	var size uint
 	var database string
+	var dbSchema string
 	var engineDebug bool
 	var host string
 	var port uint
 	flag.StringVar(&dbDir, "dbdir", ".state", "database dir to read from")
 	flag.StringVar(&resourceDir, "resourcedir", path.Join("services", "registration"), "resource dir")
 	flag.StringVar(&database, "db", "gdbm", "database to be used")
+	flag.StringVar(&dbSchema, "schema", "public", "database schema to be used")
 	flag.BoolVar(&engineDebug, "d", false, "use engine debug output")
 	flag.UintVar(&size, "s", 160, "max size of output")
 	flag.StringVar(&host, "h", initializers.GetEnv("HOST", "127.0.0.1"), "http host")
@@ -59,6 +61,7 @@ func main() {
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "Database", database)
+	ctx = context.WithValue(ctx, "Schema", dbSchema)
 	pfp := path.Join(scriptDir, "pp.csv")
 
 	cfg := engine.Config{

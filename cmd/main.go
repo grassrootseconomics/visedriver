@@ -36,9 +36,11 @@ func main() {
 	var size uint
 	var sessionId string
 	var database string
+	var dbSchema string
 	var engineDebug bool
 	flag.StringVar(&sessionId, "session-id", "075xx2123", "session id")
 	flag.StringVar(&database, "db", "gdbm", "database to be used")
+	flag.StringVar(&dbSchema, "schema", "public", "database schema to be used")
 	flag.StringVar(&dbDir, "dbdir", ".state", "database dir to read from")
 	flag.BoolVar(&engineDebug, "d", false, "use engine debug output")
 	flag.UintVar(&size, "s", 160, "max size of output")
@@ -49,6 +51,7 @@ func main() {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
 	ctx = context.WithValue(ctx, "Database", database)
+	ctx = context.WithValue(ctx, "Schema", dbSchema)
 	pfp := path.Join(scriptDir, "pp.csv")
 
 	cfg := engine.Config{

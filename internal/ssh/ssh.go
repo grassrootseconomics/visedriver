@@ -204,6 +204,7 @@ func(s *SshRunner) GetEngine(sessionId string) (engine.Engine, func(), error) {
 
 // adapted example from crypto/ssh package, NewServerConn doc
 func(s *SshRunner) Run(ctx context.Context, keyStore *SshKeyStore) {
+	s.Ctx = ctx
 	running := true
 
 	// TODO: waitgroup should probably not be global

@@ -878,6 +878,16 @@ func (h *Handlers) QuitWithHelp(ctx context.Context, sym string, input []byte) (
 	return res, nil
 }
 
+// ShowBlockedAccount displays a message after an account has been blocked and how to reach support.
+func (h *Handlers) ShowBlockedAccount(ctx context.Context, sym string, input []byte) (resource.Result, error) {
+	var res resource.Result
+	code := codeFromCtx(ctx)
+	l := gotext.NewLocale(translationDir, code)
+	l.AddDomain("default")
+	res.Content = l.Get("Your account has been locked.For help on how to unblock your account,contact support at: 0757628885")
+	return res, nil
+}
+
 // VerifyYob verifies the length of the given input.
 func (h *Handlers) VerifyYob(ctx context.Context, sym string, input []byte) (resource.Result, error) {
 	var res resource.Result
@@ -2114,6 +2124,7 @@ func (h *Handlers) UpdateAllProfileItems(ctx context.Context, sym string, input 
 	return res, nil
 }
 
+// countIncorrectPINAttempts keeps track of the number of incorrect PIN attempts
 func (h *Handlers) countIncorrectPINAttempts(ctx context.Context, sessionId string) error {
 	var pinAttemptsCount uint8
 	store := h.userdataStore
@@ -2142,6 +2153,7 @@ func (h *Handlers) countIncorrectPINAttempts(ctx context.Context, sessionId stri
 	return nil
 }
 
+// resetIncorrectPINAttempts resets the number of incorrect PIN attempts after a correct PIN entry
 func (h *Handlers) resetIncorrectPINAttempts(ctx context.Context, sessionId string) error {
 	store := h.userdataStore
 	currentWrongPinAttempts, err := store.ReadEntry(ctx, sessionId, common.DATA_INCORRECT_PIN_ATTEMPTS)

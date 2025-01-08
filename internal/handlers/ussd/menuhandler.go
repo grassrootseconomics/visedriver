@@ -884,7 +884,7 @@ func (h *Handlers) ShowBlockedAccount(ctx context.Context, sym string, input []b
 	code := codeFromCtx(ctx)
 	l := gotext.NewLocale(translationDir, code)
 	l.AddDomain("default")
-	res.Content = l.Get("Your account has been locked.For help on how to unblock your account, contact support at: 0757628885")
+	res.Content = l.Get("Your account has been locked. For help on how to unblock your account, contact support at: 0757628885")
 	return res, nil
 }
 

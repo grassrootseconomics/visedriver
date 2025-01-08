@@ -14,6 +14,7 @@ import (
 	"git.defalsify.org/vise.git/resource"
 	"git.grassecon.net/urdt/ussd/initializers"
 	gdbmstorage "git.grassecon.net/urdt/ussd/internal/storage/db/gdbm"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var (
@@ -64,6 +65,11 @@ func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.D
 		return nil, fmt.Errorf("failed to select the database")
 	}
 
+	schema, ok := ctx.Value("Schema").(string)
+	if !ok {
+		return nil, fmt.Errorf("failed to select the schema")
+	}
+
 	if existingDb != nil {
 		return existingDb, nil
 	}
@@ -72,8 +78,15 @@ func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.D
 	var err error
 
 	if database == "postgres" {
-		newDb = postgres.NewPgDb()
 		connStr := buildConnStr()
+
+		// Ensure the schema exists
+		err = ensureSchemaExists(ctx, connStr, schema)
+		if err != nil {
+			return nil, fmt.Errorf("failed to ensure schema exists: %w", err)
+		}
+
+		newDb = postgres.NewPgDb().WithSchema(schema)
 		err = newDb.Connect(ctx, connStr)
 	} else {
 		newDb = gdbmstorage.NewThreadGdbmDb()
@@ -86,6 +99,23 @@ func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.D
 	}
 
 	return newDb, nil
+}
+
+// ensureSchemaExists creates a new schema if it does not exist
+func ensureSchemaExists(ctx context.Context, connStr, schema string) error {
+	conn, err := pgxpool.New(ctx, connStr)
+	if err != nil {
+		return fmt.Errorf("failed to connect to the database: %w", err)
+	}
+	defer conn.Close()
+
+	query := fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s", schema)
+	_, err = conn.Exec(ctx, query)
+	if err != nil {
+		return fmt.Errorf("failed to create schema: %w", err)
+	}
+
+	return nil
 }
 
 func (ms *MenuStorageService) GetPersister(ctx context.Context) (*persist.Persister, error) {

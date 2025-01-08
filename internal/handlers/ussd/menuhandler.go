@@ -835,7 +835,7 @@ func (h *Handlers) QuitWithHelp(ctx context.Context, sym string, input []byte) (
 	l := gotext.NewLocale(translationDir, code)
 	l.AddDomain("default")
 
-	res.Content = l.Get("For more help,please call: 0757628885")
+	res.Content = l.Get("For more help, please call: 0757628885")
 	res.FlagReset = append(res.FlagReset, flag_account_authorized)
 	return res, nil
 }

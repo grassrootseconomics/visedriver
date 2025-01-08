@@ -7,23 +7,31 @@ import (
 	"os"
 	"path"
 
-	"git.defalsify.org/vise.git/db"
-	"git.defalsify.org/vise.git/logging"
 	"git.grassecon.net/urdt/ussd/config"
-	"git.grassecon.net/urdt/ussd/debug"
 	"git.grassecon.net/urdt/ussd/initializers"
 	"git.grassecon.net/urdt/ussd/internal/storage"
-	testdataloader "github.com/peteole/testdata-loader"
+	"git.grassecon.net/urdt/ussd/debug"
+	"git.defalsify.org/vise.git/db"
+	"git.defalsify.org/vise.git/logging"
 )
 
 var (
 	logg      = logging.NewVanilla()
-	baseDir   = testdataloader.GetBasePath()
 	scriptDir = path.Join("services", "registration")
 )
 
 func init() {
-	initializers.LoadEnvVariables(baseDir)
+	initializers.LoadEnvVariables()
+}
+
+
+func formatItem(k []byte, v []byte) (string, error) {
+	o, err := debug.FromKey(k)
+	if err != nil {
+		return "", err
+	}
+	s := fmt.Sprintf("%vValue: %v\n\n", o, string(v))
+	return s, nil
 }
 
 func main() {
@@ -65,12 +73,12 @@ func main() {
 		if k == nil {
 			break
 		}
-		o, err := debug.FromKey(k)
+		r, err := formatItem(k, v)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, err.Error())
+			fmt.Fprintf(os.Stderr, "format db item error: %v", err)
 			os.Exit(1)
 		}
-		fmt.Printf("%vValue: %v\n\n", o, string(v))
+		fmt.Printf(r)
 	}
 
 	err = store.Close()

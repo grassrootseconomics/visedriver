@@ -4,9 +4,9 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"path"
 	"os"
 	"os/signal"
+	"path"
 	"sync"
 	"syscall"
 
@@ -18,10 +18,12 @@ import (
 )
 
 var (
-	wg sync.WaitGroup
-	keyStore db.Db
+	wg        sync.WaitGroup
+	keyStore  db.Db
 	logg      = logging.NewVanilla()
 	scriptDir = path.Join("services", "registration")
+
+	build = "dev"
 )
 
 func main() {
@@ -76,7 +78,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "keystore file open error: %v", err)
 		os.Exit(1)
 	}
-	defer func () {
+	defer func() {
 		logg.TraceCtxf(ctx, "shutdown auth key store reached")
 		err = authKeyStore.Close()
 		if err != nil {
@@ -90,14 +92,14 @@ func main() {
 	signal.Notify(cterm, os.Interrupt, syscall.SIGTERM)
 
 	runner := &ssh.SshRunner{
-		Cfg: cfg,
-		Debug: engineDebug,
-		FlagFile: pfp,
-		DbDir: dbDir,
+		Cfg:         cfg,
+		Debug:       engineDebug,
+		FlagFile:    pfp,
+		DbDir:       dbDir,
 		ResourceDir: resourceDir,
-		SrvKeyFile: sshKeyFile,
-		Host: host,
-		Port: port,
+		SrvKeyFile:  sshKeyFile,
+		Host:        host,
+		Port:        port,
 	}
 	go func() {
 		select {
@@ -109,7 +111,7 @@ func main() {
 		if err != nil {
 			logg.ErrorCtxf(ctx, "runner stop error", "err", err)
 		}
-		
+
 	}()
 	runner.Run(ctx, authKeyStore)
 }

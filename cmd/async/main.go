@@ -12,6 +12,7 @@ import (
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/resource"
+	"git.defalsify.org/vise.git/lang"
 	testdataloader "github.com/peteole/testdata-loader"
 
 	"git.grassecon.net/urdt/ussd/config"
@@ -19,6 +20,7 @@ import (
 	"git.grassecon.net/urdt/ussd/internal/handlers"
 	"git.grassecon.net/urdt/ussd/internal/storage"
 	"git.grassecon.net/urdt/ussd/remote"
+	"git.grassecon.net/urdt/ussd/internal/args"
 )
 
 var (
@@ -57,6 +59,8 @@ func main() {
 	var engineDebug bool
 	var host string
 	var port uint
+	var gettextDir string
+	var langs args.LangVar
 	flag.StringVar(&sessionId, "session-id", "075xx2123", "session id")
 	flag.StringVar(&dbDir, "dbdir", ".state", "database dir to read from")
 	flag.StringVar(&resourceDir, "resourcedir", path.Join("services", "registration"), "resource dir")
@@ -66,6 +70,8 @@ func main() {
 	flag.UintVar(&size, "s", 160, "max size of output")
 	flag.StringVar(&host, "h", initializers.GetEnv("HOST", "127.0.0.1"), "http host")
 	flag.UintVar(&port, "p", initializers.GetEnvUint("PORT", 7123), "http port")
+	flag.StringVar(&gettextDir, "gettext", "", "use gettext translations from given directory")
+	flag.Var(&langs, "language", "add symbol resolution for language")
 	flag.Parse()
 
 	logg.Infof("start command", "dbdir", dbDir, "resourcedir", resourceDir, "outputsize", size, "sessionId", sessionId)
@@ -73,6 +79,14 @@ func main() {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "Database", database)
 	ctx = context.WithValue(ctx, "Schema", dbSchema)
+
+	ln, err := lang.LanguageFromCode(config.DefaultLanguage)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "default language set error: %v", err)
+		os.Exit(1)
+	}
+	ctx = context.WithValue(ctx, "Language", ln)
+
 	pfp := path.Join(scriptDir, "pp.csv")
 
 	cfg := engine.Config{

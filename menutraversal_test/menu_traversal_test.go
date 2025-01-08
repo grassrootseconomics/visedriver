@@ -4,15 +4,18 @@ import (
 	"bytes"
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"math/rand"
 	"os"
 	"regexp"
 	"testing"
 
+	"git.grassecon.net/urdt/ussd/internal/storage"
 	"git.grassecon.net/urdt/ussd/internal/testutil"
 	"git.grassecon.net/urdt/ussd/internal/testutil/driver"
 	"github.com/gofrs/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var (
@@ -25,6 +28,7 @@ var (
 
 var groupTestFile = flag.String("test-file", "group_test.json", "The test file to use for running the group tests")
 var database = flag.String("db", "gdbm", "Specify the database (gdbm or postgres)")
+var dbSchema = flag.String("schema", "test", "Specify the database schema (default test)")
 
 func GenerateSessionId() string {
 	uu := uuid.NewGenWithOptions(uuid.WithRandomReader(g))
@@ -91,7 +95,29 @@ func TestMain(m *testing.M) {
 	}()
 
 	// Set the selected database
-	testutil.SetDatabase(*database)
+	testutil.SetDatabase(*database, *dbSchema)
+
+	// Cleanup the schema table after tests
+	defer func() {
+		if *database == "postgres" {
+			ctx := context.Background()
+			connStr := storage.BuildConnStr()
+			dbConn, err := pgxpool.New(ctx, connStr)
+			if err != nil {
+				log.Fatalf("Failed to connect to database for cleanup: %v", err)
+			}
+			defer dbConn.Close()
+
+			query := fmt.Sprintf("DELETE FROM %s.kv_vise;", *dbSchema)
+			_, execErr := dbConn.Exec(ctx, query)
+			if execErr != nil {
+				log.Printf("Failed to cleanup table %s.kv_vise: %v", *dbSchema, execErr)
+			} else {
+				log.Printf("Successfully cleaned up table %s.kv_vise", *dbSchema)
+			}
+		}
+	}()
+
 	m.Run()
 }
 

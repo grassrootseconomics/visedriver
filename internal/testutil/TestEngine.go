@@ -24,6 +24,7 @@ var (
 	logg             = logging.NewVanilla()
 	scriptDir        = path.Join(baseDir, "services", "registration")
 	selectedDatabase = ""
+	selectedDbSchema = ""
 )
 
 func init() {
@@ -31,14 +32,17 @@ func init() {
 }
 
 // SetDatabase updates the database used by TestEngine
-func SetDatabase(dbType string) {
+func SetDatabase(dbType string, dbSchema string) {
 	selectedDatabase = dbType
+	selectedDbSchema = dbSchema
 }
 
 func TestEngine(sessionId string) (engine.Engine, func(), chan bool) {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "SessionId", sessionId)
 	ctx = context.WithValue(ctx, "Database", selectedDatabase)
+	ctx = context.WithValue(ctx, "Schema", selectedDbSchema)
+
 	pfp := path.Join(scriptDir, "pp.csv")
 
 	var eventChannel = make(chan bool)

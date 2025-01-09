@@ -9,7 +9,7 @@ import (
 
 	"git.grassecon.net/urdt/ussd/request"
 	"git.grassecon.net/urdt/ussd/errors"
-	"git.grassecon.net/urdt/ussd/internal/handlers/ussd"
+	"git.grassecon.net/urdt/ussd/internal/handlers/application"
 	"git.grassecon.net/urdt/ussd/internal/storage"
 )
 
@@ -21,28 +21,28 @@ type BaseSessionHandler struct {
 	cfgTemplate engine.Config
 	rp request.RequestParser
 	rs resource.Resource
-	hn *ussd.Handlers
+	hn *application.Handlers
 	provider storage.StorageProvider
 }
 
-func NewBaseSessionHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp request.RequestParser, hn *ussd.Handlers) *BaseSessionHandler {
+func NewBaseSessionHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp request.RequestParser, hn *application.Handlers) *BaseSessionHandler {
 	return &BaseSessionHandler{
 		cfgTemplate: cfg,
-		rs: rs,
-		hn: hn,
-		rp: rp,
-		provider: storage.NewSimpleStorageProvider(stateDb, userdataDb),
+		rs:          rs,
+		hn:          hn,
+		rp:          rp,
+		provider:    storage.NewSimpleStorageProvider(stateDb, userdataDb),
 	}
 }
 
-func(f* BaseSessionHandler) Shutdown() {
+func (f *BaseSessionHandler) Shutdown() {
 	err := f.provider.Close()
 	if err != nil {
 		logg.Errorf("handler shutdown error", "err", err)
 	}
 }
 
-func(f *BaseSessionHandler) GetEngine(cfg engine.Config, rs resource.Resource, pr *persist.Persister) engine.Engine {
+func (f *BaseSessionHandler) GetEngine(cfg engine.Config, rs resource.Resource, pr *persist.Persister) engine.Engine {
 	en := engine.NewEngine(cfg, rs)
 	en = en.WithPersister(pr)
 	return en
@@ -52,7 +52,7 @@ func(f *BaseSessionHandler) Process(rqs request.RequestSession) (request.Request
 	var r bool
 	var err error
 	var ok bool
-	
+
 	logg.InfoCtxf(rqs.Ctx, "new request", "data", rqs)
 
 	rqs.Storage, err = f.provider.Get(rqs.Config.SessionId)
@@ -91,7 +91,7 @@ func(f *BaseSessionHandler) Process(rqs request.RequestSession) (request.Request
 		return rqs, err
 	}
 
-	rqs.Continue = r 
+	rqs.Continue = r
 	return rqs, nil
 }
 
@@ -106,10 +106,14 @@ func(f *BaseSessionHandler) Reset(rqs request.RequestSession) (request.RequestSe
 	return rqs, rqs.Engine.Finish()
 }
 
-func(f *BaseSessionHandler) GetConfig() engine.Config {
+func (f *BaseSessionHandler) GetConfig() engine.Config {
 	return f.cfgTemplate
 }
 
+<<<<<<< HEAD:handlers/base.go
 func(f *BaseSessionHandler) GetRequestParser() request.RequestParser {
+=======
+func (f *BaseSessionHandler) GetRequestParser() RequestParser {
+>>>>>>> master:internal/handlers/base.go
 	return f.rp
 }

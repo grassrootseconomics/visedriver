@@ -37,7 +37,7 @@ func main() {
 	config.LoadConfig()
 
 	var connStr string
-	var dbDir string
+	var authConnStr string
 	var resourceDir string
 	var size uint
 	var engineDebug bool
@@ -45,6 +45,7 @@ func main() {
 	var host string
 	var port uint
 	flag.StringVar(&connStr, "c", "", "connection string")
+	flag.StringVar(&authConnStr, "authdb", "", "auth connection string")
 	flag.StringVar(&resourceDir, "resourcedir", path.Join("services", "registration"), "resource dir")
 	flag.BoolVar(&engineDebug, "d", false, "use engine debug output")
 	flag.UintVar(&size, "s", 160, "max size of output")
@@ -52,12 +53,20 @@ func main() {
 	flag.UintVar(&port, "p", 7122, "socket port")
 	flag.Parse()
 
-	if connStr != "" {
+	if connStr == "" {
 		connStr = config.DbConn
 	}
-	connData, err := storage.ToConnData(config.DbConn)
+	if authConnStr == "" {
+		authConnStr = connStr
+	}
+	connData, err := storage.ToConnData(connStr)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "connstr err: %v", err)
+		os.Exit(1)
+	}
+	authConnData, err := storage.ToConnData(authConnStr)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "auth connstr err: %v", err)
 		os.Exit(1)
 	}
 
@@ -75,7 +84,7 @@ func main() {
 	logg.WarnCtxf(ctx, "!!!!! Do not expose to internet and only use with tunnel!")
 	logg.WarnCtxf(ctx, "!!!!! (See ssh -L <...>)")
 
-	logg.Infof("start command", "dbdir", dbDir, "resourcedir", resourceDir, "outputsize", size, "keyfile", sshKeyFile, "host", host, "port", port)
+	logg.Infof("start command", "conn", connData, "authconn", authConnData, "resourcedir", resourceDir, "outputsize", size, "keyfile", sshKeyFile, "host", host, "port", port)
 
 	pfp := path.Join(scriptDir, "pp.csv")
 
@@ -91,7 +100,7 @@ func main() {
 		cfg.EngineDebug = true
 	}
 
-	authKeyStore, err := ssh.NewSshKeyStore(ctx, dbDir)
+	authKeyStore, err := ssh.NewSshKeyStore(ctx, authConnData.String())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "keystore file open error: %v", err)
 		os.Exit(1)

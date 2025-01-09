@@ -41,6 +41,7 @@ func NewAuther(ctx context.Context, keyStore *SshKeyStore) *auther {
 }
 
 func(a *auther) Check(conn ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.Permissions, error) {
+	logg.TraceCtxf(a.Ctx, "looking for publickey", "pubkey", fmt.Sprintf("%x", pubKey))
 	va, err := a.keyStore.Get(a.Ctx, pubKey)
 	if err != nil {
 		return nil, err
@@ -203,6 +204,7 @@ func(s *SshRunner) GetEngine(sessionId string) (engine.Engine, func(), error) {
 
 // adapted example from crypto/ssh package, NewServerConn doc
 func(s *SshRunner) Run(ctx context.Context, keyStore *SshKeyStore) {
+	s.Ctx = ctx
 	running := true
 
 	// TODO: waitgroup should probably not be global

@@ -41,6 +41,7 @@ func NewAuther(ctx context.Context, keyStore *SshKeyStore) *auther {
 }
 
 func(a *auther) Check(conn ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.Permissions, error) {
+	logg.TraceCtxf(a.Ctx, "looking for publickey", "pubkey", fmt.Sprintf("%x", pubKey))
 	va, err := a.keyStore.Get(a.Ctx, pubKey)
 	if err != nil {
 		return nil, err
@@ -69,6 +70,20 @@ func(a *auther) Get(k []byte) (string, error) {
 		return "", errors.New("not found")
 	}
 	return v, nil
+}
+
+type SshRunner struct {
+	Ctx context.Context
+	Cfg engine.Config
+	FlagFile string
+	Conn storage.ConnData
+	ResourceDir string
+	Debug bool
+	SrvKeyFile string
+	Host string
+	Port uint
+	wg sync.WaitGroup
+	lst net.Listener
 }
 
 func(s *SshRunner) serve(ctx context.Context, sessionId string, ch ssh.NewChannel, en engine.Engine) error {
@@ -128,32 +143,13 @@ func(s *SshRunner) serve(ctx context.Context, sessionId string, ch ssh.NewChanne
 	return nil
 }
 
-type SshRunner struct {
-	Ctx context.Context
-	Cfg engine.Config
-	FlagFile string
-	DbDir string
-	ResourceDir string
-	Debug bool
-	SrvKeyFile string
-	Host string
-	Port uint
-	wg sync.WaitGroup
-	lst net.Listener
-}
-
 func(s *SshRunner) Stop() error {
 	return s.lst.Close()
 }
 
 func(s *SshRunner) GetEngine(sessionId string) (engine.Engine, func(), error) {
 	ctx := s.Ctx
-	menuStorageService := storage.NewMenuStorageService(s.DbDir, s.ResourceDir)
-
-	err := menuStorageService.EnsureDbDir()
-	if err != nil {
-		return nil, nil, err
-	}
+	menuStorageService := storage.NewMenuStorageService(s.Conn, s.ResourceDir)
 
 	rs, err := menuStorageService.GetResource(ctx)
 	if err != nil {
@@ -208,6 +204,7 @@ func(s *SshRunner) GetEngine(sessionId string) (engine.Engine, func(), error) {
 
 // adapted example from crypto/ssh package, NewServerConn doc
 func(s *SshRunner) Run(ctx context.Context, keyStore *SshKeyStore) {
+	s.Ctx = ctx
 	running := true
 
 	// TODO: waitgroup should probably not be global

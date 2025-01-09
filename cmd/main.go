@@ -33,23 +33,35 @@ func init() {
 func main() {
 	config.LoadConfig()
 
-	var dbDir string
+	var connStr string
 	var size uint
 	var sessionId string
 	var database string
 	var engineDebug bool
+	var resourceDir string
+	var err error
 	var gettextDir string
 	var langs args.LangVar
+
+	flag.StringVar(&resourceDir, "resourcedir", scriptDir, "resource dir")
 	flag.StringVar(&sessionId, "session-id", "075xx2123", "session id")
-	flag.StringVar(&database, "db", "gdbm", "database to be used")
-	flag.StringVar(&dbDir, "dbdir", ".state", "database dir to read from")
+	flag.StringVar(&connStr, "c", "", "connection string")
 	flag.BoolVar(&engineDebug, "d", false, "use engine debug output")
 	flag.UintVar(&size, "s", 160, "max size of output")
 	flag.StringVar(&gettextDir, "gettext", "", "use gettext translations from given directory")
 	flag.Var(&langs, "language", "add symbol resolution for language")
 	flag.Parse()
 
-	logg.Infof("start command", "dbdir", dbDir, "outputsize", size)
+	if connStr != "" {
+		connStr = config.DbConn
+	}
+	connData, err := storage.ToConnData(connStr)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "connstr err: %v", err)
+		os.Exit(1)
+	}
+
+	logg.Infof("start command", "conn", connData, "outputsize", size)
 
 	if len(langs.Langs()) == 0 {
 		langs.Set(config.DefaultLanguage)
@@ -76,16 +88,10 @@ func main() {
 		MenuSeparator: menuSeparator,
 	}
 
-	resourceDir := scriptDir
-	menuStorageService := storage.NewMenuStorageService(dbDir, resourceDir)
+	menuStorageService := storage.NewMenuStorageService(connData, resourceDir)
+	
 	if gettextDir != "" {
 		menuStorageService = menuStorageService.WithGettext(gettextDir, langs.Langs())
-	}
-
-	err = menuStorageService.EnsureDbDir()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
-		os.Exit(1)
 	}
 
 	rs, err := menuStorageService.GetResource(ctx)

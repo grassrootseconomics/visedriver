@@ -48,20 +48,21 @@ func (p *asyncRequestParser) GetInput(r any) ([]byte, error) {
 func main() {
 	config.LoadConfig()
 
+	var connStr string
 	var sessionId string
-	var dbDir string
 	var resourceDir string
 	var size uint
 	var database string
 	var engineDebug bool
 	var host string
 	var port uint
+	var err error
 	var gettextDir string
 	var langs args.LangVar
+
 	flag.StringVar(&sessionId, "session-id", "075xx2123", "session id")
-	flag.StringVar(&dbDir, "dbdir", ".state", "database dir to read from")
 	flag.StringVar(&resourceDir, "resourcedir", path.Join("services", "registration"), "resource dir")
-	flag.StringVar(&database, "db", "gdbm", "database to be used")
+	flag.StringVar(&connStr, "c", "", "connection string")
 	flag.BoolVar(&engineDebug, "d", false, "use engine debug output")
 	flag.UintVar(&size, "s", 160, "max size of output")
 	flag.StringVar(&host, "h", initializers.GetEnv("HOST", "127.0.0.1"), "http host")
@@ -70,7 +71,16 @@ func main() {
 	flag.Var(&langs, "language", "add symbol resolution for language")
 	flag.Parse()
 
-	logg.Infof("start command", "dbdir", dbDir, "resourcedir", resourceDir, "outputsize", size, "sessionId", sessionId)
+	if connStr != "" {
+		connStr = config.DbConn
+	}
+	connData, err := storage.ToConnData(connStr)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "connstr err: %v", err)
+		os.Exit(1)
+	}
+
+	logg.Infof("start command", "conn", connData, "resourcedir", resourceDir, "outputsize", size, "sessionId", sessionId)
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "Database", database)
@@ -95,18 +105,18 @@ func main() {
 		cfg.EngineDebug = true
 	}
 
-	menuStorageService := storage.NewMenuStorageService(dbDir, resourceDir)
+	menuStorageService := storage.NewMenuStorageService(connData, resourceDir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+
 	rs, err := menuStorageService.GetResource(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 
-	err = menuStorageService.EnsureDbDir()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
-		os.Exit(1)
-	}
 
 	userdataStore, err := menuStorageService.GetUserdataDb(ctx)
 	if err != nil {

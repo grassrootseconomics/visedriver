@@ -15,6 +15,7 @@ const (
 type ConnData struct {
 	typ int
 	str string
+	domain string
 }
 
 func (cd *ConnData) DbType() int {
@@ -25,23 +26,38 @@ func (cd *ConnData) String() string {
 	return cd.str
 }
 
-func probePostgres(s string) (string, bool) {
-	v, err := url.Parse(s)
-	if err != nil {
-		return "", false
-	}
-	if v.Scheme != "postgres" {
-		return "", false
-	}
-	return s, true
+func (cd *ConnData) Domain() string {
+	return cd.domain
 }
 
-func probeGdbm(s string) (string, bool) {
+func (cd *ConnData) Path() string {
+	v, _ := url.Parse(cd.str)
+	v.RawQuery = ""
+	return v.String()
+}
+
+func probePostgres(s string) (string, string, bool) {
+	domain := "public"
+	v, err := url.Parse(s)
+	if err != nil {
+		return "", "", false
+	}
+	if v.Scheme != "postgres" {
+		return "", "", false
+	}
+	vv := v.Query()
+	if vv.Has("search_path") {
+		domain = vv.Get("search_path")
+	}
+	return s, domain, true
+}
+
+func probeGdbm(s string) (string, string, bool) {
 	if !path.IsAbs(s) {
-		return "", false
+		return "", "", false
 	}
 	s = path.Clean(s)
-	return s, true
+	return s, "", true
 }
 
 func ToConnData(connStr string) (ConnData, error) {
@@ -51,14 +67,15 @@ func ToConnData(connStr string) (ConnData, error) {
 		return o, nil
 	}
 
-	v, ok := probePostgres(connStr)
+	v, domain, ok := probePostgres(connStr)
 	if ok {
 		o.typ = DBTYPE_POSTGRES
 		o.str = v
+		o.domain = domain
 		return o, nil
 	}
 
-	v, ok = probeGdbm(connStr)
+	v, _, ok = probeGdbm(connStr)
 	if ok {
 		o.typ = DBTYPE_GDBM
 		o.str = v

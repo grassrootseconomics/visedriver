@@ -55,7 +55,12 @@ func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.D
 	connStr := ms.conn.String()
 	dbTyp := ms.conn.DbType()
 	if dbTyp == DBTYPE_POSTGRES {
-		newDb = postgres.NewPgDb()
+		// TODO: move to vise
+		err = ensureSchemaExists(ctx, ms.conn)
+		if err != nil {
+			return nil, err
+		}
+		newDb = postgres.NewPgDb().WithSchema(ms.conn.Domain())
 	} else if dbTyp == DBTYPE_GDBM {
 		err = ms.ensureDbDir()
 		if err != nil {
@@ -66,7 +71,7 @@ func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.D
 	} else {
 		return nil, fmt.Errorf("unsupported connection string: '%s'\n", ms.conn.String())
 	}
-	logg.DebugCtxf(ctx, "connecting to db", "conn", connStr)
+	logg.DebugCtxf(ctx, "connecting to db", "conn", connStr, "conndata", ms.conn)
 	err = newDb.Connect(ctx, connStr)
 	if err != nil {
 		return nil, err
@@ -98,15 +103,15 @@ func (ms *MenuStorageService) WithGettext(path string, lns []lang.Language) *Men
 }
 
 // ensureSchemaExists creates a new schema if it does not exist
-func ensureSchemaExists(ctx context.Context, connStr, schema string) error {
-	conn, err := pgxpool.New(ctx, connStr)
+func ensureSchemaExists(ctx context.Context, conn ConnData) error {
+	h, err := pgxpool.New(ctx, conn.Path())
 	if err != nil {
 		return fmt.Errorf("failed to connect to the database: %w", err)
 	}
-	defer conn.Close()
+	defer h.Close()
 
-	query := fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s", schema)
-	_, err = conn.Exec(ctx, query)
+	query := fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s", conn.Domain())
+	_, err = h.Exec(ctx, query)
 	if err != nil {
 		return fmt.Errorf("failed to create schema: %w", err)
 	}

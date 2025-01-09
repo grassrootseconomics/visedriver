@@ -110,10 +110,6 @@ func (f *BaseSessionHandler) GetConfig() engine.Config {
 	return f.cfgTemplate
 }
 
-<<<<<<< HEAD:handlers/base.go
 func(f *BaseSessionHandler) GetRequestParser() request.RequestParser {
-=======
-func (f *BaseSessionHandler) GetRequestParser() RequestParser {
->>>>>>> master:internal/handlers/base.go
 	return f.rp
 }

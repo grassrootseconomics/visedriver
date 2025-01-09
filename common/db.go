@@ -57,6 +57,8 @@ const (
 	DATA_ACTIVE_ADDRESS
 	//Holds count of the number of incorrect PIN attempts
 	DATA_INCORRECT_PIN_ATTEMPTS
+	//ISO 639 code for the selected language.
+	DATA_SELECTED_LANGUAGE_CODE
 )
 
 const (

@@ -9,8 +9,8 @@ import (
 	"regexp"
 	"testing"
 
-	"git.grassecon.net/grassrootseconomics/visedriver/internal/testutil"
-	"git.grassecon.net/grassrootseconomics/visedriver/internal/testutil/driver"
+	"git.grassecon.net/grassrootseconomics/visedriver/testutil"
+	"git.grassecon.net/grassrootseconomics/visedriver/testutil/driver"
 	"github.com/gofrs/uuid"
 )
 

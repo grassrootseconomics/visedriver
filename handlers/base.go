@@ -9,7 +9,6 @@ import (
 
 	"git.grassecon.net/grassrootseconomics/visedriver/request"
 	"git.grassecon.net/grassrootseconomics/visedriver/errors"
-	"git.grassecon.net/grassrootseconomics/visedriver/internal/handlers/application"
 	"git.grassecon.net/grassrootseconomics/visedriver/storage"
 )
 
@@ -17,11 +16,24 @@ var (
 	logg = logging.NewVanilla().WithDomain("handlers")
 )
 
+type Handlers struct {
+	pe                   *persist.Persister
+	st                   *state.State
+	ca                   cache.Memory
+	userdataStore        common.DataStore
+	adminstore           *utils.AdminStore
+	flagManager          *asm.FlagParser
+	accountService       remote.AccountServiceInterface
+	prefixDb             dbstorage.PrefixDb
+	profile              *models.Profile
+	ReplaceSeparatorFunc func(string) string
+}
+
 type BaseSessionHandler struct {
 	cfgTemplate engine.Config
 	rp request.RequestParser
 	rs resource.Resource
-	hn *application.Handlers
+	hn *Handlers
 	provider storage.StorageProvider
 }
 

@@ -18,8 +18,8 @@ import (
 	"git.grassecon.net/grassrootseconomics/visedriver/config"
 	"git.grassecon.net/grassrootseconomics/visedriver/handlers"
 	"git.grassecon.net/grassrootseconomics/visedriver/storage"
-	"git.grassecon.net/grassrootseconomics/visedriver/internal/testutil/testservice"
-	"git.grassecon.net/grassrootseconomics/visedriver/internal/testutil/testtag"
+	"git.grassecon.net/grassrootseconomics/visedriver/testutil/testservice"
+	"git.grassecon.net/grassrootseconomics/visedriver/testutil/testtag"
 	testdataloader "github.com/peteole/testdata-loader"
 	"git.grassecon.net/grassrootseconomics/visedriver/remote"
 )

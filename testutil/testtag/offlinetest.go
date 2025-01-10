@@ -4,7 +4,7 @@ package testtag
 
 import (
 	"git.grassecon.net/grassrootseconomics/visedriver/remote"
-	accountservice "git.grassecon.net/grassrootseconomics/visedriver/internal/testutil/testservice"
+	accountservice "git.grassecon.net/grassrootseconomics/visedriver/testutil/testservice"
 )
 
 var (

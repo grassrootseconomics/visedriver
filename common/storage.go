@@ -7,6 +7,7 @@ import (
 	"git.defalsify.org/vise.git/db"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/persist"
+	"git.defalsify.org/vise.git/lang"
 	"git.grassecon.net/grassrootseconomics/visedriver/storage"
 	dbstorage "git.grassecon.net/grassrootseconomics/visedriver/storage/db"
 )
@@ -38,6 +39,11 @@ func NewStorageService(conn storage.ConnData) (*StorageService, error) {
 		svc: storage.NewMenuStorageService(conn, ""),
 	}
 	return svc, nil
+}
+
+func (ss *StorageService) WithGettext(path string, lns []lang.Language) *StorageService {
+	ss.svc = ss.svc.WithGettext(path, lns)
+	return ss
 }
 
 // TODO: simplify enable poresource, conndata instead

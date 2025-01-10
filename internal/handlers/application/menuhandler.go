@@ -1,4 +1,4 @@
-package ussd
+package application
 
 import (
 	"bytes"
@@ -161,9 +161,12 @@ func (h *Handlers) SetLanguage(ctx context.Context, sym string, input []byte) (r
 		//Fallback to english instead?
 		code = "eng"
 	}
-	res.FlagSet = append(res.FlagSet, state.FLAG_LANG)
+	err := h.persistLanguageCode(ctx, code)
+	if err != nil {
+		return res, err
+	}
 	res.Content = code
-
+	res.FlagSet = append(res.FlagSet, state.FLAG_LANG)
 	languageSetFlag, err := h.flagManager.GetFlag("flag_language_set")
 	if err != nil {
 		logg.ErrorCtxf(ctx, "Error setting the languageSetFlag", "error", err)
@@ -2170,6 +2173,21 @@ func (h *Handlers) resetIncorrectPINAttempts(ctx context.Context, sessionId stri
 			logg.ErrorCtxf(ctx, "failed to reset incorrect PIN attempts ", "key", common.DATA_INCORRECT_PIN_ATTEMPTS, "value", common.AllowedPINAttempts, "error", err)
 			return err
 		}
+	}
+	return nil
+}
+
+// persistLanguageCode persists the selected ISO 639 language code
+func (h *Handlers) persistLanguageCode(ctx context.Context, code string) error {
+	store := h.userdataStore
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return fmt.Errorf("missing session")
+	}
+	err := store.WriteEntry(ctx, sessionId, common.DATA_SELECTED_LANGUAGE_CODE, []byte(code))
+	if err != nil {
+		logg.ErrorCtxf(ctx, "failed to persist language code", "key", common.DATA_SELECTED_LANGUAGE_CODE, "value", code, "error", err)
+		return err
 	}
 	return nil
 }

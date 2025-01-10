@@ -40,6 +40,7 @@ var (
 	VoucherTransfersURL string
 	VoucherDataURL      string
 	CheckAliasURL       string
+	DbConn		string
 	DefaultLanguage	    string
 	Languages	[]string
 )
@@ -69,20 +70,30 @@ func setBase() error {
 	dataURLBase = initializers.GetEnv("DATA_URL_BASE", "http://localhost:5006")
 	BearerToken = initializers.GetEnv("BEARER_TOKEN", "")
 
-	_, err = url.JoinPath(custodialURLBase, "/foo")
+	_, err = url.Parse(custodialURLBase)
 	if err != nil {
 		return err
 	}
-	_, err = url.JoinPath(dataURLBase, "/bar")
+	_, err = url.Parse(dataURLBase)
 	if err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func setConn() error {
+	DbConn = initializers.GetEnv("DB_CONN", "")
 	return nil
 }
 
 // LoadConfig initializes the configuration values after environment variables are loaded.
 func LoadConfig() error {
 	err := setBase()
+	if err != nil {
+		return err
+	}
+	err = setConn()
 	if err != nil {
 		return err
 	}

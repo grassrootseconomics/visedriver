@@ -1,4 +1,4 @@
-package ussd
+package application
 
 import (
 	"context"

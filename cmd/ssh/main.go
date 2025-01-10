@@ -14,7 +14,10 @@ import (
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/logging"
 
+	"git.grassecon.net/urdt/ussd/config"
+	"git.grassecon.net/urdt/ussd/initializers"
 	"git.grassecon.net/urdt/ussd/internal/ssh"
+	"git.grassecon.net/urdt/ussd/internal/storage"
 )
 
 var (
@@ -26,25 +29,49 @@ var (
 	build = "dev"
 )
 
+func init() {
+	initializers.LoadEnvVariables()
+}
+
 func main() {
-	var dbDir string
+	config.LoadConfig()
+
+	var connStr string
+	var authConnStr string
 	var resourceDir string
 	var size uint
 	var engineDebug bool
 	var stateDebug bool
 	var host string
 	var port uint
-	flag.StringVar(&dbDir, "dbdir", ".state", "database dir to read from")
+	flag.StringVar(&connStr, "c", "", "connection string")
+	flag.StringVar(&authConnStr, "authdb", "", "auth connection string")
 	flag.StringVar(&resourceDir, "resourcedir", path.Join("services", "registration"), "resource dir")
-	flag.BoolVar(&engineDebug, "engine-debug", false, "use engine debug output")
-	flag.BoolVar(&stateDebug, "state-debug", false, "use engine debug output")
+	flag.BoolVar(&engineDebug, "d", false, "use engine debug output")
 	flag.UintVar(&size, "s", 160, "max size of output")
-	flag.StringVar(&host, "h", "127.0.0.1", "http host")
-	flag.UintVar(&port, "p", 7122, "http port")
+	flag.StringVar(&host, "h", "127.0.0.1", "socket host")
+	flag.UintVar(&port, "p", 7122, "socket port")
 	flag.Parse()
 
+	if connStr == "" {
+		connStr = config.DbConn
+	}
+	if authConnStr == "" {
+		authConnStr = connStr
+	}
+	connData, err := storage.ToConnData(connStr)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "connstr err: %v", err)
+		os.Exit(1)
+	}
+	authConnData, err := storage.ToConnData(authConnStr)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "auth connstr err: %v", err)
+		os.Exit(1)
+	}
+
 	sshKeyFile := flag.Arg(0)
-	_, err := os.Stat(sshKeyFile)
+	_, err = os.Stat(sshKeyFile)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "cannot open ssh server private key file: %v\n", err)
 		os.Exit(1)
@@ -57,7 +84,7 @@ func main() {
 	logg.WarnCtxf(ctx, "!!!!! Do not expose to internet and only use with tunnel!")
 	logg.WarnCtxf(ctx, "!!!!! (See ssh -L <...>)")
 
-	logg.Infof("start command", "dbdir", dbDir, "resourcedir", resourceDir, "outputsize", size, "keyfile", sshKeyFile, "host", host, "port", port)
+	logg.Infof("start command", "conn", connData, "authconn", authConnData, "resourcedir", resourceDir, "outputsize", size, "keyfile", sshKeyFile, "host", host, "port", port)
 
 	pfp := path.Join(scriptDir, "pp.csv")
 
@@ -73,7 +100,7 @@ func main() {
 		cfg.EngineDebug = true
 	}
 
-	authKeyStore, err := ssh.NewSshKeyStore(ctx, dbDir)
+	authKeyStore, err := ssh.NewSshKeyStore(ctx, authConnData.String())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "keystore file open error: %v", err)
 		os.Exit(1)
@@ -92,10 +119,10 @@ func main() {
 	signal.Notify(cterm, os.Interrupt, syscall.SIGTERM)
 
 	runner := &ssh.SshRunner{
-		Cfg:         cfg,
-		Debug:       engineDebug,
-		FlagFile:    pfp,
-		DbDir:       dbDir,
+		Cfg: cfg,
+		Debug: engineDebug,
+		FlagFile: pfp,
+		Conn: connData,
 		ResourceDir: resourceDir,
 		SrvKeyFile:  sshKeyFile,
 		Host:        host,

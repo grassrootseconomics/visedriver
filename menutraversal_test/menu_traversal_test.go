@@ -4,18 +4,14 @@ import (
 	"bytes"
 	"context"
 	"flag"
-	"fmt"
 	"log"
 	"math/rand"
-	"os"
-	"path/filepath"
 	"regexp"
 	"testing"
 
 	"git.grassecon.net/urdt/ussd/internal/testutil"
 	"git.grassecon.net/urdt/ussd/internal/testutil/driver"
 	"github.com/gofrs/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var (
@@ -27,12 +23,8 @@ var (
 
 var groupTestFile = flag.String("test-file", "group_test.json", "The test file to use for running the group tests")
 var database = flag.String("db", "gdbm", "Specify the database (gdbm or postgres)")
+var connStr = flag.String("conn", ".test_state", "connection string")
 var dbSchema = flag.String("schema", "test", "Specify the database schema (default test)")
-
-func testStore() string {
-	v, _ :=  filepath.Abs(".test_state/state.gdbm")
-	return v
-}
 
 func GenerateSessionId() string {
 	uu := uuid.NewGenWithOptions(uuid.WithRandomReader(g))
@@ -90,37 +82,12 @@ func extractSendAmount(response []byte) string {
 func TestMain(m *testing.M) {
 	// Parse the flags
 	flag.Parse()
-
 	sessionID = GenerateSessionId()
-	defer func() {
-		if err := os.RemoveAll(testStore()); err != nil {
-			log.Fatalf("Failed to delete state store %s: %v", testStore(), err)
-		}
-	}()
+	// set the db
+	testutil.SetDatabase(*database, *connStr, *dbSchema)
 
-	// Set the selected database
-	testutil.SetDatabase(*database, *dbSchema)
-
-	// Cleanup the schema table after tests
-	defer func() {
-		if *database == "postgres" {
-			ctx := context.Background()
-			connStr := "postgres://" //storage.BuildConnStr()
-			dbConn, err := pgxpool.New(ctx, connStr)
-			if err != nil {
-				log.Fatalf("Failed to connect to database for cleanup: %v", err)
-			}
-			defer dbConn.Close()
-
-			query := fmt.Sprintf("DELETE FROM %s.kv_vise;", *dbSchema)
-			_, execErr := dbConn.Exec(ctx, query)
-			if execErr != nil {
-				log.Printf("Failed to cleanup table %s.kv_vise: %v", *dbSchema, execErr)
-			} else {
-				log.Printf("Successfully cleaned up table %s.kv_vise", *dbSchema)
-			}
-		}
-	}()
+	// Cleanup the db after tests
+	defer testutil.CleanDatabase()
 
 	m.Run()
 }

@@ -10,16 +10,16 @@ import (
 	"syscall"
 
 	"git.defalsify.org/vise.git/engine"
+	"git.defalsify.org/vise.git/lang"
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/resource"
-	"git.defalsify.org/vise.git/lang"
 
 	"git.grassecon.net/urdt/ussd/config"
 	"git.grassecon.net/urdt/ussd/initializers"
+	"git.grassecon.net/urdt/ussd/internal/args"
 	"git.grassecon.net/urdt/ussd/internal/handlers"
 	"git.grassecon.net/urdt/ussd/internal/storage"
 	"git.grassecon.net/urdt/ussd/remote"
-	"git.grassecon.net/urdt/ussd/internal/args"
 )
 
 var (
@@ -52,7 +52,6 @@ func main() {
 	var sessionId string
 	var resourceDir string
 	var size uint
-	var database string
 	var engineDebug bool
 	var host string
 	var port uint
@@ -71,7 +70,7 @@ func main() {
 	flag.Var(&langs, "language", "add symbol resolution for language")
 	flag.Parse()
 
-	if connStr != "" {
+	if connStr == "" {
 		connStr = config.DbConn
 	}
 	connData, err := storage.ToConnData(connStr)
@@ -83,7 +82,6 @@ func main() {
 	logg.Infof("start command", "conn", connData, "resourcedir", resourceDir, "outputsize", size, "sessionId", sessionId)
 
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, "Database", database)
 
 	ln, err := lang.LanguageFromCode(config.DefaultLanguage)
 	if err != nil {
@@ -116,7 +114,6 @@ func main() {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
-
 
 	userdataStore, err := menuStorageService.GetUserdataDb(ctx)
 	if err != nil {

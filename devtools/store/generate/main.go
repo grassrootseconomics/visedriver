@@ -9,21 +9,22 @@ import (
 	"path"
 
 	"git.defalsify.org/vise.git/logging"
-	"git.grassecon.net/urdt/ussd/config"
-	"git.grassecon.net/urdt/ussd/internal/storage"
-	"git.grassecon.net/urdt/ussd/initializers"
 	"git.grassecon.net/urdt/ussd/common"
+	"git.grassecon.net/urdt/ussd/config"
+	"git.grassecon.net/urdt/ussd/initializers"
+	"git.grassecon.net/urdt/ussd/internal/storage"
+	testdataloader "github.com/peteole/testdata-loader"
 )
 
 var (
 	logg      = logging.NewVanilla()
+	baseDir   = testdataloader.GetBasePath()
 	scriptDir = path.Join("services", "registration")
 )
 
 func init() {
 	initializers.LoadEnvVariables()
 }
-
 
 func main() {
 	config.LoadConfig()
@@ -86,5 +87,4 @@ func main() {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
-	
 }

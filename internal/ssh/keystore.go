@@ -10,8 +10,8 @@ import (
 
 	"git.defalsify.org/vise.git/db"
 
-	"git.grassecon.net/urdt/ussd/internal/storage"
-	dbstorage "git.grassecon.net/urdt/ussd/internal/storage/db/gdbm"
+	"git.grassecon.net/grassrootseconomics/visedriver/storage"
+	dbstorage "git.grassecon.net/grassrootseconomics/visedriver/storage/db/gdbm"
 )
 
 type SshKeyStore struct {

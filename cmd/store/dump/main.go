@@ -2,17 +2,17 @@ package main
 
 import (
 	"context"
-	"crypto/sha1"
 	"flag"
 	"fmt"
 	"os"
 	"path"
 
+	"git.grassecon.net/grassrootseconomics/visedriver/config"
+	"git.grassecon.net/grassrootseconomics/visedriver/initializers"
+	"git.grassecon.net/grassrootseconomics/visedriver/storage"
+	"git.grassecon.net/grassrootseconomics/visedriver/debug"
+	"git.defalsify.org/vise.git/db"
 	"git.defalsify.org/vise.git/logging"
-	"git.grassecon.net/urdt/ussd/config"
-	"git.grassecon.net/urdt/ussd/internal/storage"
-	"git.grassecon.net/urdt/ussd/initializers"
-	"git.grassecon.net/urdt/ussd/common"
 )
 
 var (
@@ -25,6 +25,15 @@ func init() {
 }
 
 
+func formatItem(k []byte, v []byte) (string, error) {
+	o, err := debug.FromKey(k)
+	if err != nil {
+		return "", err
+	}
+	s := fmt.Sprintf("%vValue: %v\n\n", o, string(v))
+	return s, nil
+}
+
 func main() {
 	config.LoadConfig()
 
@@ -35,7 +44,7 @@ func main() {
 	var err error
 
 	flag.StringVar(&sessionId, "session-id", "075xx2123", "session id")
-	flag.StringVar(&connStr, "c", "", "connection string")
+	flag.StringVar(&connStr, "c", ".state", "connection string")
 	flag.BoolVar(&engineDebug, "d", false, "use engine debug output")
 	flag.Parse()
 
@@ -56,29 +65,31 @@ func main() {
 
 	resourceDir := scriptDir
 	menuStorageService := storage.NewMenuStorageService(connData, resourceDir)
-	
+
 	store, err := menuStorageService.GetUserdataDb(ctx)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
+		fmt.Fprintf(os.Stderr, "get userdata db: %v\n", err.Error())
 		os.Exit(1)
 	}
-	userStore := common.UserDataStore{store}
+	store.SetPrefix(db.DATATYPE_USERDATA)
 
-	h := sha1.New()
-	h.Write([]byte(sessionId))
-	address := h.Sum(nil)
-	addressString := fmt.Sprintf("%x", address)
-
-	err = userStore.WriteEntry(ctx, sessionId, common.DATA_PUBLIC_KEY, []byte(addressString))
+	d, err := store.Dump(ctx, []byte(sessionId))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
+		fmt.Fprintf(os.Stderr, "store dump fail: %v\n", err.Error())
 		os.Exit(1)
 	}
 
-	err = userStore.WriteEntry(ctx, addressString, common.DATA_PUBLIC_KEY_REVERSE, []byte(sessionId))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
-		os.Exit(1)
+	for true {
+		k, v := d.Next(ctx)
+		if k == nil {
+			break
+		}
+		r, err := formatItem(k, v)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "format db item error: %v", err)
+			os.Exit(1)
+		}
+		fmt.Printf(r)
 	}
 
 	err = store.Close()
@@ -86,5 +97,4 @@ func main() {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
-	
 }

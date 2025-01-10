@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	dbstorage "git.grassecon.net/urdt/ussd/internal/storage/db"
+	dbstorage "git.grassecon.net/grassrootseconomics/visedriver/storage/db"
 	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 )
 

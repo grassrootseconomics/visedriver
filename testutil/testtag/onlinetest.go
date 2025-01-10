@@ -2,7 +2,7 @@
 
 package testtag
 
-import "git.grassecon.net/urdt/ussd/remote"
+import "git.grassecon.net/grassrootseconomics/visedriver/remote"
 
 var (
 	AccountService remote.AccountServiceInterface

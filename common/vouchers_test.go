@@ -10,7 +10,7 @@ import (
 
 	visedb "git.defalsify.org/vise.git/db"
 	memdb "git.defalsify.org/vise.git/db/mem"
-	dbstorage "git.grassecon.net/urdt/ussd/internal/storage/db"
+	dbstorage "git.grassecon.net/grassrootseconomics/visedriver/storage/db"
 	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 )
 

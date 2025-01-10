@@ -11,8 +11,8 @@ import (
 	"regexp"
 	"testing"
 
-	"git.grassecon.net/urdt/ussd/internal/testutil"
-	"git.grassecon.net/urdt/ussd/internal/testutil/driver"
+	"git.grassecon.net/grassrootseconomics/visedriver/internal/testutil"
+	"git.grassecon.net/grassrootseconomics/visedriver/internal/testutil/driver"
 	"github.com/gofrs/uuid"
 )
 

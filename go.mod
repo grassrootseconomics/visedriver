@@ -1,4 +1,4 @@
-module git.grassecon.net/urdt/ussd
+module git.grassecon.net/grassrootseconomics/visedriver
 
 go 1.23.0
 

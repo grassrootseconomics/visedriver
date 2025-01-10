@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"git.defalsify.org/vise.git/logging"
-	"git.grassecon.net/urdt/ussd/internal/utils"
+	"git.grassecon.net/grassrootseconomics/visedriver/internal/utils"
 )
 
 var (

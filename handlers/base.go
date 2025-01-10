@@ -7,10 +7,10 @@ import (
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/logging"
 
-	"git.grassecon.net/urdt/ussd/request"
-	"git.grassecon.net/urdt/ussd/errors"
-	"git.grassecon.net/urdt/ussd/internal/handlers/application"
-	"git.grassecon.net/urdt/ussd/internal/storage"
+	"git.grassecon.net/grassrootseconomics/visedriver/request"
+	"git.grassecon.net/grassrootseconomics/visedriver/errors"
+	"git.grassecon.net/grassrootseconomics/visedriver/internal/handlers/application"
+	"git.grassecon.net/grassrootseconomics/visedriver/storage"
 )
 
 var (

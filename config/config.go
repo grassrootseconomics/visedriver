@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"strings"
 
-	"git.grassecon.net/urdt/ussd/initializers"
+	"git.grassecon.net/grassrootseconomics/visedriver/initializers"
 )
 
 const (

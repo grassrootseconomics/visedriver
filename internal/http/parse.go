@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"git.grassecon.net/urdt/ussd/internal/handlers"
+	"git.grassecon.net/grassrootseconomics/visedriver/internal/handlers"
 )
 
 type DefaultRequestParser struct {

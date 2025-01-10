@@ -10,7 +10,7 @@ import (
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/logging"
-	"git.grassecon.net/urdt/ussd/internal/storage"
+	"git.grassecon.net/grassrootseconomics/visedriver/storage"
 )
 
 var (

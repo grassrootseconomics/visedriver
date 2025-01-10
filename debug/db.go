@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"encoding/binary"
 
-	"git.grassecon.net/urdt/ussd/common"
+	"git.grassecon.net/grassrootseconomics/visedriver/common"
 	"git.defalsify.org/vise.git/db"
 )
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 
-	"git.grassecon.net/urdt/ussd/devtools/admin/commands"
+	"git.grassecon.net/grassrootseconomics/visedriver/devtools/admin/commands"
 )
 
 func main() {

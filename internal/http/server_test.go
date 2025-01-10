@@ -9,9 +9,9 @@ import (
 	"testing"
 
 	"git.defalsify.org/vise.git/engine"
-	"git.grassecon.net/urdt/ussd/internal/handlers"
-	"git.grassecon.net/urdt/ussd/testutil/mocks/httpmocks"
-	"git.grassecon.net/urdt/ussd/request"
+	"git.grassecon.net/grassrootseconomics/visedriver/internal/handlers"
+	"git.grassecon.net/grassrootseconomics/visedriver/testutil/mocks/httpmocks"
+	"git.grassecon.net/grassrootseconomics/visedriver/request"
 )
 
 // invalidRequestType is a custom type to test invalid request scenarios

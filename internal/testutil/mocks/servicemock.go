@@ -3,7 +3,7 @@ package mocks
 import (
 	"context"
 
-	"git.grassecon.net/urdt/ussd/models"
+	"git.grassecon.net/grassrootseconomics/visedriver/models"
 	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 	"github.com/stretchr/testify/mock"
 )

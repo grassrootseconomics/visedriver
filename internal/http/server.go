@@ -6,8 +6,8 @@ import (
 
 	"git.defalsify.org/vise.git/logging"
 
-	"git.grassecon.net/urdt/ussd/internal/handlers"
-	"git.grassecon.net/urdt/ussd/request"
+	"git.grassecon.net/grassrootseconomics/visedriver/internal/handlers"
+	"git.grassecon.net/grassrootseconomics/visedriver/request"
 )
 
 var (

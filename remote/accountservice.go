@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"git.grassecon.net/urdt/ussd/config"
-	"git.grassecon.net/urdt/ussd/models"
+	"git.grassecon.net/grassrootseconomics/visedriver/config"
+	"git.grassecon.net/grassrootseconomics/visedriver/models"
 	"github.com/grassrootseconomics/eth-custodial/pkg/api"
 	dataserviceapi "github.com/grassrootseconomics/ussd-data-service/pkg/api"
 )

@@ -4,7 +4,7 @@ import (
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
-	"git.grassecon.net/urdt/ussd/request"
+	"git.grassecon.net/grassrootseconomics/visedriver/request"
 )
 
 // MockRequestHandler implements request.RequestHandler interface for testing

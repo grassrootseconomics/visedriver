@@ -10,8 +10,8 @@ import (
 
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/lang"
-	"git.grassecon.net/urdt/ussd/config"
-	"git.grassecon.net/urdt/ussd/initializers"
+	"git.grassecon.net/grassrootseconomics/visedriver/config"
+	"git.grassecon.net/grassrootseconomics/visedriver/initializers"
 )
 
 const (

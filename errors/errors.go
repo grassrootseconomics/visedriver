@@ -1,7 +1,7 @@
 package errors
 
 import (
-	"git.grassecon.net/urdt/ussd/internal/handlers"
+	"git.grassecon.net/grassrootseconomics/visedriver/internal/handlers"
 )
 
 var (

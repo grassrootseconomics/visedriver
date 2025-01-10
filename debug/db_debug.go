@@ -5,7 +5,7 @@ package debug
 import (
 	"git.defalsify.org/vise.git/db"
 
-	"git.grassecon.net/urdt/ussd/common"
+	"git.grassecon.net/grassrootseconomics/visedriver/common"
 )
 
 func init() {

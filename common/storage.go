@@ -7,8 +7,8 @@ import (
 	"git.defalsify.org/vise.git/db"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/persist"
-	"git.grassecon.net/urdt/ussd/internal/storage"
-	dbstorage "git.grassecon.net/urdt/ussd/internal/storage/db"
+	"git.grassecon.net/grassrootseconomics/visedriver/storage"
+	dbstorage "git.grassecon.net/grassrootseconomics/visedriver/storage/db"
 )
 
 var (

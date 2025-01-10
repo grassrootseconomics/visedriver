@@ -11,12 +11,12 @@ import (
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/logging"
 	"git.defalsify.org/vise.git/resource"
-	"git.grassecon.net/urdt/ussd/handlers"
-	"git.grassecon.net/urdt/ussd/internal/storage"
-	"git.grassecon.net/urdt/ussd/internal/testutil/testservice"
-	"git.grassecon.net/urdt/ussd/internal/testutil/testtag"
+	"git.grassecon.net/grassrootseconomics/visedriver/handlers"
+	"git.grassecon.net/grassrootseconomics/visedriver/storage"
+	"git.grassecon.net/grassrootseconomics/visedriver/internal/testutil/testservice"
+	"git.grassecon.net/grassrootseconomics/visedriver/internal/testutil/testtag"
 	testdataloader "github.com/peteole/testdata-loader"
-	"git.grassecon.net/urdt/ussd/remote"
+	"git.grassecon.net/grassrootseconomics/visedriver/remote"
 )
 
 var (

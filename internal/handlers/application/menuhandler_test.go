@@ -775,6 +775,11 @@ func TestSetLanguage(t *testing.T) {
 		log.Fatal(err)
 	}
 
+	sessionId := "session123"
+	ctx, store := InitializeTestStore(t)
+
+	ctx = context.WithValue(ctx, "SessionId", sessionId)
+
 	// Define test cases
 	tests := []struct {
 		name           string
@@ -807,12 +812,13 @@ func TestSetLanguage(t *testing.T) {
 
 			// Create the Handlers instance with the mock flag manager
 			h := &Handlers{
-				flagManager: fm.parser,
-				st:          mockState,
+				flagManager:   fm.parser,
+				userdataStore: store,
+				st:            mockState,
 			}
 
 			// Call the method
-			res, err := h.SetLanguage(context.Background(), "set_language", nil)
+			res, err := h.SetLanguage(ctx, "set_language", nil)
 			if err != nil {
 				t.Error(err)
 			}
@@ -2283,5 +2289,43 @@ func TestResetIncorrectPINAttempts(t *testing.T) {
 		t.Logf(err.Error())
 	}
 	assert.Equal(t, "0", string(incorrectAttempts))
+
+}
+
+func TestPersistLanguageCode(t *testing.T) {
+	ctx, store := InitializeTestStore(t)
+
+	sessionId := "session123"
+	ctx = context.WithValue(ctx, "SessionId", sessionId)
+
+	h := &Handlers{
+		userdataStore: store,
+	}
+	tests := []struct {
+		name                 string
+		code                 string
+		expectedLanguageCode string
+	}{
+		{
+			name:                 "Set Default Language (English)",
+			code:                 "eng",
+			expectedLanguageCode: "eng",
+		},
+		{
+			name:                 "Set Swahili Language",
+			code:                 "swa",
+			expectedLanguageCode: "swa",
+		},
+	}
+
+	for _, test := range tests {
+		err := h.persistLanguageCode(ctx, test.code)
+		if err != nil {
+			t.Logf(err.Error())
+		}
+		code, err := store.ReadEntry(ctx, sessionId, common.DATA_SELECTED_LANGUAGE_CODE)
+
+		assert.Equal(t, test.expectedLanguageCode, string(code))
+	}
 
 }

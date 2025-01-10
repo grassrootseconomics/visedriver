@@ -4,21 +4,21 @@ import (
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
-	"git.grassecon.net/urdt/ussd/internal/handlers"
+	"git.grassecon.net/grassrootseconomics/visedriver/request"
 )
 
-// MockRequestHandler implements handlers.RequestHandler interface for testing
+// MockRequestHandler implements request.RequestHandler interface for testing
 type MockRequestHandler struct {
-	ProcessFunc          func(handlers.RequestSession) (handlers.RequestSession, error)
+	ProcessFunc          func(request.RequestSession) (request.RequestSession, error)
 	GetConfigFunc        func() engine.Config
 	GetEngineFunc        func(cfg engine.Config, rs resource.Resource, pe *persist.Persister) engine.Engine
-	OutputFunc           func(rs handlers.RequestSession) (handlers.RequestSession, error)
-	ResetFunc            func(rs handlers.RequestSession) (handlers.RequestSession, error)
+	OutputFunc           func(rs request.RequestSession) (request.RequestSession, error)
+	ResetFunc            func(rs request.RequestSession) (request.RequestSession, error)
 	ShutdownFunc         func()
-	GetRequestParserFunc func() handlers.RequestParser
+	GetRequestParserFunc func() request.RequestParser
 }
 
-func (m *MockRequestHandler) Process(rqs handlers.RequestSession) (handlers.RequestSession, error) {
+func (m *MockRequestHandler) Process(rqs request.RequestSession) (request.RequestSession, error) {
 	return m.ProcessFunc(rqs)
 }
 
@@ -30,11 +30,11 @@ func (m *MockRequestHandler) GetEngine(cfg engine.Config, rs resource.Resource, 
 	return m.GetEngineFunc(cfg, rs, pe)
 }
 
-func (m *MockRequestHandler) Output(rs handlers.RequestSession) (handlers.RequestSession, error) {
+func (m *MockRequestHandler) Output(rs request.RequestSession) (request.RequestSession, error) {
 	return m.OutputFunc(rs)
 }
 
-func (m *MockRequestHandler) Reset(rs handlers.RequestSession) (handlers.RequestSession, error) {
+func (m *MockRequestHandler) Reset(rs request.RequestSession) (request.RequestSession, error) {
 	return m.ResetFunc(rs)
 }
 
@@ -42,6 +42,6 @@ func (m *MockRequestHandler) Shutdown() {
 	m.ShutdownFunc()
 }
 
-func (m *MockRequestHandler) GetRequestParser() handlers.RequestParser {
+func (m *MockRequestHandler) GetRequestParser() request.RequestParser {
 	return m.GetRequestParserFunc()
 }

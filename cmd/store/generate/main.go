@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 
+	testdataloader "github.com/peteole/testdata-loader"
 	"git.defalsify.org/vise.git/logging"
 	"git.grassecon.net/grassrootseconomics/visedriver/config"
 	"git.grassecon.net/grassrootseconomics/visedriver/storage"

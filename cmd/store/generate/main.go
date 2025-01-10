@@ -17,13 +17,13 @@ import (
 
 var (
 	logg      = logging.NewVanilla()
+	baseDir   = testdataloader.GetBasePath()
 	scriptDir = path.Join("services", "registration")
 )
 
 func init() {
 	initializers.LoadEnvVariables()
 }
-
 
 func main() {
 	config.LoadConfig()
@@ -86,5 +86,4 @@ func main() {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(1)
 	}
-	
 }

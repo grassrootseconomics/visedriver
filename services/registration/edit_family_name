@@ -1,2 +1,0 @@
-Current family name: {{.get_current_profile_info}}
-Enter family name:

@@ -1,2 +1,0 @@
-Current year of birth: {{.get_current_profile_info}}
-Enter your year of birth

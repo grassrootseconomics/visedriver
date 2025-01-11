@@ -1,2 +1,0 @@
-RELOAD save_offerings
-CATCH profile_update_success flag_allow_update 1

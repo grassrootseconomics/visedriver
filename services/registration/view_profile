@@ -1,2 +1,0 @@
-My profile:
-{{.get_profile_info}}

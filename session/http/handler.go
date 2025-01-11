@@ -13,7 +13,6 @@ var (
 	logg = logging.NewVanilla().WithDomain("visedriver.http.session")
 )
 
-
 // HTTPSessionHandler implements the session handler for HTTP
 type HTTPSessionHandler struct {
 	request.RequestHandler

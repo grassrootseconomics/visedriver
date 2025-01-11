@@ -43,6 +43,7 @@ type RequestHandler interface {
 	Reset(rs RequestSession) (RequestSession, error)
 	Shutdown()
 }
+
 type SessionHandler struct {
 	RequestHandler
 }

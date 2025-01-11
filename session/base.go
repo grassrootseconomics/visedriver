@@ -1,95 +1,30 @@
-package handlers
+package session
 
 import (
-	"context"
-	"fmt"
-
-	"git.defalsify.org/vise.git/asm"
 	"git.defalsify.org/vise.git/db"
-	"git.defalsify.org/vise.git/state"
-	"git.defalsify.org/vise.git/cache"
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/logging"
-
+	"git.grassecon.net/grassrootseconomics/visedriver/handlers"
 	"git.grassecon.net/grassrootseconomics/visedriver/request"
-	"git.grassecon.net/grassrootseconomics/visedriver/errors"
-	dbstorage "git.grassecon.net/grassrootseconomics/visedriver/storage/db"
-	"git.grassecon.net/grassrootseconomics/visedriver/common"
 	"git.grassecon.net/grassrootseconomics/visedriver/storage"
-	"git.grassecon.net/grassrootseconomics/visedriver/remote"
-	"git.grassecon.net/grassrootseconomics/visedriver/models"
-	"git.grassecon.net/grassrootseconomics/visedriver/utils"
+	"git.grassecon.net/grassrootseconomics/visedriver/errors"
 )
 
 var (
-	logg = logging.NewVanilla().WithDomain("handlers")
+	logg = logging.NewVanilla().WithDomain("visedriver.session")
 )
 
-type Handlers struct {
-	pe                   *persist.Persister
-	st                   *state.State
-	ca                   cache.Memory
-	userdataStore        common.DataStore
-	adminstore           *utils.AdminStore
-	flagManager          *asm.FlagParser
-	accountService       remote.AccountServiceInterface
-	prefixDb             dbstorage.PrefixDb
-	profile              *models.Profile
-	ReplaceSeparatorFunc func(string) string
-}
-
-// NewHandlers creates a new instance of the Handlers struct with the provided dependencies.
-func NewHandlers(appFlags *asm.FlagParser, userdataStore db.Db, adminstore *utils.AdminStore, accountService remote.AccountServiceInterface, replaceSeparatorFunc func(string) string) (*Handlers, error) {
-	if userdataStore == nil {
-		return nil, fmt.Errorf("cannot create handler with nil userdata store")
-	}
-	userDb := &common.UserDataStore{
-		Db: userdataStore,
-	}
-
-	// Instantiate the SubPrefixDb with "DATATYPE_USERDATA" prefix
-	prefix := common.ToBytes(db.DATATYPE_USERDATA)
-	prefixDb := dbstorage.NewSubPrefixDb(userdataStore, prefix)
-
-	h := &Handlers{
-		userdataStore:        userDb,
-		flagManager:          appFlags,
-		adminstore:           adminstore,
-		accountService:       accountService,
-		prefixDb:             prefixDb,
-		profile:              &models.Profile{Max: 6},
-		ReplaceSeparatorFunc: replaceSeparatorFunc,
-	}
-	return h, nil
-}
-
-func (h *Handlers) Exit() {
-	h.pe = nil
-}
-
-func (h *Handlers) Init(ctx context.Context, sym string, input []byte) (resource.Result, error) {
-	return resource.Result{}, nil
-}
-
-// WithPersister sets persister instance to the handlers.
-func (h *Handlers) WithPersister(pe *persist.Persister) *Handlers {
-	if h.pe != nil {
-		panic("persister already set")
-	}
-	h.pe = pe
-	return h
-}
 type BaseSessionHandler struct {
 	cfgTemplate engine.Config
 	rp request.RequestParser
 	rs resource.Resource
-	hn *Handlers
+	hn *handlers.Handlers
 	provider storage.StorageProvider
 }
 
-func NewBaseSessionHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp request.RequestParser, hn *Handlers) *BaseSessionHandler {
+func NewBaseSessionHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp request.RequestParser, hn *handlers.Handlers) *BaseSessionHandler {
 	return &BaseSessionHandler{
 		cfgTemplate: cfg,
 		rs:          rs,

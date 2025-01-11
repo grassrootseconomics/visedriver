@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"git.defalsify.org/vise.git/engine"
-	"git.grassecon.net/grassrootseconomics/visedriver/internal/handlers"
+	viseerrors "git.grassecon.net/grassrootseconomics/visedriver/errors"
 	"git.grassecon.net/grassrootseconomics/visedriver/testutil/mocks/httpmocks"
 	"git.grassecon.net/grassrootseconomics/visedriver/request"
 )
@@ -44,14 +44,14 @@ func TestSessionHandler_ServeHTTP(t *testing.T) {
 		{
 			name:           "Missing Session ID",
 			sessionID:      "",
-			parserErr:      handlers.ErrSessionMissing,
+			parserErr:      viseerrors.ErrSessionMissing,
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "Process Error",
 			sessionID:      "123",
 			input:          []byte("test input"),
-			processErr:     handlers.ErrStorage,
+			processErr:     viseerrors.ErrStorage,
 			expectedStatus: http.StatusInternalServerError,
 		},
 		{
@@ -151,13 +151,13 @@ func TestDefaultRequestParser_GetSessionId(t *testing.T) {
 			name:          "Missing Session ID",
 			request:       httptest.NewRequest(http.MethodPost, "/", nil),
 			expectedID:    "",
-			expectedError: handlers.ErrSessionMissing,
+			expectedError: viseerrors.ErrSessionMissing,
 		},
 		{
 			name:          "Invalid Request Type",
 			request:       invalidRequestType{},
 			expectedID:    "",
-			expectedError: handlers.ErrInvalidRequest,
+			expectedError: viseerrors.ErrInvalidRequest,
 		},
 	}
 
@@ -203,7 +203,7 @@ func TestDefaultRequestParser_GetInput(t *testing.T) {
 			name:          "Invalid Request Type",
 			request:       invalidRequestType{},
 			expectedInput: nil,
-			expectedError: handlers.ErrInvalidRequest,
+			expectedError: viseerrors.ErrInvalidRequest,
 		},
 		{
 			name: "Read Error",

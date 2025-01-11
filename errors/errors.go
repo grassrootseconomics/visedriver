@@ -1,15 +1,15 @@
 package errors
 
 import (
-	"git.grassecon.net/grassrootseconomics/visedriver/internal/handlers"
+	"errors"
 )
 
 var (
-	ErrInvalidRequest = handlers.ErrInvalidRequest
-	ErrSessionMissing = handlers.ErrSessionMissing
-	ErrInvalidInput = handlers.ErrInvalidInput
-	ErrStorage = handlers.ErrStorage
-	ErrEngineType = handlers.ErrEngineType
-	ErrEngineInit = handlers.ErrEngineInit
-	ErrEngineExec = handlers.ErrEngineExec
+	ErrInvalidRequest = errors.New("invalid request for context")
+	ErrSessionMissing = errors.New("missing session")
+	ErrInvalidInput   = errors.New("invalid input")
+	ErrStorage        = errors.New("storage retrieval fail")
+	ErrEngineType     = errors.New("incompatible engine")
+	ErrEngineInit     = errors.New("engine init fail")
+	ErrEngineExec     = errors.New("engine exec fail")
 )

@@ -99,7 +99,7 @@ func TestSessionHandler_ServeHTTP(t *testing.T) {
 				},
 			}
 
-			sessionHandler := &SessionHandler{
+			sessionHandler := &HTTPSessionHandler{
 				RequestHandler: mockRequestHandler,
 			}
 			//sessionHandler := request.ToSessionHandler(mockRequestHandler)
@@ -120,7 +120,7 @@ func TestSessionHandler_ServeHTTP(t *testing.T) {
 }
 
 func TestSessionHandler_WriteError(t *testing.T) {
-	handler := &SessionHandler{}
+	handler := &HTTPSessionHandler{}
 	mockWriter := &httpmocks.MockWriter{}
 	err := errors.New("test error")
 

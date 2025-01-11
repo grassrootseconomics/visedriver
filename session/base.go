@@ -6,10 +6,10 @@ import (
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/logging"
-	"git.grassecon.net/grassrootseconomics/visedriver/handlers"
 	"git.grassecon.net/grassrootseconomics/visedriver/request"
 	"git.grassecon.net/grassrootseconomics/visedriver/storage"
 	"git.grassecon.net/grassrootseconomics/visedriver/errors"
+	"git.grassecon.net/grassrootseconomics/visedriver/entry"
 )
 
 var (
@@ -20,11 +20,12 @@ type BaseSessionHandler struct {
 	cfgTemplate engine.Config
 	rp request.RequestParser
 	rs resource.Resource
-	hn *handlers.Handlers
+	hn entry.EntryHandler
 	provider storage.StorageProvider
 }
 
-func NewBaseSessionHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp request.RequestParser, hn *handlers.Handlers) *BaseSessionHandler {
+//func NewBaseSessionHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp request.RequestParser, hn *handlers.Handlers) *BaseSessionHandler {
+func NewBaseSessionHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp request.RequestParser, hn entry.EntryHandler) *BaseSessionHandler {
 	return &BaseSessionHandler{
 		cfgTemplate: cfg,
 		rs:          rs,
@@ -60,7 +61,8 @@ func(f *BaseSessionHandler) Process(rqs request.RequestSession) (request.Request
 		return rqs, errors.ErrStorage
 	}
 
-	f.hn = f.hn.WithPersister(rqs.Storage.Persister)
+	//f.hn = f.hn.WithPersister(rqs.Storage.Persister)
+	f.hn.SetPersister(rqs.Storage.Persister)
 	defer func() {
 		f.hn.Exit()
 	}()

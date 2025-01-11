@@ -5,19 +5,21 @@ import (
 	"strconv"
 
 	"git.defalsify.org/vise.git/logging"
-
-	"git.grassecon.net/grassrootseconomics/visedriver/internal/handlers"
 	"git.grassecon.net/grassrootseconomics/visedriver/request"
+	"git.grassecon.net/grassrootseconomics/visedriver/errors"
 )
 
 var (
-	logg = logging.NewVanilla().WithDomain("httpserver")
+	logg = logging.NewVanilla().WithDomain("visedriver.http.session")
 )
 
-type SessionHandler request.SessionHandler
 
-// TODO: duplicated
-func (f *SessionHandler) WriteError(w http.ResponseWriter, code int, err error) {
+// HTTPSessionHandler implements the session handler for HTTP
+type HTTPSessionHandler struct {
+	request.RequestHandler
+}
+
+func (f *HTTPSessionHandler) WriteError(w http.ResponseWriter, code int, err error) {
 	s := err.Error()
 	w.Header().Set("Content-Length", strconv.Itoa(len(s)))
 	w.WriteHeader(code)
@@ -28,7 +30,13 @@ func (f *SessionHandler) WriteError(w http.ResponseWriter, code int, err error) 
 	}
 }
 
-func (f *SessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func NewHTTPSessionHandler(h request.RequestHandler) *HTTPSessionHandler {
+	return &HTTPSessionHandler{
+		RequestHandler: h,
+	}
+}
+
+func (hh *HTTPSessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	var code int
 	var err error
 	var perr error
@@ -38,48 +46,48 @@ func (f *SessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		Writer: w,
 	}
 
-	rp := f.GetRequestParser()
-	cfg := f.GetConfig()
+	rp := hh.GetRequestParser()
+	cfg := hh.GetConfig()
 	cfg.SessionId, err = rp.GetSessionId(req.Context(), req)
 	if err != nil {
 		logg.ErrorCtxf(rqs.Ctx, "", "header processing error", err)
-		f.WriteError(w, 400, err)
+		hh.WriteError(w, 400, err)
 	}
 	rqs.Config = cfg
 	rqs.Input, err = rp.GetInput(req)
 	if err != nil {
 		logg.ErrorCtxf(rqs.Ctx, "", "header processing error", err)
-		f.WriteError(w, 400, err)
+		hh.WriteError(w, 400, err)
 		return
 	}
 
-	rqs, err = f.Process(rqs)
+	rqs, err = hh.Process(rqs)
 	switch err {
-	case handlers.ErrStorage:
+	case errors.ErrStorage:
 		code = 500
-	case handlers.ErrEngineInit:
+	case errors.ErrEngineInit:
 		code = 500
-	case handlers.ErrEngineExec:
+	case errors.ErrEngineExec:
 		code = 500
 	default:
 		code = 200
 	}
 
 	if code != 200 {
-		f.WriteError(w, 500, err)
+		hh.WriteError(w, 500, err)
 		return
 	}
 
 	w.WriteHeader(200)
 	w.Header().Set("Content-Type", "text/plain")
-	rqs, err = f.Output(rqs)
-	rqs, perr = f.Reset(rqs)
+	rqs, err = hh.Output(rqs)
+	rqs, perr = hh.Reset(rqs)
 	if err != nil {
-		f.WriteError(w, 500, err)
+		hh.WriteError(w, 500, err)
 		return
 	}
 	if perr != nil {
-		f.WriteError(w, 500, perr)
+		hh.WriteError(w, 500, perr)
 		return
 	}
 }

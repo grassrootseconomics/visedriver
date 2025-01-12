@@ -1,1 +1,0 @@
-CREATE DATABASE urdt_ussd;

@@ -27,6 +27,7 @@ type StorageService interface {
 	GetResource(ctx context.Context) (resource.Resource, error)
 }
 
+// TODO: Support individual backend for each store (conndata)
 type MenuStorageService struct {
 	conn ConnData
 	resourceDir   string
@@ -48,14 +49,14 @@ func (ms *MenuStorageService) WithResourceDir(resourceDir string) *MenuStorageSe
 	return ms
 }
 
-func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.Db, section string) (db.Db, error) {
+// TODO: allow fsdb, memdb
+func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.Db, section string, typ string) (db.Db, error) {
 	var newDb db.Db
 	var err error
 
 	if existingDb != nil {
 		return existingDb, nil
 	}
-
 
 	connStr := ms.conn.String()
 	dbTyp := ms.conn.DbType()
@@ -76,7 +77,7 @@ func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.D
 	} else {
 		return nil, fmt.Errorf("unsupported connection string: '%s'\n", ms.conn.String())
 	}
-	logg.DebugCtxf(ctx, "connecting to db", "conn", connStr, "conndata", ms.conn)
+	logg.DebugCtxf(ctx, "connecting to db", "conn", connStr, "conndata", ms.conn, "typ", typ)
 	err = newDb.Connect(ctx, connStr)
 	if err != nil {
 		return nil, err
@@ -140,7 +141,7 @@ func (ms *MenuStorageService) GetUserdataDb(ctx context.Context) (db.Db, error) 
 		return ms.userDataStore, nil
 	}
 
-	userDataStore, err := ms.getOrCreateDb(ctx, ms.userDataStore, "userdata.gdbm")
+	userDataStore, err := ms.getOrCreateDb(ctx, ms.userDataStore, "userdata.gdbm", "userdata")
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +170,7 @@ func (ms *MenuStorageService) GetStateStore(ctx context.Context) (db.Db, error) 
 		return ms.stateStore, nil
 	}
 
-	stateStore, err := ms.getOrCreateDb(ctx, ms.stateStore, "state.gdbm")
+	stateStore, err := ms.getOrCreateDb(ctx, ms.stateStore, "state.gdbm", "state")
 	if err != nil {
 		return nil, err
 	}

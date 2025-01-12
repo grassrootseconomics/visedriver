@@ -24,7 +24,7 @@ func (e *errorReader) Read(p []byte) (n int, err error) {
 	return 0, errors.New("read error")
 }
 
-func TestSessionHandler_ServeHTTP(t *testing.T) {
+func TestRequestHandler_ServeHTTP(t *testing.T) {
 	tests := []struct {
 		name           string
 		sessionID      string
@@ -99,7 +99,7 @@ func TestSessionHandler_ServeHTTP(t *testing.T) {
 				},
 			}
 
-			sessionHandler := &HTTPSessionHandler{
+			sessionHandler := &HTTPRequestHandler{
 				RequestHandler: mockRequestHandler,
 			}
 
@@ -118,8 +118,8 @@ func TestSessionHandler_ServeHTTP(t *testing.T) {
 	}
 }
 
-func TestSessionHandler_WriteError(t *testing.T) {
-	handler := &HTTPSessionHandler{}
+func TestRequestHandler_WriteError(t *testing.T) {
+	handler := &HTTPRequestHandler{}
 	mockWriter := &httpmocks.MockWriter{}
 	err := errors.New("test error")
 

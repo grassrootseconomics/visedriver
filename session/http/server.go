@@ -13,12 +13,12 @@ var (
 	logg = logging.NewVanilla().WithDomain("visedriver.http.session")
 )
 
-// HTTPSessionHandler implements the session handler for HTTP
-type HTTPSessionHandler struct {
+// HTTPRequestHandler implements the session handler for HTTP
+type HTTPRequestHandler struct {
 	request.RequestHandler
 }
 
-func (f *HTTPSessionHandler) WriteError(w http.ResponseWriter, code int, err error) {
+func (f *HTTPRequestHandler) WriteError(w http.ResponseWriter, code int, err error) {
 	s := err.Error()
 	w.Header().Set("Content-Length", strconv.Itoa(len(s)))
 	w.WriteHeader(code)
@@ -29,13 +29,13 @@ func (f *HTTPSessionHandler) WriteError(w http.ResponseWriter, code int, err err
 	}
 }
 
-func NewHTTPSessionHandler(h request.RequestHandler) *HTTPSessionHandler {
-	return &HTTPSessionHandler{
+func NewHTTPRequestHandler(h request.RequestHandler) *HTTPRequestHandler {
+	return &HTTPRequestHandler{
 		RequestHandler: h,
 	}
 }
 
-func (hh *HTTPSessionHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (hh *HTTPRequestHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	var code int
 	var err error
 	var perr error

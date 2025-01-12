@@ -16,7 +16,7 @@ var (
 	logg = logging.NewVanilla().WithDomain("visedriver.session")
 )
 
-type BaseSessionHandler struct {
+type BaseRequestHandler struct {
 	cfgTemplate engine.Config
 	rp request.RequestParser
 	rs resource.Resource
@@ -24,9 +24,9 @@ type BaseSessionHandler struct {
 	provider storage.StorageProvider
 }
 
-//func NewBaseSessionHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp request.RequestParser, hn *handlers.Handlers) *BaseSessionHandler {
-func NewBaseSessionHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp request.RequestParser, hn entry.EntryHandler) *BaseSessionHandler {
-	return &BaseSessionHandler{
+//func NewBaseRequestHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp request.RequestParser, hn *handlers.Handlers) *BaseRequestHandler {
+func NewBaseRequestHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp request.RequestParser, hn entry.EntryHandler) *BaseRequestHandler {
+	return &BaseRequestHandler{
 		cfgTemplate: cfg,
 		rs:          rs,
 		hn:          hn,
@@ -35,20 +35,20 @@ func NewBaseSessionHandler(cfg engine.Config, rs resource.Resource, stateDb db.D
 	}
 }
 
-func (f *BaseSessionHandler) Shutdown() {
+func (f *BaseRequestHandler) Shutdown() {
 	err := f.provider.Close()
 	if err != nil {
 		logg.Errorf("handler shutdown error", "err", err)
 	}
 }
 
-func (f *BaseSessionHandler) GetEngine(cfg engine.Config, rs resource.Resource, pr *persist.Persister) engine.Engine {
+func (f *BaseRequestHandler) GetEngine(cfg engine.Config, rs resource.Resource, pr *persist.Persister) engine.Engine {
 	en := engine.NewEngine(cfg, rs)
 	en = en.WithPersister(pr)
 	return en
 }
 
-func(f *BaseSessionHandler) Process(rqs request.RequestSession) (request.RequestSession, error) {
+func(f *BaseRequestHandler) Process(rqs request.RequestSession) (request.RequestSession, error) {
 	var r bool
 	var err error
 	var ok bool
@@ -96,21 +96,21 @@ func(f *BaseSessionHandler) Process(rqs request.RequestSession) (request.Request
 	return rqs, nil
 }
 
-func(f *BaseSessionHandler) Output(rqs request.RequestSession) (request.RequestSession,  error) {
+func(f *BaseRequestHandler) Output(rqs request.RequestSession) (request.RequestSession,  error) {
 	var err error
 	_, err = rqs.Engine.Flush(rqs.Ctx, rqs.Writer)
 	return rqs, err
 }
 
-func(f *BaseSessionHandler) Reset(rqs request.RequestSession) (request.RequestSession, error) {
+func(f *BaseRequestHandler) Reset(rqs request.RequestSession) (request.RequestSession, error) {
 	defer f.provider.Put(rqs.Config.SessionId, rqs.Storage)
 	return rqs, rqs.Engine.Finish()
 }
 
-func (f *BaseSessionHandler) GetConfig() engine.Config {
+func (f *BaseRequestHandler) GetConfig() engine.Config {
 	return f.cfgTemplate
 }
 
-func(f *BaseSessionHandler) GetRequestParser() request.RequestParser {
+func(f *BaseRequestHandler) GetRequestParser() request.RequestParser {
 	return f.rp
 }

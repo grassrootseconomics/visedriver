@@ -1,31 +1,25 @@
-package session
+package request
 
 import (
 	"git.defalsify.org/vise.git/db"
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
-	"git.defalsify.org/vise.git/logging"
-	"git.grassecon.net/grassrootseconomics/visedriver/request"
 	"git.grassecon.net/grassrootseconomics/visedriver/storage"
 	"git.grassecon.net/grassrootseconomics/visedriver/errors"
 	"git.grassecon.net/grassrootseconomics/visedriver/entry"
 )
 
-var (
-	logg = logging.NewVanilla().WithDomain("visedriver.session")
-)
-
 type BaseRequestHandler struct {
 	cfgTemplate engine.Config
-	rp request.RequestParser
+	rp RequestParser
 	rs resource.Resource
 	hn entry.EntryHandler
 	provider storage.StorageProvider
 }
 
 //func NewBaseRequestHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp request.RequestParser, hn *handlers.Handlers) *BaseRequestHandler {
-func NewBaseRequestHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp request.RequestParser, hn entry.EntryHandler) *BaseRequestHandler {
+func NewBaseRequestHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp RequestParser, hn entry.EntryHandler) *BaseRequestHandler {
 	return &BaseRequestHandler{
 		cfgTemplate: cfg,
 		rs:          rs,
@@ -48,7 +42,7 @@ func (f *BaseRequestHandler) GetEngine(cfg engine.Config, rs resource.Resource, 
 	return en
 }
 
-func(f *BaseRequestHandler) Process(rqs request.RequestSession) (request.RequestSession, error) {
+func(f *BaseRequestHandler) Process(rqs RequestSession) (RequestSession, error) {
 	var r bool
 	var err error
 	var ok bool
@@ -96,13 +90,13 @@ func(f *BaseRequestHandler) Process(rqs request.RequestSession) (request.Request
 	return rqs, nil
 }
 
-func(f *BaseRequestHandler) Output(rqs request.RequestSession) (request.RequestSession,  error) {
+func(f *BaseRequestHandler) Output(rqs RequestSession) (RequestSession,  error) {
 	var err error
 	_, err = rqs.Engine.Flush(rqs.Ctx, rqs.Writer)
 	return rqs, err
 }
 
-func(f *BaseRequestHandler) Reset(rqs request.RequestSession) (request.RequestSession, error) {
+func(f *BaseRequestHandler) Reset(rqs RequestSession) (RequestSession, error) {
 	defer f.provider.Put(rqs.Config.SessionId, rqs.Storage)
 	return rqs, rqs.Engine.Finish()
 }
@@ -111,6 +105,6 @@ func (f *BaseRequestHandler) GetConfig() engine.Config {
 	return f.cfgTemplate
 }
 
-func(f *BaseRequestHandler) GetRequestParser() request.RequestParser {
+func(f *BaseRequestHandler) GetRequestParser() RequestParser {
 	return f.rp
 }

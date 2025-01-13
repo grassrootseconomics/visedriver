@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	DBTYPE_MEM = iota
+	DBTYPE_NONE = iota
+	DBTYPE_MEM
 	DBTYPE_GDBM
 	DBTYPE_POSTGRES
 )

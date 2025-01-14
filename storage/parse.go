@@ -9,6 +9,7 @@ import (
 const (
 	DBTYPE_NONE = iota
 	DBTYPE_MEM
+	DBTYPE_FS
 	DBTYPE_GDBM
 	DBTYPE_POSTGRES
 )
@@ -54,11 +55,30 @@ func probePostgres(s string) (string, string, bool) {
 }
 
 func probeGdbm(s string) (string, string, bool) {
+	domain := "public"
+	v, err := url.Parse(s)
+	if err != nil {
+		return "", "", false
+	}
+	if v.Scheme != "gdbm" {
+		return "", "", false
+	}
+	return s, domain, true
+}
+
+func probeFs(s string) (string, string, bool) {
 	if !path.IsAbs(s) {
 		return "", "", false
 	}
 	s = path.Clean(s)
 	return s, "", true
+}
+
+func probeMem(s string) (string, string, bool) {
+	if s != "" {
+		return "", "", false
+	}
+	return "", "", true
 }
 
 func ToConnData(connStr string) (ConnData, error) {
@@ -80,6 +100,19 @@ func ToConnData(connStr string) (ConnData, error) {
 	if ok {
 		o.typ = DBTYPE_GDBM
 		o.str = v
+		return o, nil
+	}
+
+	v, _, ok = probeFs(connStr)
+	if ok {
+		o.typ = DBTYPE_FS
+		o.str = v
+		return o, nil
+	}
+
+	v, _, ok = probeMem(connStr)
+	if ok {
+		o.typ = DBTYPE_MEM
 		return o, nil
 	}
 

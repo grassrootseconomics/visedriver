@@ -74,6 +74,14 @@ func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.D
 		}
 		connStr = path.Join(connStr, section)
 		newDb = gdbmstorage.NewThreadGdbmDb()
+	} else if dbTyp == DBTYPE_FS {
+		err = ms.ensureDbDir()
+		if err != nil {
+			return nil, err
+		}
+		newDb = fsdb.NewFsDb().WithBinary()
+	} else if dbTyp == DBTYPE_MEM {
+		logg.WarnCtxf(ctx, "using volatile storage (memdb)")
 	} else {
 		return nil, fmt.Errorf("unsupported connection string: '%s'\n", ms.conn.String())
 	}

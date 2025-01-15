@@ -3,7 +3,7 @@ module git.grassecon.net/grassrootseconomics/visedriver
 go 1.23.0
 
 require (
-	git.defalsify.org/vise.git v0.2.3-0.20250103172917-3e190a44568d
+	git.defalsify.org/vise.git lash/fs-dump
 	github.com/alecthomas/assert/v2 v2.2.2
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/grassrootseconomics/eth-custodial v1.3.0-beta

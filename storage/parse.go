@@ -63,6 +63,7 @@ func probeGdbm(s string) (string, string, bool) {
 	if v.Scheme != "gdbm" {
 		return "", "", false
 	}
+	s = v.Path
 	return s, domain, true
 }
 

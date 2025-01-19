@@ -13,6 +13,9 @@ var (
 
 var (
 	DbConn		string
+	ResourceDbConn	string
+	UserDbConn	string
+	StateDbConn	string
 	DefaultLanguage	    string
 	Languages	[]string
 )
@@ -39,6 +42,9 @@ func setLanguage() error {
 
 func setConn() error {
 	DbConn = env.GetEnv("DB_CONN", "")
+	UserDbConn = env.GetEnv("DB_CONN_USER", DbConn)
+	StateDbConn = env.GetEnv("DB_CONN_STATE", DbConn)
+	ResourceDbConn = env.GetEnv("DB_CONN_RESOURCE", DbConn)
 	return nil
 }
 

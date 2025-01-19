@@ -195,10 +195,10 @@ func (ms *MenuStorageService) ensureDbDir() error {
 	return nil
 }
 
-func (ms *MenuStorageService) Close() error {
-	errA := ms.stateStore.Close()
-	errB := ms.userDataStore.Close()
-	errC := ms.resourceStore.Close()
+func (ms *MenuStorageService) Close(ctx context.Context) error {
+	errA := ms.stateStore.Close(ctx)
+	errB := ms.userDataStore.Close(ctx)
+	errC := ms.resourceStore.Close(ctx)
 	if errA != nil || errB != nil || errC != nil {
 		return fmt.Errorf("%v %v %v", errA, errB, errC)
 	}

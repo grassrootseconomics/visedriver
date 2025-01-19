@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"context"
+
 	"git.defalsify.org/vise.git/db"
 	"git.defalsify.org/vise.git/persist"
 )
@@ -17,7 +19,7 @@ type Storage struct {
 type StorageProvider interface {
 	Get(sessionId string) (*Storage, error)
 	Put(sessionId string, storage *Storage) error
-	Close() error
+	Close(ctx context.Context) error
 }
 
 type SimpleStorageProvider struct {
@@ -43,6 +45,6 @@ func (p *SimpleStorageProvider) Put(sessionId string, storage *Storage) error {
 	return nil
 }
 
-func (p *SimpleStorageProvider) Close() error {
-	return p.Storage.UserdataDb.Close()
+func (p *SimpleStorageProvider) Close(ctx context.Context) error {
+	return p.Storage.UserdataDb.Close(ctx)
 }

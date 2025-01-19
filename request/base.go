@@ -1,6 +1,8 @@
 package request
 
 import (
+	"context"
+
 	"git.defalsify.org/vise.git/db"
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/persist"
@@ -29,8 +31,8 @@ func NewBaseRequestHandler(cfg engine.Config, rs resource.Resource, stateDb db.D
 	}
 }
 
-func (f *BaseRequestHandler) Shutdown() {
-	err := f.provider.Close()
+func (f *BaseRequestHandler) Shutdown(ctx context.Context) {
+	err := f.provider.Close(ctx)
 	if err != nil {
 		logg.Errorf("handler shutdown error", "err", err)
 	}
@@ -96,9 +98,9 @@ func(f *BaseRequestHandler) Output(rqs RequestSession) (RequestSession,  error) 
 	return rqs, err
 }
 
-func(f *BaseRequestHandler) Reset(rqs RequestSession) (RequestSession, error) {
+func(f *BaseRequestHandler) Reset(ctx context.Context, rqs RequestSession) (RequestSession, error) {
 	defer f.provider.Put(rqs.Config.SessionId, rqs.Storage)
-	return rqs, rqs.Engine.Finish()
+	return rqs, rqs.Engine.Finish(ctx)
 }
 
 func (f *BaseRequestHandler) GetConfig() engine.Config {

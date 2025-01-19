@@ -111,11 +111,11 @@ func(tdb *ThreadGdbmDb) Get(ctx context.Context, key []byte) ([]byte, error) {
 	return v, err
 }
 
-func(tdb *ThreadGdbmDb) Close() error {
+func(tdb *ThreadGdbmDb) Close(ctx context.Context) error {
 	tdb.reserve()
 	close(dbC[tdb.connStr])
 	delete(dbC, tdb.connStr)
-	err := tdb.db.Close()
+	err := tdb.db.Close(ctx)
 	tdb.db = nil
 	return err
 }
@@ -124,4 +124,20 @@ func(tdb *ThreadGdbmDb) Dump(ctx context.Context, key []byte) (*db.Dumper, error
 	tdb.reserve()
 	defer tdb.release()
 	return tdb.db.Dump(ctx, key)
+}
+
+func(tdb *ThreadGdbmDb) DecodeKey(ctx context.Context, key []byte) ([]byte, error) {
+	return tdb.db.DecodeKey(ctx, key)
+}
+
+func(tdb *ThreadGdbmDb) Abort(ctx context.Context) {
+	tdb.db.Abort(ctx)
+}
+
+func(tdb *ThreadGdbmDb) Start(ctx context.Context) error {
+	return tdb.db.Start(ctx)
+}
+
+func(tdb *ThreadGdbmDb) Stop(ctx context.Context) error {
+	return tdb.db.Stop(ctx)
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"path/filepath"
 )
 
 const (
@@ -68,8 +69,18 @@ func probeGdbm(s string) (string, string, bool) {
 }
 
 func probeFs(s string) (string, string, bool) {
-	if !path.IsAbs(s) {
+	var err error
+
+	v, _ := url.Parse(s)
+	if v.Scheme != "" && v.Scheme != "file://" {
 		return "", "", false
+	}
+
+	if !path.IsAbs(s) {
+		s, err = filepath.Abs(s)
+		if err != nil {
+			panic(err)
+		}
 	}
 	s = path.Clean(s)
 	return s, "", true
@@ -85,11 +96,13 @@ func probeMem(s string) (string, string, bool) {
 func ToConnData(connStr string) (ConnData, error) {
 	var o ConnData
 
-	if connStr == "" {
+	v, domain, ok := probeMem(connStr)
+	if ok {
+		o.typ = DBTYPE_MEM
 		return o, nil
 	}
 
-	v, domain, ok := probePostgres(connStr)
+	v, domain, ok = probePostgres(connStr)
 	if ok {
 		o.typ = DBTYPE_POSTGRES
 		o.str = v
@@ -108,12 +121,6 @@ func ToConnData(connStr string) (ConnData, error) {
 	if ok {
 		o.typ = DBTYPE_FS
 		o.str = v
-		return o, nil
-	}
-
-	v, _, ok = probeMem(connStr)
-	if ok {
-		o.typ = DBTYPE_MEM
 		return o, nil
 	}
 

@@ -3,20 +3,21 @@ package config
 import (
 	"strings"
 
+	"git.defalsify.org/vise.git/logging"
 	"git.grassecon.net/grassrootseconomics/visedriver/env"
+	"git.grassecon.net/grassrootseconomics/visedriver/storage"
 )
 
 var (
+	logg = logging.NewVanilla().WithDomain("visedriver-config")
 	defaultLanguage		   = "eng"
 	languages []string
-)
-
-var (
-	DbConn		string
-	ResourceDbConn	string
-	UserDbConn	string
-	StateDbConn	string
 	DefaultLanguage	    string
+	dbConn	string
+	dbConnMissing	bool
+	stateDbConn	string
+	resourceDbConn	string
+	userDbConn	string
 	Languages	[]string
 )
 
@@ -38,14 +39,62 @@ func setLanguage() error {
 	return nil
 }
 
-
-
 func setConn() error {
-	DbConn = env.GetEnv("DB_CONN", "")
-	UserDbConn = env.GetEnv("DB_CONN_USER", DbConn)
-	StateDbConn = env.GetEnv("DB_CONN_STATE", DbConn)
-	ResourceDbConn = env.GetEnv("DB_CONN_RESOURCE", DbConn)
+	dbConn = env.GetEnv("DB_CONN", "?")
+	stateDbConn = env.GetEnv("DB_CONN_STATE", dbConn)
+	resourceDbConn = env.GetEnv("DB_CONN_RESOURCE", dbConn)
+	userDbConn = env.GetEnv("DB_CONN_USER", dbConn)
 	return nil
+}
+
+func ApplyConn(connStr *string, stateConnStr *string, resourceConnStr *string, userConnStr *string) {
+	if connStr != nil {
+		dbConn = *connStr
+	}
+	if stateConnStr != nil {
+		stateDbConn = *stateConnStr
+	}
+	if resourceConnStr != nil {
+		resourceDbConn = *resourceConnStr
+	}
+	if userConnStr != nil {
+		userDbConn = *userConnStr
+	}
+
+	if dbConn == "?" {
+		logg.Warnf("no db connection found, using memdb for everything")
+		dbConn = ""
+	}
+
+	if stateDbConn == "?" {
+		stateDbConn = dbConn
+	}
+	if resourceDbConn == "?" {
+		resourceDbConn = dbConn
+	}
+	if userDbConn == "?" {
+		userDbConn = dbConn
+	}
+}
+
+func GetConns() (storage.Conns, error) {
+	o := storage.NewConns()
+	c, err := storage.ToConnData(stateDbConn)
+	if err != nil {
+		return o, err
+	}
+	o.Set(c, storage.STORETYPE_STATE)
+	c, err = storage.ToConnData(resourceDbConn)
+	if err != nil {
+		return o, err
+	}
+	o.Set(c, storage.STORETYPE_RESOURCE)
+	c, err = storage.ToConnData(userDbConn)
+	if err != nil {
+		return o, err
+	}
+	o.Set(c, storage.STORETYPE_USER)
+	return o, nil
 }
 
 // LoadConfig initializes the configuration values after environment variables are loaded.

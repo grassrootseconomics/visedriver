@@ -27,7 +27,7 @@ func NewConns() Conns {
 	return c
 }
 
-func (c Conns) Set(typ int8, conn ConnData) {
+func (c Conns) Set(conn ConnData, typ int8) {
 	if typ < 0 || typ >= _STORETYPE_MAX {
 		panic(fmt.Errorf("invalid store type: %d", typ))
 	}

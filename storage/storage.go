@@ -16,6 +16,10 @@ type Storage struct {
 	UserdataDb db.Db	
 }
 
+func (s *Storage) Close(ctx context.Context) error {
+	return s.UserdataDb.Close(ctx)
+}
+
 type StorageProvider interface {
 	Get(sessionId string) (*Storage, error)
 	Put(sessionId string, storage *Storage) error
@@ -46,5 +50,5 @@ func (p *SimpleStorageProvider) Put(sessionId string, storage *Storage) error {
 }
 
 func (p *SimpleStorageProvider) Close(ctx context.Context) error {
-	return p.Storage.UserdataDb.Close(ctx)
+	return p.Storage.Close(ctx)
 }

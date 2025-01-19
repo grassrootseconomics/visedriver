@@ -80,7 +80,7 @@ func (hh *HTTPRequestHandler) ServeHTTP(w http.ResponseWriter, req *http.Request
 	w.WriteHeader(200)
 	w.Header().Set("Content-Type", "text/plain")
 	rqs, err = hh.Output(rqs)
-	rqs, perr = hh.Reset(rqs)
+	rqs, perr = hh.Reset(rqs.Ctx, rqs)
 	if err != nil {
 		hh.WriteError(w, 500, err)
 		return

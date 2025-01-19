@@ -195,6 +195,7 @@ func (ms *MenuStorageService) ensureDbDir() error {
 	return nil
 }
 
+// TODO: how to handle persister here?
 func (ms *MenuStorageService) Close(ctx context.Context) error {
 	errA := ms.stateStore.Close(ctx)
 	errB := ms.userDataStore.Close(ctx)

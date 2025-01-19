@@ -27,16 +27,16 @@ type RequestSession struct {
 
 // TODO: seems like can remove this.
 type RequestParser interface {
-	GetSessionId(ctx context.Context, rq any) (string, error)
-	GetInput(rq any) ([]byte, error)
+	GetSessionId(context.Context, any) (string, error)
+	GetInput(any) ([]byte, error)
 }
 
 type RequestHandler interface {
 	GetConfig() engine.Config
 	GetRequestParser() RequestParser
-	GetEngine(cfg engine.Config, rs resource.Resource, pe *persist.Persister) engine.Engine 
-	Process(rs RequestSession) (RequestSession, error)
-	Output(rs RequestSession) (RequestSession, error)
-	Reset(rs RequestSession) (RequestSession, error)
-	Shutdown()
+	GetEngine(engine.Config, resource.Resource, *persist.Persister) engine.Engine 
+	Process(RequestSession) (RequestSession, error)
+	Output(RequestSession) (RequestSession, error)
+	Reset(context.Context, RequestSession) (RequestSession, error)
+	Shutdown(ctx context.Context)
 }

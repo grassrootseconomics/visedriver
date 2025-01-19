@@ -141,3 +141,7 @@ func(tdb *ThreadGdbmDb) Start(ctx context.Context) error {
 func(tdb *ThreadGdbmDb) Stop(ctx context.Context) error {
 	return tdb.db.Stop(ctx)
 }
+
+func(tdb *ThreadGdbmDb) Connection() string {
+	return tdb.db.Connection()
+}

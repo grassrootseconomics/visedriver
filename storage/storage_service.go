@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -29,53 +30,77 @@ type StorageService interface {
 
 // TODO: Support individual backend for each store (conndata)
 type MenuStorageService struct {
-	conn ConnData
-	resourceDir   string
+	conns Conns
 	poResource    resource.Resource
-	resourceStore db.Db
-	stateStore    db.Db
-	userDataStore db.Db
+	store map[int8]db.Db
 }
 
-func NewMenuStorageService(conn ConnData, resourceDir string) *MenuStorageService {
+func NewMenuStorageService(conn Conns) *MenuStorageService {
 	return &MenuStorageService{
-		conn: conn,
-		resourceDir: resourceDir,
+		conns: conn,
+		store: make(map[int8]db.Db),
 	}
 }
 
-func (ms *MenuStorageService) WithResourceDir(resourceDir string) *MenuStorageService {
-	ms.resourceDir = resourceDir
+func (ms *MenuStorageService) WithDb(store db.Db, typ int8) *MenuStorageService {
+	var err error
+	if ms.store[typ] != nil {
+		panic(fmt.Errorf("db already set for typ: %d", typ))
+	}
+	ms.store[typ] = store
+	ms.conns[typ], err = ToConnData(store.Connection())
+	if err != nil {
+		panic(err)
+	}
 	return ms
 }
 
-// TODO: allow fsdb, memdb
-func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.Db, section string, typ string) (db.Db, error) {
-	var newDb db.Db
+func (ms *MenuStorageService) checkDb(ctx context.Context,typ int8) db.Db {
+	store := ms.store[typ]
+	if store != nil {
+		return store
+	}
+	connData := ms.conns[typ]
+	v := ms.conns.Have(&connData)
+	if v == -1 {
+		return nil
+	}
+	src := ms.store[v]
+	if src == nil {
+		return nil
+	}
+	ms.store[typ] = ms.store[v]
+	logg.InfoCtxf(ctx, "found existing db", "typ", typ, "srctyp", v, "store", ms.store[typ], "srcstore", ms.store[v])
+	return ms.store[typ]
+}
+
+func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, section string, typ int8) (db.Db, error) {
 	var err error
 
-	if existingDb != nil {
-		return existingDb, nil
+	newDb := ms.checkDb(ctx, typ)
+	if newDb != nil {
+		return newDb, nil
 	}
 
-	connStr := ms.conn.String()
-	dbTyp := ms.conn.DbType()
+	connData := ms.conns[typ]
+	connStr := connData.String()
+	dbTyp := connData.DbType()
 	if dbTyp == DBTYPE_POSTGRES {
 		// TODO: move to vise
-		err = ensureSchemaExists(ctx, ms.conn)
+		err = ensureSchemaExists(ctx, connData)
 		if err != nil {
 			return nil, err
 		}
-		newDb = postgres.NewPgDb().WithSchema(ms.conn.Domain())
+		newDb = postgres.NewPgDb().WithSchema(connData.Domain())
 	} else if dbTyp == DBTYPE_GDBM {
-		err = ms.ensureDbDir()
+		err = ms.ensureDbDir(connStr)
 		if err != nil {
 			return nil, err
 		}
 		connStr = path.Join(connStr, section)
 		newDb = gdbmstorage.NewThreadGdbmDb()
 	} else if dbTyp == DBTYPE_FS {
-		err = ms.ensureDbDir()
+		err = ms.ensureDbDir(connStr)
 		if err != nil {
 			return nil, err
 		}
@@ -83,13 +108,14 @@ func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, existingDb db.D
 	} else if dbTyp == DBTYPE_MEM {
 		logg.WarnCtxf(ctx, "using volatile storage (memdb)")
 	} else {
-		return nil, fmt.Errorf("unsupported connection string: '%s'\n", ms.conn.String())
+		return nil, fmt.Errorf("unsupported connection string: '%s'\n", connData.String())
 	}
-	logg.DebugCtxf(ctx, "connecting to db", "conn", connStr, "conndata", ms.conn, "typ", typ)
+	logg.DebugCtxf(ctx, "connecting to db", "conn", connData, "typ", typ)
 	err = newDb.Connect(ctx, connStr)
 	if err != nil {
 		return nil, err
 	}
+	ms.store[typ] = newDb
 
 	return newDb, nil
 }
@@ -145,26 +171,15 @@ func (ms *MenuStorageService) GetPersister(ctx context.Context) (*persist.Persis
 }
 
 func (ms *MenuStorageService) GetUserdataDb(ctx context.Context) (db.Db, error) {
-	if ms.userDataStore != nil {
-		return ms.userDataStore, nil
-	}
-
-	userDataStore, err := ms.getOrCreateDb(ctx, ms.userDataStore, "userdata.gdbm", "userdata")
-	if err != nil {
-		return nil, err
-	}
-
-	ms.userDataStore = userDataStore
-	return ms.userDataStore, nil
+	return ms.getOrCreateDb(ctx, "userdata.gdbm", STORETYPE_USER)
 }
 
 func (ms *MenuStorageService) GetResource(ctx context.Context) (resource.Resource, error) {
-	ms.resourceStore = fsdb.NewFsDb()
-	err := ms.resourceStore.Connect(ctx, ms.resourceDir)
+	store, err := ms.getOrCreateDb(ctx, "resource.gdbm", STORETYPE_RESOURCE)
 	if err != nil {
 		return nil, err
 	}
-	rfs := resource.NewDbResource(ms.resourceStore)
+	rfs := resource.NewDbResource(store)
 	if ms.poResource != nil {
 		logg.InfoCtxf(ctx, "using poresource for menu and template")
 		rfs.WithMenuGetter(ms.poResource.GetMenu)
@@ -174,34 +189,34 @@ func (ms *MenuStorageService) GetResource(ctx context.Context) (resource.Resourc
 }
 
 func (ms *MenuStorageService) GetStateStore(ctx context.Context) (db.Db, error) {
-	if ms.stateStore != nil {
-		return ms.stateStore, nil
-	}
-
-	stateStore, err := ms.getOrCreateDb(ctx, ms.stateStore, "state.gdbm", "state")
-	if err != nil {
-		return nil, err
-	}
-
-	ms.stateStore = stateStore
-	return ms.stateStore, nil
+	return ms.getOrCreateDb(ctx, "state.gdbm", STORETYPE_STATE)
 }
 
-func (ms *MenuStorageService) ensureDbDir() error {
-	err := os.MkdirAll(ms.conn.String(), 0700)
+func (ms *MenuStorageService) ensureDbDir(path string) error {
+	err := os.MkdirAll(path, 0700)
 	if err != nil {
-		return fmt.Errorf("state dir create exited with error: %v\n", err)
+		return fmt.Errorf("store dir create exited with error: %v\n", err)
 	}
 	return nil
 }
 
 // TODO: how to handle persister here?
 func (ms *MenuStorageService) Close(ctx context.Context) error {
-	errA := ms.stateStore.Close(ctx)
-	errB := ms.userDataStore.Close(ctx)
-	errC := ms.resourceStore.Close(ctx)
-	if errA != nil || errB != nil || errC != nil {
-		return fmt.Errorf("%v %v %v", errA, errB, errC)
+	var errs []error
+	var haveErr bool
+	for i := range(_STORETYPE_MAX) {
+		err := ms.store[int8(i)].Close(ctx)
+		if err != nil {
+			haveErr = true
+		}
+		errs = append(errs, err) 
+	}
+	if haveErr {
+		errStr := ""
+		for i, err := range(errs) {
+			errStr += fmt.Sprintf("(%d: %v)", i, err)
+		}
+		return errors.New(errStr)
 	}
 	return nil
 }

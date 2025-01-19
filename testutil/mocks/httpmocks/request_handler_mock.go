@@ -1,6 +1,8 @@
 package httpmocks
 
 import (
+	"context"
+
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
@@ -13,8 +15,8 @@ type MockRequestHandler struct {
 	GetConfigFunc        func() engine.Config
 	GetEngineFunc        func(cfg engine.Config, rs resource.Resource, pe *persist.Persister) engine.Engine
 	OutputFunc           func(rs request.RequestSession) (request.RequestSession, error)
-	ResetFunc            func(rs request.RequestSession) (request.RequestSession, error)
-	ShutdownFunc         func()
+	ResetFunc            func(ctx context.Context, rs request.RequestSession) (request.RequestSession, error)
+	ShutdownFunc         func(ctx context.Context)
 	GetRequestParserFunc func() request.RequestParser
 }
 
@@ -34,12 +36,12 @@ func (m *MockRequestHandler) Output(rs request.RequestSession) (request.RequestS
 	return m.OutputFunc(rs)
 }
 
-func (m *MockRequestHandler) Reset(rs request.RequestSession) (request.RequestSession, error) {
-	return m.ResetFunc(rs)
+func (m *MockRequestHandler) Reset(ctx context.Context, rs request.RequestSession) (request.RequestSession, error) {
+	return m.ResetFunc(ctx, rs)
 }
 
-func (m *MockRequestHandler) Shutdown() {
-	m.ShutdownFunc()
+func (m *MockRequestHandler) Shutdown(ctx context.Context) {
+	m.ShutdownFunc(ctx)
 }
 
 func (m *MockRequestHandler) GetRequestParser() request.RequestParser {

@@ -21,8 +21,8 @@ func (s *Storage) Close(ctx context.Context) error {
 }
 
 type StorageProvider interface {
-	Get(sessionId string) (*Storage, error)
-	Put(sessionId string, storage *Storage) error
+	Get(ctx context.Context, sessionId string) (*Storage, error)
+	Put(ctx context.Context, sessionId string, storage *Storage) error
 	Close(ctx context.Context) error
 }
 
@@ -41,11 +41,13 @@ func NewSimpleStorageProvider(stateStore db.Db, userdataStore db.Db) StorageProv
 	}
 }
 
-func (p *SimpleStorageProvider) Get(sessionId string) (*Storage, error) {
+func (p *SimpleStorageProvider) Get(ctx context.Context, sessionId string) (*Storage, error) {
+	p.Storage.UserdataDb.Start(ctx)
 	return p.Storage, nil
 }
 
-func (p *SimpleStorageProvider) Put(sessionId string, storage *Storage) error {
+func (p *SimpleStorageProvider) Put(ctx context.Context, sessionId string, storage *Storage) error {
+	storage.UserdataDb.Stop(ctx)
 	return nil
 }
 

@@ -51,7 +51,7 @@ func(f *BaseRequestHandler) Process(rqs RequestSession) (RequestSession, error) 
 
 	logg.InfoCtxf(rqs.Ctx, "new request", "data", rqs)
 
-	rqs.Storage, err = f.provider.Get(rqs.Config.SessionId)
+	rqs.Storage, err = f.provider.Get(rqs.Ctx, rqs.Config.SessionId)
 	if err != nil {
 		logg.ErrorCtxf(rqs.Ctx, "", "storage get error", err)
 		return rqs, errors.ErrStorage
@@ -65,7 +65,7 @@ func(f *BaseRequestHandler) Process(rqs RequestSession) (RequestSession, error) 
 	eni := f.GetEngine(rqs.Config, f.rs, rqs.Storage.Persister)
 	en, ok := eni.(*engine.DefaultEngine)
 	if !ok {
-		perr := f.provider.Put(rqs.Config.SessionId, rqs.Storage)
+		perr := f.provider.Put(rqs.Ctx, rqs.Config.SessionId, rqs.Storage)
 		rqs.Storage = nil
 		if perr != nil {
 			logg.ErrorCtxf(rqs.Ctx, "", "storage put error", perr)
@@ -80,7 +80,7 @@ func(f *BaseRequestHandler) Process(rqs RequestSession) (RequestSession, error) 
 
 	r, err = rqs.Engine.Exec(rqs.Ctx, rqs.Input)
 	if err != nil {
-		perr := f.provider.Put(rqs.Config.SessionId, rqs.Storage)
+		perr := f.provider.Put(rqs.Ctx, rqs.Config.SessionId, rqs.Storage)
 		rqs.Storage = nil
 		if perr != nil {
 			logg.ErrorCtxf(rqs.Ctx, "", "storage put error", perr)
@@ -99,7 +99,7 @@ func(f *BaseRequestHandler) Output(rqs RequestSession) (RequestSession,  error) 
 }
 
 func(f *BaseRequestHandler) Reset(ctx context.Context, rqs RequestSession) (RequestSession, error) {
-	defer f.provider.Put(rqs.Config.SessionId, rqs.Storage)
+	defer f.provider.Put(ctx, rqs.Config.SessionId, rqs.Storage)
 	return rqs, rqs.Engine.Finish(ctx)
 }
 

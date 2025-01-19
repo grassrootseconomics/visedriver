@@ -88,7 +88,7 @@ func TestRequestHandler_ServeHTTP(t *testing.T) {
 				OutputFunc: func(rs request.RequestSession) (request.RequestSession, error) {
 					return rs, tt.outputErr
 				},
-				ResetFunc: func(rs request.RequestSession) (request.RequestSession, error) {
+				ResetFunc: func(ctx context.Context, rs request.RequestSession) (request.RequestSession, error) {
 					return rs, tt.resetErr
 				},
 				GetRequestParserFunc: func() request.RequestParser {

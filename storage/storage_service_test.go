@@ -19,7 +19,7 @@ func TestMenuStorageServiceOneSet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	conns.Set(STORETYPE_STATE, connData)
+	conns.Set(connData, STORETYPE_STATE)
 
 	ctx := context.Background()
 	ms := NewMenuStorageService(conns)
@@ -48,7 +48,7 @@ func TestMenuStorageServiceExplicit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	conns.Set(STORETYPE_STATE, connData)
+	conns.Set(connData, STORETYPE_STATE)
 
 	ctx := context.Background()
 	d, err = os.MkdirTemp("", "visedriver-menustorageservice")
@@ -90,10 +90,11 @@ func TestMenuStorageServiceReuse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	conns.Set(STORETYPE_STATE, connData)
-	conns.Set(STORETYPE_USER, connData)
+	conns.Set(connData, STORETYPE_STATE)
+	conns.Set(connData, STORETYPE_USER)
 
 	ctx := context.Background()
+	ctx = context.WithValue(ctx, "SessionId", "foo")
 	ms := NewMenuStorageService(conns)
 	stateStore, err := ms.GetStateStore(ctx)
 	if err != nil {

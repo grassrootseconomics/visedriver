@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"git.defalsify.org/vise.git/db"
 	fsdb "git.defalsify.org/vise.git/db/fs"
+	memdb "git.defalsify.org/vise.git/db/mem"
 	"git.defalsify.org/vise.git/db/postgres"
 	"git.defalsify.org/vise.git/lang"
 	"git.defalsify.org/vise.git/logging"
@@ -28,7 +29,6 @@ type StorageService interface {
 	GetResource(ctx context.Context) (resource.Resource, error)
 }
 
-// TODO: Support individual backend for each store (conndata)
 type MenuStorageService struct {
 	conns Conns
 	poResource    resource.Resource
@@ -70,7 +70,7 @@ func (ms *MenuStorageService) checkDb(ctx context.Context,typ int8) db.Db {
 		return nil
 	}
 	ms.store[typ] = ms.store[v]
-	logg.InfoCtxf(ctx, "found existing db", "typ", typ, "srctyp", v, "store", ms.store[typ], "srcstore", ms.store[v])
+	logg.DebugCtxf(ctx, "found existing db", "typ", typ, "srctyp", v, "store", ms.store[typ], "srcstore", ms.store[v])
 	return ms.store[typ]
 }
 
@@ -79,6 +79,7 @@ func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, section string,
 
 	newDb := ms.checkDb(ctx, typ)
 	if newDb != nil {
+		logg.InfoCtxf(ctx, "using existing db", "typ", typ, "db", newDb)
 		return newDb, nil
 	}
 
@@ -107,10 +108,11 @@ func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, section string,
 		newDb = fsdb.NewFsDb().WithBinary()
 	} else if dbTyp == DBTYPE_MEM {
 		logg.WarnCtxf(ctx, "using volatile storage (memdb)")
+		newDb = memdb.NewMemDb()
 	} else {
 		return nil, fmt.Errorf("unsupported connection string: '%s'\n", connData.String())
 	}
-	logg.DebugCtxf(ctx, "connecting to db", "conn", connData, "typ", typ)
+	logg.InfoCtxf(ctx, "connecting to db", "conn", connData, "typ", typ)
 	err = newDb.Connect(ctx, connStr)
 	if err != nil {
 		return nil, err
@@ -159,8 +161,21 @@ func ensureSchemaExists(ctx context.Context, conn ConnData) error {
 	return nil
 }
 
+func applySession(ctx context.Context, store db.Db) error {
+	sessionId, ok := ctx.Value("SessionId").(string)
+	if !ok {
+		return fmt.Errorf("missing session to apply to store: %v", store)
+	}
+	store.SetSession(sessionId)
+	return nil
+}
+
 func (ms *MenuStorageService) GetPersister(ctx context.Context) (*persist.Persister, error) {
 	stateStore, err := ms.GetStateStore(ctx)
+	if err != nil {
+		return nil, err
+	}
+	err = applySession(ctx, stateStore)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +186,16 @@ func (ms *MenuStorageService) GetPersister(ctx context.Context) (*persist.Persis
 }
 
 func (ms *MenuStorageService) GetUserdataDb(ctx context.Context) (db.Db, error) {
-	return ms.getOrCreateDb(ctx, "userdata.gdbm", STORETYPE_USER)
+	userStore, err := ms.getOrCreateDb(ctx, "userdata.gdbm", STORETYPE_USER)
+	if err != nil {
+		return nil, err
+	}
+
+	err = applySession(ctx, userStore)
+	if err != nil {
+		return nil, err
+	}
+	return userStore, nil
 }
 
 func (ms *MenuStorageService) GetResource(ctx context.Context) (resource.Resource, error) {

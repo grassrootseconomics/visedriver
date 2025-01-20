@@ -62,7 +62,6 @@ func ApplyConn(connStr *string, stateConnStr *string, resourceConnStr *string, u
 	}
 
 	if dbConn == "?" {
-		logg.Warnf("no db connection found, using memdb for everything")
 		dbConn = ""
 	}
 

@@ -35,7 +35,7 @@ func (c Conns) Set(conn ConnData, typ int8) {
 }
 
 func (c Conns) Have(conn *ConnData) int8 {
-	for i := range(_STORETYPE_MAX) {
+	for i := range _STORETYPE_MAX {
 		ii := int8(i)
 		v, ok := c[ii]
 		if !ok {
@@ -49,8 +49,8 @@ func (c Conns) Have(conn *ConnData) int8 {
 }
 
 type ConnData struct {
-	typ int
-	str string
+	typ    int
+	str    string
 	domain string
 }
 

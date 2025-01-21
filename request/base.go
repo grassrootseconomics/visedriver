@@ -7,20 +7,20 @@ import (
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
-	"git.grassecon.net/grassrootseconomics/visedriver/storage"
-	"git.grassecon.net/grassrootseconomics/visedriver/errors"
 	"git.grassecon.net/grassrootseconomics/visedriver/entry"
+	"git.grassecon.net/grassrootseconomics/visedriver/errors"
+	"git.grassecon.net/grassrootseconomics/visedriver/storage"
 )
 
 type BaseRequestHandler struct {
 	cfgTemplate engine.Config
-	rp RequestParser
-	rs resource.Resource
-	hn entry.EntryHandler
-	provider storage.StorageProvider
+	rp          RequestParser
+	rs          resource.Resource
+	hn          entry.EntryHandler
+	provider    storage.StorageProvider
 }
 
-//func NewBaseRequestHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp request.RequestParser, hn *handlers.Handlers) *BaseRequestHandler {
+// func NewBaseRequestHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp request.RequestParser, hn *handlers.Handlers) *BaseRequestHandler {
 func NewBaseRequestHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp RequestParser, hn entry.EntryHandler) *BaseRequestHandler {
 	return &BaseRequestHandler{
 		cfgTemplate: cfg,
@@ -44,7 +44,7 @@ func (f *BaseRequestHandler) GetEngine(cfg engine.Config, rs resource.Resource, 
 	return en
 }
 
-func(f *BaseRequestHandler) Process(rqs RequestSession) (RequestSession, error) {
+func (f *BaseRequestHandler) Process(rqs RequestSession) (RequestSession, error) {
 	var r bool
 	var err error
 	var ok bool
@@ -92,13 +92,13 @@ func(f *BaseRequestHandler) Process(rqs RequestSession) (RequestSession, error) 
 	return rqs, nil
 }
 
-func(f *BaseRequestHandler) Output(rqs RequestSession) (RequestSession,  error) {
+func (f *BaseRequestHandler) Output(rqs RequestSession) (RequestSession, error) {
 	var err error
 	_, err = rqs.Engine.Flush(rqs.Ctx, rqs.Writer)
 	return rqs, err
 }
 
-func(f *BaseRequestHandler) Reset(ctx context.Context, rqs RequestSession) (RequestSession, error) {
+func (f *BaseRequestHandler) Reset(ctx context.Context, rqs RequestSession) (RequestSession, error) {
 	defer f.provider.Put(ctx, rqs.Config.SessionId, rqs.Storage)
 	return rqs, rqs.Engine.Finish(ctx)
 }
@@ -107,6 +107,6 @@ func (f *BaseRequestHandler) GetConfig() engine.Config {
 	return f.cfgTemplate
 }
 
-func(f *BaseRequestHandler) GetRequestParser() RequestParser {
+func (f *BaseRequestHandler) GetRequestParser() RequestParser {
 	return f.rp
 }

@@ -12,8 +12,8 @@ const (
 )
 
 type Storage struct {
-	Persister *persist.Persister
-	UserdataDb db.Db	
+	Persister  *persist.Persister
+	UserdataDb db.Db
 }
 
 func (s *Storage) Close(ctx context.Context) error {
@@ -35,7 +35,7 @@ func NewSimpleStorageProvider(stateStore db.Db, userdataStore db.Db) StorageProv
 	pe = pe.WithFlush()
 	return &SimpleStorageProvider{
 		Storage: &Storage{
-			Persister: pe,
+			Persister:  pe,
 			UserdataDb: userdataStore,
 		},
 	}

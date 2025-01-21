@@ -10,8 +10,8 @@ import (
 
 	"git.defalsify.org/vise.git/engine"
 	viseerrors "git.grassecon.net/grassrootseconomics/visedriver/errors"
-	"git.grassecon.net/grassrootseconomics/visedriver/testutil/mocks/httpmocks"
 	"git.grassecon.net/grassrootseconomics/visedriver/request"
+	"git.grassecon.net/grassrootseconomics/visedriver/testutil/mocks/httpmocks"
 )
 
 // invalidRequestType is a custom type to test invalid request scenarios
@@ -165,7 +165,7 @@ func TestDefaultRequestParser_GetSessionId(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			id, err := parser.GetSessionId(context.Background(),tt.request)
+			id, err := parser.GetSessionId(context.Background(), tt.request)
 
 			if id != tt.expectedID {
 				t.Errorf("Expected session ID %s, got %s", tt.expectedID, id)

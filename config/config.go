@@ -9,23 +9,23 @@ import (
 )
 
 var (
-	logg = logging.NewVanilla().WithDomain("visedriver-config")
-	defaultLanguage		   = "eng"
-	languages []string
-	DefaultLanguage	    string
-	dbConn	string
-	dbConnMissing	bool
-	stateDbConn	string
-	resourceDbConn	string
-	userDbConn	string
-	Languages	[]string
+	logg            = logging.NewVanilla().WithDomain("visedriver-config")
+	defaultLanguage = "eng"
+	languages       []string
+	DefaultLanguage string
+	dbConn          string
+	dbConnMissing   bool
+	stateDbConn     string
+	resourceDbConn  string
+	userDbConn      string
+	Languages       []string
 )
 
 func setLanguage() error {
 	defaultLanguage = env.GetEnv("DEFAULT_LANGUAGE", defaultLanguage)
 	languages = strings.Split(env.GetEnv("LANGUAGES", defaultLanguage), ",")
 	haveDefaultLanguage := false
-	for i, v := range(languages) {
+	for i, v := range languages {
 		languages[i] = strings.ReplaceAll(v, " ", "")
 		if languages[i] == defaultLanguage {
 			haveDefaultLanguage = true
@@ -48,6 +48,7 @@ func setConn() error {
 }
 
 func ApplyConn(connStr *string, stateConnStr *string, resourceConnStr *string, userConnStr *string) {
+	logg.Infof("applyconn", "state", stateConnStr, "user", userConnStr)
 	if connStr != nil {
 		dbConn = *connStr
 	}

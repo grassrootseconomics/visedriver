@@ -5,8 +5,8 @@ import (
 
 	"git.defalsify.org/vise.git/db"
 	memdb "git.defalsify.org/vise.git/db/mem"
-	"git.defalsify.org/vise.git/resource"
 	"git.defalsify.org/vise.git/persist"
+	"git.defalsify.org/vise.git/resource"
 )
 
 type MemStorageService struct {
@@ -39,4 +39,3 @@ func (mss *MemStorageService) GetUserdataDb(ctx context.Context) (db.Db, error) 
 func (mss *MemStorageService) GetResource(ctx context.Context) (resource.Resource, error) {
 	return mss.rs, nil
 }
-	

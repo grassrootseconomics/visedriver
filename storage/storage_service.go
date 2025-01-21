@@ -6,8 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path"
-	
-	"github.com/jackc/pgx/v5/pgxpool"
+
 	"git.defalsify.org/vise.git/db"
 	fsdb "git.defalsify.org/vise.git/db/fs"
 	memdb "git.defalsify.org/vise.git/db/mem"
@@ -17,6 +16,7 @@ import (
 	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/resource"
 	gdbmstorage "git.grassecon.net/grassrootseconomics/visedriver/storage/db/gdbm"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var (
@@ -30,9 +30,9 @@ type StorageService interface {
 }
 
 type MenuStorageService struct {
-	conns Conns
-	poResource    resource.Resource
-	store map[int8]db.Db
+	conns      Conns
+	poResource resource.Resource
+	store      map[int8]db.Db
 }
 
 func NewMenuStorageService(conn Conns) *MenuStorageService {
@@ -55,7 +55,7 @@ func (ms *MenuStorageService) WithDb(store db.Db, typ int8) *MenuStorageService 
 	return ms
 }
 
-func (ms *MenuStorageService) checkDb(ctx context.Context,typ int8) db.Db {
+func (ms *MenuStorageService) checkDb(ctx context.Context, typ int8) db.Db {
 	store := ms.store[typ]
 	if store != nil {
 		return store
@@ -70,7 +70,7 @@ func (ms *MenuStorageService) checkDb(ctx context.Context,typ int8) db.Db {
 		return nil
 	}
 	ms.store[typ] = ms.store[v]
-	logg.DebugCtxf(ctx, "found existing db", "typ", typ, "srctyp", v, "store", ms.store[typ], "srcstore", ms.store[v])
+	logg.DebugCtxf(ctx, "found existing db", "typ", typ, "srctyp", v, "store", ms.store[typ], "srcstore", ms.store[v], "conn", connData)
 	return ms.store[typ]
 }
 
@@ -124,7 +124,7 @@ func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, section string,
 
 // WithGettext triggers use of gettext for translation of templates and menus.
 //
-// The first language in `lns` will be used as default language, to resolve node keys to 
+// The first language in `lns` will be used as default language, to resolve node keys to
 // language strings.
 //
 // If `lns` is an empty array, gettext will not be used.
@@ -135,7 +135,7 @@ func (ms *MenuStorageService) WithGettext(path string, lns []lang.Language) *Men
 	}
 	rs := resource.NewPoResource(lns[0], path)
 
-	for _, ln := range(lns) {
+	for _, ln := range lns {
 		rs = rs.WithLanguage(ln)
 	}
 
@@ -228,16 +228,16 @@ func (ms *MenuStorageService) ensureDbDir(path string) error {
 func (ms *MenuStorageService) Close(ctx context.Context) error {
 	var errs []error
 	var haveErr bool
-	for i := range(_STORETYPE_MAX) {
+	for i := range _STORETYPE_MAX {
 		err := ms.store[int8(i)].Close(ctx)
 		if err != nil {
 			haveErr = true
 		}
-		errs = append(errs, err) 
+		errs = append(errs, err)
 	}
 	if haveErr {
 		errStr := ""
-		for i, err := range(errs) {
+		for i, err := range errs {
 			errStr += fmt.Sprintf("(%d: %v)", i, err)
 		}
 		return errors.New(errStr)

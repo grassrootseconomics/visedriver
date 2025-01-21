@@ -2,8 +2,9 @@ package entry
 
 import (
 	"context"
-	"git.defalsify.org/vise.git/resource"
+
 	"git.defalsify.org/vise.git/persist"
+	"git.defalsify.org/vise.git/resource"
 )
 
 type EntryHandler interface {

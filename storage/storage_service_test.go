@@ -61,7 +61,7 @@ func TestMenuStorageServiceExplicit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	ms := NewMenuStorageService(conns)
 	ms = ms.WithDb(store, STORETYPE_RESOURCE)
 	_, err = ms.GetStateStore(ctx)

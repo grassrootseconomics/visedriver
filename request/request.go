@@ -4,10 +4,10 @@ import (
 	"context"
 	"io"
 
-	"git.defalsify.org/vise.git/resource"
-	"git.defalsify.org/vise.git/persist"
 	"git.defalsify.org/vise.git/engine"
 	"git.defalsify.org/vise.git/logging"
+	"git.defalsify.org/vise.git/persist"
+	"git.defalsify.org/vise.git/resource"
 	"git.grassecon.net/grassrootseconomics/visedriver/storage"
 )
 
@@ -16,12 +16,12 @@ var (
 )
 
 type RequestSession struct {
-	Ctx context.Context
-	Config engine.Config
-	Engine engine.Engine
-	Input []byte
-	Storage *storage.Storage
-	Writer io.Writer
+	Ctx      context.Context
+	Config   engine.Config
+	Engine   engine.Engine
+	Input    []byte
+	Storage  *storage.Storage
+	Writer   io.Writer
 	Continue bool
 }
 
@@ -34,7 +34,7 @@ type RequestParser interface {
 type RequestHandler interface {
 	GetConfig() engine.Config
 	GetRequestParser() RequestParser
-	GetEngine(engine.Config, resource.Resource, *persist.Persister) engine.Engine 
+	GetEngine(engine.Config, resource.Resource, *persist.Persister) engine.Engine
 	Process(RequestSession) (RequestSession, error)
 	Output(RequestSession) (RequestSession, error)
 	Reset(context.Context, RequestSession) (RequestSession, error)

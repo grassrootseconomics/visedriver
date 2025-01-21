@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"git.defalsify.org/vise.git/logging"
-	"git.grassecon.net/grassrootseconomics/visedriver/request"
 	"git.grassecon.net/grassrootseconomics/visedriver/errors"
+	"git.grassecon.net/grassrootseconomics/visedriver/request"
 )
 
 var (

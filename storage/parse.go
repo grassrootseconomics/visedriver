@@ -61,6 +61,15 @@ func probeMem(s string) (string, string, bool) {
 	return "", "", true
 }
 
+func ToConnDataMode(connStr string, mode DbMode) (ConnData, error) {
+	o, err := ToConnData(connStr)
+	if err != nil {
+		return o, err
+	}
+	o.mode = mode
+	return o, nil
+}
+
 func ToConnData(connStr string) (ConnData, error) {
 	var o ConnData
 

@@ -5,12 +5,19 @@ import (
 	"net/url"
 )
 
+type DbMode uint8
+
 const (
 	DBTYPE_NONE = iota
 	DBTYPE_MEM
 	DBTYPE_FS
 	DBTYPE_GDBM
 	DBTYPE_POSTGRES
+)
+
+const (
+	DBMODE_BINARY DbMode = iota
+	DBMODE_TEXT
 )
 
 const (
@@ -52,6 +59,7 @@ type ConnData struct {
 	typ    int
 	str    string
 	domain string
+	mode DbMode
 }
 
 func (cd *ConnData) DbType() int {
@@ -64,6 +72,10 @@ func (cd *ConnData) String() string {
 
 func (cd *ConnData) Domain() string {
 	return cd.domain
+}
+
+func (cd *ConnData) Mode() DbMode {
+	return cd.mode
 }
 
 func (cd *ConnData) Path() string {

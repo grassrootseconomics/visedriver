@@ -15,11 +15,26 @@ var (
 	DefaultLanguage string
 	dbConn          string
 	dbConnMissing   bool
+	dbConnMode	storage.DbMode
 	stateDbConn     string
+	stateDbConnMode	storage.DbMode
 	resourceDbConn  string
+	resourceDbConnMode	storage.DbMode
 	userDbConn      string
+	userDbConnMode	storage.DbMode
 	Languages       []string
 )
+
+type Override struct {
+	DbConn       *string
+	DbConnMode	storage.DbMode
+	StateConn    *string
+	StateConnMode	storage.DbMode
+	ResourceConn *string
+	ResourceConnMode	storage.DbMode
+	UserConn     *string
+	UserConnMode	storage.DbMode
+}
 
 func setLanguage() error {
 	defaultLanguage = env.GetEnv("DEFAULT_LANGUAGE", defaultLanguage)
@@ -47,19 +62,24 @@ func setConn() error {
 	return nil
 }
 
-func ApplyConn(connStr *string, stateConnStr *string, resourceConnStr *string, userConnStr *string) {
-	logg.Infof("applyconn", "state", stateConnStr, "user", userConnStr)
-	if connStr != nil {
-		dbConn = *connStr
+func ApplyConn(override *Override) {
+	if override.DbConn != nil {
+		dbConn = *override.DbConn
+		dbConnMode = override.DbConnMode
 	}
-	if stateConnStr != nil {
-		stateDbConn = *stateConnStr
+	if override.StateConn != nil {
+		stateDbConn = *override.StateConn
+		stateDbConnMode = override.StateConnMode
 	}
-	if resourceConnStr != nil {
-		resourceDbConn = *resourceConnStr
+	if override.ResourceConn != nil {
+		resourceDbConn = *override.ResourceConn
+		resourceDbConnMode = override.ResourceConnMode
 	}
-	if userConnStr != nil {
-		userDbConn = *userConnStr
+	if override.UserConn != nil {
+		userDbConn = *override.UserConn
+		if override.UserConnMode != storage.DBMODE_BINARY {
+			logg.Warnf("user db non-binary mode ignored")
+		}
 	}
 
 	if dbConn == "?" {
@@ -68,28 +88,31 @@ func ApplyConn(connStr *string, stateConnStr *string, resourceConnStr *string, u
 
 	if stateDbConn == "?" {
 		stateDbConn = dbConn
+		stateDbConnMode = dbConnMode
 	}
 	if resourceDbConn == "?" {
 		resourceDbConn = dbConn
+		resourceDbConnMode = dbConnMode
 	}
 	if userDbConn == "?" {
 		userDbConn = dbConn
+		//userDbConnMode = dbConnMode
 	}
 }
 
 func GetConns() (storage.Conns, error) {
 	o := storage.NewConns()
-	c, err := storage.ToConnData(stateDbConn)
+	c, err := storage.ToConnDataMode(stateDbConn, stateDbConnMode)
 	if err != nil {
 		return o, err
 	}
 	o.Set(c, storage.STORETYPE_STATE)
-	c, err = storage.ToConnData(resourceDbConn)
+	c, err = storage.ToConnDataMode(resourceDbConn, resourceDbConnMode)
 	if err != nil {
 		return o, err
 	}
 	o.Set(c, storage.STORETYPE_RESOURCE)
-	c, err = storage.ToConnData(userDbConn)
+	c, err = storage.ToConnDataMode(userDbConn, userDbConnMode)
 	if err != nil {
 		return o, err
 	}

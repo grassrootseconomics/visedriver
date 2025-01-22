@@ -105,7 +105,11 @@ func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, section string,
 		if err != nil {
 			return nil, err
 		}
-		newDb = fsdb.NewFsDb().WithBinary()
+		fsdbInstance := fsdb.NewFsDb()
+		if connData.Mode() == DBMODE_BINARY {
+			fsdbInstance = fsdbInstance.WithBinary()
+		}
+		newDb = fsdbInstance
 	} else if dbTyp == DBTYPE_MEM {
 		logg.WarnCtxf(ctx, "using volatile storage (memdb)")
 		newDb = memdb.NewMemDb()

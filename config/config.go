@@ -65,21 +65,16 @@ func setConn() error {
 func ApplyConn(override *Override) {
 	if override.DbConn != nil {
 		dbConn = *override.DbConn
-		dbConnMode = override.DbConnMode
 	}
+	dbConnMode = override.DbConnMode
 	if override.StateConn != nil {
 		stateDbConn = *override.StateConn
-		stateDbConnMode = override.StateConnMode
 	}
 	if override.ResourceConn != nil {
 		resourceDbConn = *override.ResourceConn
-		resourceDbConnMode = override.ResourceConnMode
 	}
 	if override.UserConn != nil {
 		userDbConn = *override.UserConn
-		if override.UserConnMode != storage.DBMODE_BINARY {
-			logg.Warnf("user db non-binary mode ignored")
-		}
 	}
 
 	if dbConn == "?" {
@@ -96,7 +91,17 @@ func ApplyConn(override *Override) {
 	}
 	if userDbConn == "?" {
 		userDbConn = dbConn
-		//userDbConnMode = dbConnMode
+		userDbConnMode = dbConnMode
+	}
+
+	if override.StateConnMode != storage.DBMODE_ANY {
+		stateDbConnMode = override.StateConnMode
+	}
+	if override.ResourceConnMode != storage.DBMODE_ANY {
+		resourceDbConnMode = override.ResourceConnMode
+	}
+	if override.UserConnMode != storage.DBMODE_ANY {
+		userDbConnMode = override.UserConnMode
 	}
 }
 

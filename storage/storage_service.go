@@ -61,6 +61,7 @@ func (ms *MenuStorageService) checkDb(ctx context.Context, typ int8) db.Db {
 		return store
 	}
 	connData := ms.conns[typ]
+	logg.DebugCtxf(ctx, "db check", "conn", connData, "store", DbStoreDebug[typ])
 	v := ms.conns.Have(&connData)
 	if v == -1 {
 		return nil
@@ -84,7 +85,7 @@ func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, section string,
 	}
 
 	connData := ms.conns[typ]
-	connStr := connData.String()
+	connStr := connData.Raw()
 	dbTyp := connData.DbType()
 	if dbTyp == DBTYPE_POSTGRES {
 		// TODO: move to vise
@@ -114,7 +115,7 @@ func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, section string,
 		logg.WarnCtxf(ctx, "using volatile storage (memdb)")
 		newDb = memdb.NewMemDb()
 	} else {
-		return nil, fmt.Errorf("unsupported connection string: '%s'\n", connData.String())
+		return nil, fmt.Errorf("unsupported connection string: '%s'\n", connData.Raw())
 	}
 	logg.InfoCtxf(ctx, "connecting to db", "conn", connData, "typ", typ)
 	err = newDb.Connect(ctx, connStr)

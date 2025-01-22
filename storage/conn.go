@@ -16,7 +16,8 @@ const (
 )
 
 const (
-	DBMODE_BINARY DbMode = iota
+	DBMODE_ANY DbMode = iota
+	DBMODE_BINARY
 	DBMODE_TEXT
 )
 
@@ -25,6 +26,12 @@ const (
 	STORETYPE_RESOURCE
 	STORETYPE_USER
 	_STORETYPE_MAX
+)
+
+var (
+	DbModeDebug = []string{"ANY", "BIN", "TXT"}
+	DbTypeDebug = []string{"NONE", "MEM", "FS", "GDBM", "POSTGRES"}
+	DbStoreDebug = []string{"STATE", "RESOURCE", "USER"}
 )
 
 type Conns map[int8]ConnData
@@ -48,8 +55,10 @@ func (c Conns) Have(conn *ConnData) int8 {
 		if !ok {
 			continue
 		}
-		if v.String() == conn.String() {
-			return ii
+		if v.Raw() == conn.Raw() {
+			if v.Mode() == DBMODE_ANY || v.Mode() == conn.Mode() {
+				return ii
+			}
 		}
 	}
 	return -1
@@ -66,8 +75,8 @@ func (cd *ConnData) DbType() int {
 	return cd.typ
 }
 
-func (cd *ConnData) String() string {
-	return cd.str
+func (cd ConnData) String() string {
+	return fmt.Sprintf("conn: %s, mod %s, typ %s", cd.str, DbModeDebug[uint8(cd.mode)], DbTypeDebug[uint8(cd.typ)])
 }
 
 func (cd *ConnData) Domain() string {
@@ -82,4 +91,8 @@ func (cd *ConnData) Path() string {
 	v, _ := url.Parse(cd.str)
 	v.RawQuery = ""
 	return v.String()
+}
+
+func (cd *ConnData) Raw() string {
+	return cd.str
 }

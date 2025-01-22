@@ -9,31 +9,31 @@ import (
 )
 
 var (
-	logg            = logging.NewVanilla().WithDomain("visedriver-config")
-	defaultLanguage = "eng"
-	languages       []string
-	DefaultLanguage string
-	dbConn          string
-	dbConnMissing   bool
-	dbConnMode	storage.DbMode
-	stateDbConn     string
-	stateDbConnMode	storage.DbMode
-	resourceDbConn  string
-	resourceDbConnMode	storage.DbMode
-	userDbConn      string
-	userDbConnMode	storage.DbMode
-	Languages       []string
+	logg               = logging.NewVanilla().WithDomain("visedriver-config")
+	defaultLanguage    = "eng"
+	languages          []string
+	DefaultLanguage    string
+	dbConn             string
+	dbConnMissing      bool
+	dbConnMode         storage.DbMode
+	stateDbConn        string
+	stateDbConnMode    storage.DbMode
+	resourceDbConn     string
+	resourceDbConnMode storage.DbMode
+	userDbConn         string
+	userDbConnMode     storage.DbMode
+	Languages          []string
 )
 
 type Override struct {
-	DbConn       *string
-	DbConnMode	storage.DbMode
-	StateConn    *string
-	StateConnMode	storage.DbMode
-	ResourceConn *string
-	ResourceConnMode	storage.DbMode
-	UserConn     *string
-	UserConnMode	storage.DbMode
+	DbConn           *string
+	DbConnMode       storage.DbMode
+	StateConn        *string
+	StateConnMode    storage.DbMode
+	ResourceConn     *string
+	ResourceConnMode storage.DbMode
+	UserConn         *string
+	UserConnMode     storage.DbMode
 }
 
 func setLanguage() error {

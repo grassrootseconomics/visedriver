@@ -29,8 +29,8 @@ const (
 )
 
 var (
-	DbModeDebug = []string{"ANY", "BIN", "TXT"}
-	DbTypeDebug = []string{"NONE", "MEM", "FS", "GDBM", "POSTGRES"}
+	DbModeDebug  = []string{"ANY", "BIN", "TXT"}
+	DbTypeDebug  = []string{"NONE", "MEM", "FS", "GDBM", "POSTGRES"}
 	DbStoreDebug = []string{"STATE", "RESOURCE", "USER"}
 )
 
@@ -68,7 +68,7 @@ type ConnData struct {
 	typ    int
 	str    string
 	domain string
-	mode DbMode
+	mode   DbMode
 }
 
 func (cd *ConnData) DbType() int {

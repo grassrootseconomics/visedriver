@@ -12,7 +12,7 @@ require (
 	gopkg.in/leonelquinteros/gotext.v1 v1.3.1
 )
 
-require github.com/grassrootseconomics/ussd-data-service v0.0.0-20241003123429-4904b4438a3a // indirect
+require github.com/grassrootseconomics/ussd-data-service v0.0.0-20241003123429-4904b4438a3a
 
 require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect
@@ -22,9 +22,9 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/kr/text v0.2.0 // indirect
 	github.com/rogpeppe/go-internal v1.13.1 // indirect
-	golang.org/x/crypto v0.27.0 // indirect
-	golang.org/x/sync v0.8.0 // indirect
-	golang.org/x/text v0.18.0 // indirect
+	golang.org/x/crypto v0.31.0 // indirect
+	golang.org/x/sync v0.10.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 )
 
 require (

@@ -26,13 +26,13 @@ var (
 )
 
 type Override struct {
-	DbConn           *string
+	DbConn           string
 	DbConnMode       storage.DbMode
-	StateConn        *string
+	StateConn        string
 	StateConnMode    storage.DbMode
-	ResourceConn     *string
+	ResourceConn     string
 	ResourceConnMode storage.DbMode
-	UserConn         *string
+	UserConn         string
 	UserConnMode     storage.DbMode
 }
 
@@ -63,18 +63,21 @@ func setConn() error {
 }
 
 func ApplyConn(override *Override) {
-	if override.DbConn != nil {
-		dbConn = *override.DbConn
+	if override.DbConn != "?" {
+		dbConn = override.DbConn
+		stateDbConn = override.StateConn
+		resourceDbConn = override.ResourceConn
+		userDbConn = override.UserConn
 	}
 	dbConnMode = override.DbConnMode
-	if override.StateConn != nil {
-		stateDbConn = *override.StateConn
+	if override.StateConn != "?" {
+		stateDbConn = override.StateConn
 	}
-	if override.ResourceConn != nil {
-		resourceDbConn = *override.ResourceConn
+	if override.ResourceConn != "?" {
+		resourceDbConn = override.ResourceConn
 	}
-	if override.UserConn != nil {
-		userDbConn = *override.UserConn
+	if override.UserConn != "?" {
+		userDbConn = override.UserConn
 	}
 
 	if dbConn == "?" {
@@ -94,6 +97,10 @@ func ApplyConn(override *Override) {
 		userDbConnMode = dbConnMode
 	}
 
+	logg.Debugf("conns", "conn", dbConn, "user", userDbConn)
+	if override.DbConnMode != storage.DBMODE_ANY {
+		dbConnMode = override.DbConnMode
+	}
 	if override.StateConnMode != storage.DBMODE_ANY {
 		stateDbConnMode = override.StateConnMode
 	}

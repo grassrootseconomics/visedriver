@@ -169,7 +169,9 @@ func ensureSchemaExists(ctx context.Context, conn ConnData) error {
 func applySession(ctx context.Context, store db.Db) error {
 	sessionId, ok := ctx.Value("SessionId").(string)
 	if !ok {
-		return fmt.Errorf("missing session to apply to store: %v", store)
+		logg.DebugCtxf(ctx, "missing session to apply", "store", store)
+		return nil
+		//return fmt.Errorf("missing session to apply to store: %v", store)
 	}
 	store.SetSession(sessionId)
 	return nil
@@ -184,7 +186,6 @@ func (ms *MenuStorageService) GetPersister(ctx context.Context) (*persist.Persis
 	if err != nil {
 		return nil, err
 	}
-
 	pr := persist.NewPersister(stateStore)
 	logg.TraceCtxf(ctx, "menu storage service", "persist", pr, "store", stateStore)
 	return pr, nil
@@ -195,7 +196,6 @@ func (ms *MenuStorageService) GetUserdataDb(ctx context.Context) (db.Db, error) 
 	if err != nil {
 		return nil, err
 	}
-
 	err = applySession(ctx, userStore)
 	if err != nil {
 		return nil, err

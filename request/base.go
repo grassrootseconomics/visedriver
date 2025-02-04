@@ -12,23 +12,32 @@ import (
 	"git.grassecon.net/grassrootseconomics/visedriver/storage"
 )
 
+type EngineFunc func(engine.Config, resource.Resource, *persist.Persister) engine.Engine
+
 type BaseRequestHandler struct {
 	cfgTemplate engine.Config
 	rp          RequestParser
 	rs          resource.Resource
 	hn          entry.EntryHandler
 	provider    storage.StorageProvider
+	engineFunc	EngineFunc
 }
 
-// func NewBaseRequestHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp request.RequestParser, hn *handlers.Handlers) *BaseRequestHandler {
 func NewBaseRequestHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp RequestParser, hn entry.EntryHandler) *BaseRequestHandler {
-	return &BaseRequestHandler{
+	h := &BaseRequestHandler{
 		cfgTemplate: cfg,
 		rs:          rs,
 		hn:          hn,
 		rp:          rp,
 		provider:    storage.NewSimpleStorageProvider(stateDb, userdataDb),
 	}
+	h.engineFunc = h.getDefaultEngine
+	return h
+}
+
+func (f *BaseRequestHandler) WithEngineFunc(fn EngineFunc) *BaseRequestHandler {
+	f.engineFunc = fn
+	return f
 }
 
 func (f *BaseRequestHandler) Shutdown(ctx context.Context) {
@@ -39,15 +48,22 @@ func (f *BaseRequestHandler) Shutdown(ctx context.Context) {
 }
 
 func (f *BaseRequestHandler) GetEngine(cfg engine.Config, rs resource.Resource, pr *persist.Persister) engine.Engine {
+	return f.engineFunc(cfg, rs, pr)
+}
+
+func (f *BaseRequestHandler) getDefaultEngine(cfg engine.Config, rs resource.Resource, pr *persist.Persister) engine.Engine {
 	en := engine.NewEngine(cfg, rs)
 	en = en.WithPersister(pr)
+	en = en.WithFirst(f.hn.Init)
+	if f.cfgTemplate.EngineDebug {
+		en = en.WithDebug(nil)
+	}
 	return en
 }
 
 func (f *BaseRequestHandler) Process(rqs RequestSession) (RequestSession, error) {
 	var r bool
 	var err error
-	var ok bool
 
 	logg.InfoCtxf(rqs.Ctx, "new request", "data", rqs)
 
@@ -57,27 +73,12 @@ func (f *BaseRequestHandler) Process(rqs RequestSession) (RequestSession, error)
 		return rqs, errors.ErrStorage
 	}
 
-	//f.hn = f.hn.WithPersister(rqs.Storage.Persister)
 	f.hn.SetPersister(rqs.Storage.Persister)
 	defer func() {
 		f.hn.Exit()
 	}()
-	eni := f.GetEngine(rqs.Config, f.rs, rqs.Storage.Persister)
-	en, ok := eni.(*engine.DefaultEngine)
-	if !ok {
-		perr := f.provider.Put(rqs.Ctx, rqs.Config.SessionId, rqs.Storage)
-		rqs.Storage = nil
-		if perr != nil {
-			logg.ErrorCtxf(rqs.Ctx, "", "storage put error", perr)
-		}
-		return rqs, errors.ErrEngineType
-	}
-	en = en.WithFirst(f.hn.Init)
-	if rqs.Config.EngineDebug {
-		en = en.WithDebug(nil)
-	}
-	rqs.Engine = en
 
+	rqs.Engine = f.GetEngine(rqs.Config, f.rs, rqs.Storage.Persister)
 	r, err = rqs.Engine.Exec(rqs.Ctx, rqs.Input)
 	if err != nil {
 		perr := f.provider.Put(rqs.Ctx, rqs.Config.SessionId, rqs.Storage)

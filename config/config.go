@@ -1,6 +1,7 @@
 package config
 
 import (
+	"strconv"
 	"strings"
 
 	"git.defalsify.org/vise.git/logging"
@@ -23,6 +24,7 @@ var (
 	userDbConn         string
 	userDbConnMode     storage.DbMode
 	Languages          []string
+	configManager      *Config
 )
 
 type Override struct {
@@ -134,6 +136,17 @@ func GetConns() (storage.Conns, error) {
 
 // LoadConfig initializes the configuration values after environment variables are loaded.
 func LoadConfig() error {
+	configManager = NewConfig(logg)
+
+	// Add configuration keys with validation
+	configManager.AddKey("HOST", "127.0.0.1", false, nil)
+	configManager.AddKey("PORT", "7123", false, func(v string) error {
+		_, err := strconv.Atoi(v)
+		return err
+	})
+	configManager.AddKey("DB_CONN", "", true, nil)
+	// ... add other keys ?  or is enough :/ ...
+
 	err := setConn()
 	if err != nil {
 		return err
@@ -145,5 +158,7 @@ func LoadConfig() error {
 	DefaultLanguage = defaultLanguage
 	Languages = languages
 
+	// Report configuration
+	configManager.Report("INFO")
 	return nil
 }

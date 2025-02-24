@@ -82,15 +82,15 @@ func (c *Config) Report(level string) {
 
 		switch level {
 		case "DEBUG":
-			c.logger.Debugf("%s: %s", cv.Key, value)
+			c.logger.Debugf("config set", cv.Key, value)
 		case "INFO":
-			c.logger.Infof("%s: %s", cv.Key, value)
+			c.logger.Infof("config set", cv.Key, value)
 		case "WARN":
-			c.logger.Warnf("%s: %s", cv.Key, value)
+			c.logger.Warnf("config set", cv.Key, value)
 		case "ERROR":
-			c.logger.Errorf("%s: %s", cv.Key, value)
+			c.logger.Errorf("config set", cv.Key, value)
 		default:
-			c.logger.Infof("%s: %s", cv.Key, value)
+			c.logger.Infof("config set", cv.Key, value)
 		}
 	}
 }

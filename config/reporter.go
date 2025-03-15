@@ -68,7 +68,6 @@ func (c *Config) GetValue(key string) (string, error) {
 
 // Report outputs all configuration values at the specified log level
 func (c *Config) Report(level string) {
-	c.logger.Debugf("Configuration Report:")
 	for _, cv := range c.values {
 		value, err := c.GetValue(cv.Key)
 		if err != nil {

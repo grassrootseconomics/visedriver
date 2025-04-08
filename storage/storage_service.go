@@ -9,8 +9,6 @@ import (
 
 	"git.defalsify.org/vise.git/db"
 	fsdb "git.defalsify.org/vise.git/db/fs"
-	"git.defalsify.org/vise.git/db/log"
-	"git.defalsify.org/vise.git/db/mem"
 	memdb "git.defalsify.org/vise.git/db/mem"
 	"git.defalsify.org/vise.git/db/postgres"
 	"git.defalsify.org/vise.git/lang"
@@ -205,9 +203,14 @@ func (ms *MenuStorageService) GetUserdataDb(ctx context.Context) (db.Db, error) 
 	return userStore, nil
 }
 
-func (ms *MenuStorageService) GetLogDb(ctx context.Context, mainDb db.Db) db.Db {
-	memDb := mem.NewMemDb()
-	return log.NewLogDb(mainDb, memDb)
+func (ms *MenuStorageService) GetLogDb(ctx context.Context, mainDb db.Db, connStr string, section string) (db.Db, error) {
+	err := ms.ensureDbDir(connStr)
+	if err != nil {
+		return nil, err
+	}
+	connStr = path.Join(connStr, section)
+	tgdbm := gdbmstorage.NewThreadGdbmDb()
+	return tgdbm, nil
 }
 
 func (ms *MenuStorageService) GetResource(ctx context.Context) (resource.Resource, error) {

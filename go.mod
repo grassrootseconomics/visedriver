@@ -3,7 +3,7 @@ module git.grassecon.net/grassrootseconomics/visedriver
 go 1.23.0
 
 require (
-	git.defalsify.org/vise.git v0.2.3-0.20250204132233-2bffe532f21e
+	git.defalsify.org/vise.git v0.3.2-0.20250407143413-e55cf9bcb7d2
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/joho/godotenv v1.5.1
 )

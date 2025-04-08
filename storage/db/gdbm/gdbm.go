@@ -90,6 +90,10 @@ func (tdb *ThreadGdbmDb) Prefix() uint8 {
 	return v
 }
 
+func (tdb *ThreadGdbmDb) Base() *db.DbBase {
+	return tdb.Base()
+}
+
 func (tdb *ThreadGdbmDb) SetLock(typ uint8, locked bool) error {
 	tdb.reserve()
 	err := tdb.db.SetLock(typ, locked)

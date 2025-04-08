@@ -210,6 +210,10 @@ func (ms *MenuStorageService) GetLogDb(ctx context.Context, mainDb db.Db, connSt
 	}
 	connStr = path.Join(connStr, section)
 	tgdbm := gdbmstorage.NewThreadGdbmDb()
+	err = tgdbm.Connect(ctx, connStr)
+	if err != nil {
+		return nil, err
+	}
 	return tgdbm, nil
 }
 

@@ -4,11 +4,11 @@ import (
 	"context"
 	"io"
 
-	"git.defalsify.org/vise.git/engine"
-	"git.defalsify.org/vise.git/logging"
-	"git.defalsify.org/vise.git/persist"
-	"git.defalsify.org/vise.git/resource"
 	"git.grassecon.net/grassrootseconomics/visedriver/storage"
+	"github.com/grassrootseconomics/go-vise/engine"
+	"github.com/grassrootseconomics/go-vise/logging"
+	"github.com/grassrootseconomics/go-vise/persist"
+	"github.com/grassrootseconomics/go-vise/resource"
 )
 
 var (

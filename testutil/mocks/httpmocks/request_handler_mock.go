@@ -3,10 +3,10 @@ package httpmocks
 import (
 	"context"
 
-	"git.defalsify.org/vise.git/engine"
-	"git.defalsify.org/vise.git/persist"
-	"git.defalsify.org/vise.git/resource"
 	"git.grassecon.net/grassrootseconomics/visedriver/request"
+	"github.com/grassrootseconomics/go-vise/engine"
+	"github.com/grassrootseconomics/go-vise/persist"
+	"github.com/grassrootseconomics/go-vise/resource"
 )
 
 // MockRequestHandler implements request.RequestHandler interface for testing

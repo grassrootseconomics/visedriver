@@ -5,8 +5,8 @@ package config
 import (
 	"fmt"
 
-	"git.defalsify.org/vise.git/logging"
 	"git.grassecon.net/grassrootseconomics/visedriver/env"
+	"github.com/grassrootseconomics/go-vise/logging"
 )
 
 // ConfigValue represents a configuration key-value pair

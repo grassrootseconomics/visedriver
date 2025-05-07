@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"git.defalsify.org/vise.git/logging"
 	"git.grassecon.net/grassrootseconomics/visedriver/errors"
 	"git.grassecon.net/grassrootseconomics/visedriver/request"
+	"github.com/grassrootseconomics/go-vise/logging"
 )
 
 var (

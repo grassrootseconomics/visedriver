@@ -3,10 +3,10 @@ package storage
 import (
 	"context"
 
-	"git.defalsify.org/vise.git/db"
-	gdbmdb "git.defalsify.org/vise.git/db/gdbm"
-	"git.defalsify.org/vise.git/lang"
-	"git.defalsify.org/vise.git/logging"
+	"github.com/grassrootseconomics/go-vise/db"
+	gdbmdb "github.com/grassrootseconomics/go-vise/db/gdbm"
+	"github.com/grassrootseconomics/go-vise/lang"
+	"github.com/grassrootseconomics/go-vise/logging"
 )
 
 var (

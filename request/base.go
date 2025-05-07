@@ -3,13 +3,13 @@ package request
 import (
 	"context"
 
-	"git.defalsify.org/vise.git/db"
-	"git.defalsify.org/vise.git/engine"
-	"git.defalsify.org/vise.git/persist"
-	"git.defalsify.org/vise.git/resource"
 	"git.grassecon.net/grassrootseconomics/visedriver/entry"
 	"git.grassecon.net/grassrootseconomics/visedriver/errors"
 	"git.grassecon.net/grassrootseconomics/visedriver/storage"
+	"github.com/grassrootseconomics/go-vise/db"
+	"github.com/grassrootseconomics/go-vise/engine"
+	"github.com/grassrootseconomics/go-vise/persist"
+	"github.com/grassrootseconomics/go-vise/resource"
 )
 
 type EngineFunc func(engine.Config, resource.Resource, *persist.Persister) engine.Engine
@@ -20,7 +20,7 @@ type BaseRequestHandler struct {
 	rs          resource.Resource
 	hn          entry.EntryHandler
 	provider    storage.StorageProvider
-	engineFunc	EngineFunc
+	engineFunc  EngineFunc
 }
 
 func NewBaseRequestHandler(cfg engine.Config, rs resource.Resource, stateDb db.Db, userdataDb db.Db, rp RequestParser, hn entry.EntryHandler) *BaseRequestHandler {

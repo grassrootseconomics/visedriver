@@ -1,3 +1,4 @@
+//go:build configreport
 // +build configreport
 
 package config
@@ -7,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	"git.defalsify.org/vise.git/logging"
+	"github.com/grassrootseconomics/go-vise/logging"
 )
 
 // go test -tags configreport ./config/...   ---> run with tag

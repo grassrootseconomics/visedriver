@@ -7,6 +7,8 @@ github.com/fxamacker/cbor/v2 v2.4.0 h1:ri0ArlOR+5XunOP8CRUowT0pSJOwhW098ZCUyskZD
 github.com/fxamacker/cbor/v2 v2.4.0/go.mod h1:TA1xS00nchWmaBnEIxPSE5oHLuJBAVvqrtAnWBwBCVo=
 github.com/grassrootseconomics/go-vise v0.4.1 h1:g26jvYnsWaTns60ZHdltGcsL9cjWqvYZwUZ2FWVKOGo=
 github.com/grassrootseconomics/go-vise v0.4.1/go.mod h1:tt3/Swp9F9PdhSDBDvwuI1GZRrCg32kWXWzyATIpTO4=
+github.com/grassrootseconomics/go-vise v0.4.2 h1:6c6ncOCvvXOGWBtMRhuDDLvhsUb+wn11zW6NuCmlFXY=
+github.com/grassrootseconomics/go-vise v0.4.2/go.mod h1:tt3/Swp9F9PdhSDBDvwuI1GZRrCg32kWXWzyATIpTO4=
 github.com/graygnuorg/go-gdbm v0.0.0-20220711140707-71387d66dce4 h1:U4kkNYryi/qfbBF8gh7Vsbuz+cVmhf5kt6pE9bYYyLo=
 github.com/graygnuorg/go-gdbm v0.0.0-20220711140707-71387d66dce4/go.mod h1:zpZDgZFzeq9s0MIeB1P50NIEWDFFHSFBohI/NbaTD/Y=
 github.com/jackc/pgpassfile v1.0.0 h1:/6Hmqy13Ss2zCq62VdNG8tM1wchn8zjSGOBJ6icpsIM=

@@ -10,7 +10,7 @@ This document describes component versions:
 
 ## User profile data
 
-All user profile items are stored under keys matching the user's session id, prefixed with the 8-bit value `git.defalsify.org/vise.git/db.DATATYPE_USERDATA` (32), and followed with a 16-big big-endian value subprefix.
+All user profile items are stored under keys matching the user's session id, prefixed with the 8-bit value `github.com/grassrootseconomics/go-vise/db.DATATYPE_USERDATA` (32), and followed with a 16-big big-endian value subprefix.
 
 For example, given the sessionId `+254123` and the key `git.grassecon.net/urdt-ussd/common.DATA_PUBLIC_KEY` (2) will be stored under the key:
 

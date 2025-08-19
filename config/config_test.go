@@ -1,3 +1,4 @@
+//go:build configreport
 // +build configreport
 
 package config
@@ -7,12 +8,12 @@ import (
 	"os"
 	"testing"
 
-	"git.defalsify.org/vise.git/logging"
+	slogging "github.com/grassrootseconomics/go-vise/slog"
 )
 
 // go test -tags configreport ./config/...   ---> run with tag
 func TestConfig(t *testing.T) {
-	logger := logging.NewVanilla().WithDomain("test")
+	logger := slogging.Get().With("component", "test")
 	cfg := NewConfig(logger)
 
 	t.Run("Default Values", func(t *testing.T) {

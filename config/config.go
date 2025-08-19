@@ -4,13 +4,13 @@ import (
 	"strconv"
 	"strings"
 
-	"git.defalsify.org/vise.git/logging"
 	"git.grassecon.net/grassrootseconomics/visedriver/env"
 	"git.grassecon.net/grassrootseconomics/visedriver/storage"
+	slogging "github.com/grassrootseconomics/go-vise/slog"
 )
 
 var (
-	logg               = logging.NewVanilla().WithDomain("visedriver-config")
+	logg               = slogging.Get().With("component", "visedriver-config")
 	defaultLanguage    = "eng"
 	languages          []string
 	DefaultLanguage    string
@@ -136,7 +136,7 @@ func GetConns() (storage.Conns, error) {
 
 // LoadConfig initializes the configuration values after environment variables are loaded.
 func LoadConfig() error {
-	configManager = NewConfig(logg)
+	configManager = NewConfig()
 
 	// Add configuration keys with validation
 	configManager.AddKey("HOST", "127.0.0.1", false, nil)

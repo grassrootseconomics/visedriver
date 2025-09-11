@@ -5,8 +5,8 @@ package config
 import (
 	"fmt"
 
-	"git.defalsify.org/vise.git/logging"
 	"git.grassecon.net/grassrootseconomics/visedriver/env"
+	slogging "github.com/grassrootseconomics/go-vise/slog"
 )
 
 // ConfigValue represents a configuration key-value pair
@@ -20,13 +20,13 @@ type ConfigValue struct {
 // Config handles configuration management and reporting
 type Config struct {
 	values map[string]ConfigValue
-	logger logging.Vanilla
+	logger *slogging.Slog
 }
 
-func NewConfig(logger logging.Vanilla) *Config {
+func NewConfig(logging interface{}) *Config {
 	return &Config{
 		values: make(map[string]ConfigValue),
-		logger: logger,
+		logger: slogging.Get().With("component", "visedriver-config-reporter"),
 	}
 }
 
@@ -79,17 +79,6 @@ func (c *Config) Report(level string) {
 			value = "****"
 		}
 
-		switch level {
-		case "DEBUG":
-			c.logger.Debugf("config set", cv.Key, value)
-		case "INFO":
-			c.logger.Infof("config set", cv.Key, value)
-		case "WARN":
-			c.logger.Warnf("config set", cv.Key, value)
-		case "ERROR":
-			c.logger.Errorf("config set", cv.Key, value)
-		default:
-			c.logger.Infof("config set", cv.Key, value)
-		}
+		c.logger.Debugf("config set", cv.Key, value)
 	}
 }

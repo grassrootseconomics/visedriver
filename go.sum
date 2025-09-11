@@ -1,5 +1,3 @@
-git.defalsify.org/vise.git v0.2.3-0.20250204132233-2bffe532f21e h1:gtB9OdX6x5gQRM3W824dEurXuuf/YPInqgtv2KAp5Zo=
-git.defalsify.org/vise.git v0.2.3-0.20250204132233-2bffe532f21e/go.mod h1:jyBMe1qTYUz3mmuoC9JQ/TvFeW0vTanCUcPu3H8p4Ck=
 github.com/barbashov/iso639-3 v0.0.0-20211020172741-1f4ffb2d8d1c h1:H9Nm+I7Cg/YVPpEV1RzU3Wq2pjamPc/UtHDgItcb7lE=
 github.com/barbashov/iso639-3 v0.0.0-20211020172741-1f4ffb2d8d1c/go.mod h1:rGod7o6KPeJ+hyBpHfhi4v7blx9sf+QsHsA7KAsdN6U=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -9,8 +7,6 @@ github.com/fxamacker/cbor/v2 v2.9.0 h1:NpKPmjDBgUfBms6tr6JZkTHtfFGcMKsw3eGcmD/sa
 github.com/fxamacker/cbor/v2 v2.9.0/go.mod h1:vM4b+DJCtHn+zz7h3FFp/hDAI9WNWCsZj23V5ytsSxQ=
 github.com/grassrootseconomics/go-vise v0.5.0 h1:FRg2de55Eb5SisrgTBeFWfWX+sXwp5q9r7YWtKWDwsk=
 github.com/grassrootseconomics/go-vise v0.5.0/go.mod h1:b2/q4jfTu2i1wyUwYUu7FYq4m2f1AZv8MpiDM3ZcoGo=
-github.com/graygnuorg/go-gdbm v0.0.0-20220711140707-71387d66dce4 h1:U4kkNYryi/qfbBF8gh7Vsbuz+cVmhf5kt6pE9bYYyLo=
-github.com/graygnuorg/go-gdbm v0.0.0-20220711140707-71387d66dce4/go.mod h1:zpZDgZFzeq9s0MIeB1P50NIEWDFFHSFBohI/NbaTD/Y=
 github.com/jackc/pgpassfile v1.0.0 h1:/6Hmqy13Ss2zCq62VdNG8tM1wchn8zjSGOBJ6icpsIM=
 github.com/jackc/pgpassfile v1.0.0/go.mod h1:CEx0iS5ambNFdcRtxPj5JhEz+xB6uRky5eyVu/W2HEg=
 github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 h1:iCEnooe7UlwOQYpKFhBabPMi4aNAfoODPEFNiAnClxo=

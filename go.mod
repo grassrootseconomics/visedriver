@@ -5,7 +5,6 @@ go 1.24
 toolchain go1.24.6
 
 require (
-	git.defalsify.org/vise.git v0.2.3-0.20250204132233-2bffe532f21e
 	github.com/grassrootseconomics/go-vise v0.5.0
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/joho/godotenv v1.5.1
@@ -15,7 +14,6 @@ require (
 	github.com/barbashov/iso639-3 v0.0.0-20211020172741-1f4ffb2d8d1c // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
-	github.com/graygnuorg/go-gdbm v0.0.0-20220711140707-71387d66dce4 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect

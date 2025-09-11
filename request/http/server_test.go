@@ -99,9 +99,7 @@ func TestRequestHandler_ServeHTTP(t *testing.T) {
 				},
 			}
 
-			sessionHandler := &HTTPRequestHandler{
-				RequestHandler: mockRequestHandler,
-			}
+			sessionHandler := NewHTTPRequestHandler(mockRequestHandler)
 
 			req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer(tt.input))
 			req.Header.Set("X-Vise-Session", tt.sessionID)
@@ -119,7 +117,7 @@ func TestRequestHandler_ServeHTTP(t *testing.T) {
 }
 
 func TestRequestHandler_WriteError(t *testing.T) {
-	handler := &HTTPRequestHandler{}
+	handler := NewHTTPRequestHandler(&httpmocks.MockRequestHandler{})
 	mockWriter := &httpmocks.MockWriter{}
 	err := errors.New("test error")
 

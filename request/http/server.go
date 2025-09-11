@@ -4,13 +4,13 @@ import (
 	"net/http"
 	"strconv"
 
-	"git.defalsify.org/vise.git/logging"
 	"git.grassecon.net/grassrootseconomics/visedriver/errors"
 	"git.grassecon.net/grassrootseconomics/visedriver/request"
+	slogging "github.com/grassrootseconomics/go-vise/slog"
 )
 
 var (
-	logg = logging.NewVanilla().WithDomain("visedriver.http.session")
+	logg = slogging.Get().With("component", "visedriver.http.session")
 )
 
 // HTTPRequestHandler implements the session handler for HTTP

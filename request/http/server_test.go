@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"git.defalsify.org/vise.git/engine"
+	"github.com/grassrootseconomics/go-vise/engine"
 	viseerrors "git.grassecon.net/grassrootseconomics/visedriver/errors"
 	"git.grassecon.net/grassrootseconomics/visedriver/request"
 	"git.grassecon.net/grassrootseconomics/visedriver/testutil/mocks/httpmocks"

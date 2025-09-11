@@ -3,10 +3,10 @@ package request
 import (
 	"context"
 
-	"git.defalsify.org/vise.git/db"
-	"git.defalsify.org/vise.git/engine"
-	"git.defalsify.org/vise.git/persist"
-	"git.defalsify.org/vise.git/resource"
+	"github.com/grassrootseconomics/go-vise/db"
+	"github.com/grassrootseconomics/go-vise/engine"
+	"github.com/grassrootseconomics/go-vise/persist"
+	"github.com/grassrootseconomics/go-vise/resource"
 	"git.grassecon.net/grassrootseconomics/visedriver/entry"
 	"git.grassecon.net/grassrootseconomics/visedriver/errors"
 	"git.grassecon.net/grassrootseconomics/visedriver/storage"

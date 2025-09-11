@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	fsdb "git.defalsify.org/vise.git/db/fs"
+	fsdb "github.com/grassrootseconomics/go-vise/db/fs"
 )
 
 func TestMenuStorageServiceOneSet(t *testing.T) {

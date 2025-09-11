@@ -3,8 +3,8 @@ package storage
 import (
 	"context"
 
-	"git.defalsify.org/vise.git/db"
-	"git.defalsify.org/vise.git/persist"
+	"github.com/grassrootseconomics/go-vise/db"
+	"github.com/grassrootseconomics/go-vise/persist"
 )
 
 const (

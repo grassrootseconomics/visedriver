@@ -4,15 +4,15 @@ import (
 	"context"
 	"io"
 
-	"git.defalsify.org/vise.git/engine"
-	"git.defalsify.org/vise.git/logging"
-	"git.defalsify.org/vise.git/persist"
-	"git.defalsify.org/vise.git/resource"
 	"git.grassecon.net/grassrootseconomics/visedriver/storage"
+	"github.com/grassrootseconomics/go-vise/engine"
+	"github.com/grassrootseconomics/go-vise/persist"
+	"github.com/grassrootseconomics/go-vise/resource"
+	slogging "github.com/grassrootseconomics/go-vise/slog"
 )
 
 var (
-	logg = logging.NewVanilla().WithDomain("visedriver.request")
+	logg = slogging.Get().With("component", "visedriver.request")
 )
 
 type RequestSession struct {

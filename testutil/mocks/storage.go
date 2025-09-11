@@ -3,10 +3,10 @@ package mocks
 import (
 	"context"
 
-	"git.defalsify.org/vise.git/db"
-	memdb "git.defalsify.org/vise.git/db/mem"
-	"git.defalsify.org/vise.git/persist"
-	"git.defalsify.org/vise.git/resource"
+	"github.com/grassrootseconomics/go-vise/db"
+	memdb "github.com/grassrootseconomics/go-vise/db/mem"
+	"github.com/grassrootseconomics/go-vise/persist"
+	"github.com/grassrootseconomics/go-vise/resource"
 )
 
 type MemStorageService struct {

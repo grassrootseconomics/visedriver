@@ -5,22 +5,20 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path"
 
-	"git.defalsify.org/vise.git/db"
-	fsdb "git.defalsify.org/vise.git/db/fs"
-	memdb "git.defalsify.org/vise.git/db/mem"
-	"git.defalsify.org/vise.git/db/postgres"
-	"git.defalsify.org/vise.git/lang"
-	"git.defalsify.org/vise.git/logging"
-	"git.defalsify.org/vise.git/persist"
-	"git.defalsify.org/vise.git/resource"
-	gdbmstorage "git.grassecon.net/grassrootseconomics/visedriver/storage/db/gdbm"
+	"github.com/grassrootseconomics/go-vise/db"
+	fsdb "github.com/grassrootseconomics/go-vise/db/fs"
+	memdb "github.com/grassrootseconomics/go-vise/db/mem"
+	"github.com/grassrootseconomics/go-vise/db/postgres"
+	"github.com/grassrootseconomics/go-vise/lang"
+	"github.com/grassrootseconomics/go-vise/persist"
+	"github.com/grassrootseconomics/go-vise/resource"
+	slogging "github.com/grassrootseconomics/go-vise/slog"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var (
-	logg = logging.NewVanilla().WithDomain("storage")
+	logg = slogging.Get().With("component", "storage")
 )
 
 type StorageService interface {
@@ -94,13 +92,7 @@ func (ms *MenuStorageService) getOrCreateDb(ctx context.Context, section string,
 			return nil, err
 		}
 		newDb = postgres.NewPgDb().WithSchema(connData.Domain())
-	} else if dbTyp == DBTYPE_GDBM {
-		err = ms.ensureDbDir(connStr)
-		if err != nil {
-			return nil, err
-		}
-		connStr = path.Join(connStr, section)
-		newDb = gdbmstorage.NewThreadGdbmDb()
+
 	} else if dbTyp == DBTYPE_FS {
 		err = ms.ensureDbDir(connStr)
 		if err != nil {
